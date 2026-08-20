@@ -111,18 +111,6 @@ section{margin-top:26px}
 
 .chart-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px 12px}
 .chart-card h3{font-size:13px;font-weight:600}
-select:disabled{opacity:.55;cursor:not-allowed}
-/* franja que declara el alcance fijo de una pestaña */
-.alcance-fijo{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--ink2);
-  background:rgba(0,204,88,.07);border:1px solid rgba(0,204,88,.28);border-radius:8px;
-  padding:8px 12px;margin-bottom:12px}
-.alcance-fijo b{color:var(--green)}
-/* pestaña que no sale de la base: debe verse distinta */
-.fuente-externa{border:1px solid rgba(244,183,64,.38);background:rgba(244,183,64,.07);
-  border-radius:9px;padding:11px 14px;margin-bottom:13px}
-.fuente-externa .fe-t{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--amber);margin-bottom:5px}
-.fuente-externa .fe-d{font-size:12.5px;line-height:1.65;color:var(--ink2)}
-.fuente-externa b{color:var(--ink)}
 /* declara el alcance real de una cifra cuando no es el que sugiere el filtro */
 .alcance{display:inline-block;font-size:9px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;
   color:#F4B740;background:rgba(244,183,64,.12);border:1px solid rgba(244,183,64,.32);
@@ -472,7 +460,7 @@ const AREAS=[
      países, con el arreglo del puente de gastos) y no la entidad "Consolidado" del
      selector, que es un corte contable más angosto sin desglose por área. */
   {id:"costos_col",   label:"Gastos Colombia", hint:"Estructura de costos por área",
-     alcanceFijo:"Colombia",
+     forzarPais:"Colombia",
      codes:["gasto_area","gasto_admin","gasto_comercial","gasto_desarrollo","costo_operacion","costo_proveedor","costo_proveedor_ventas_pct","salario_area_pct"],
      charts:[{type:"pygcosts",title:"Costos y gastos oficiales P&G"},
              {type:"stackcol",code:"gasto_area",money:true,title:"Costos y gastos por área"},
@@ -484,7 +472,7 @@ const AREAS=[
              {type:"colavg",code:"costo_proveedor_ventas_pct",title:"Proporción de costos de proveedores sobre las ventas"},
              {type:"pieyear",code:"salario_area_pct",title:"Salarios por áreas"}]},
   {id:"costos_consol",label:"Gastos Consolidado", hint:"Estructura de costos por área · Colombia + EE.UU. + Perú + Costa Rica",
-     alcanceFijo:"__ALL__",
+     forzarPais:"__ALL__",
      codes:["gasto_area","gasto_admin","gasto_comercial","gasto_desarrollo","costo_operacion","costo_proveedor","costo_proveedor_ventas_pct","salario_area_pct"],
      charts:[{type:"pygcosts",title:"Costos y gastos oficiales P&G"},
              {type:"stackcol",code:"gasto_area",money:true,title:"Costos y gastos por área"},
@@ -1315,19 +1303,6 @@ function render(){
     nav.querySelectorAll(".tab-btn").forEach(b=>b.classList.toggle("active",b.dataset.go===idPrevio)); }
   const active=document.querySelector(".tab-btn.active");
   const tabId=active?active.dataset.go:"resumen";
-  /* Un control que no aplica se apaga a la vista; no se ignora en silencio. En las
-     pestañas de alcance fijo el selector muestra el alcance de la pestaña y queda
-     deshabilitado. Al cambiar de pestaña vuelve a mostrar la elección del lector, que
-     nunca se tocó. */
-  const fija=AREAS.find(a=>a.id===tabId&&a.alcanceFijo!==undefined);
-  const selPa=document.getElementById("f-pais");
-  if(selPa){
-    selPa.disabled=!!fija;
-    selPa.value=fija?fija.alcanceFijo:F.pais;
-    selPa.title=fija
-      ?("Esta pestaña siempre muestra "+(fija.alcanceFijo==="__ALL__"?"el consolidado":fija.alcanceFijo)+". Tu selección vuelve al cambiar de pestaña.")
-      :"";
-  }
   renderTab(tabId);
   document.getElementById("ts").textContent=S.fileName+" · "+S.periodos.length+" periodos";
 }
@@ -1350,21 +1325,6 @@ function actualizarLeyendaSD(){
    así que el ajuste no puede ir dentro de render() ni al final del cuerpo. */
 function renderTab(id){ renderTabInterno(id); actualizarLeyendaSD(); }
 
-/* Ejecuta el pintado de una pestaña de alcance fijo con SU país, y devuelve el filtro
-   como estaba. El render es síncrono, así que el try/finally cubre incluso un error a
-   media pintada: nunca se sale de aquí con el filtro del lector alterado. */
-function conAlcanceFijo(area,fn){
-  if(!area||area.alcanceFijo===undefined) return fn();
-  const previo=F.pais;
-  F.pais=area.alcanceFijo;
-  try{ return fn(); } finally{ F.pais=previo; }
-}
-/* Área de alcance fijo que está activa ahora mismo, si la hay. */
-function areaFijaActiva(){
-  const b=document.querySelector(".tab-btn.active");
-  const a=b?AREAS.find(x=>x.id===b.dataset.go):null;
-  return (a&&a.alcanceFijo!==undefined)?a:null;
-}
 function renderTabInterno(id){
   const host=document.getElementById("app"); host.innerHTML="";
   if(id==="resumen") return renderResumen(host);
@@ -1373,14 +1333,15 @@ function renderTabInterno(id){
   if(id==="pyg") return renderPyG(host);
   if(id==="consolidado"||id==="intl") return renderConsolidado(host);
   const area=AREAS.find(a=>a.id===id); if(!area)return;
-  /* Pestañas de alcance fijo (Gastos Colombia / Gastos Consolidado). Su alcance es parte
-     de su identidad y el selector superior no debe poder sacarlas de él.
-     Antes esto se resolvía escribiendo F.pais=area.forzarPais, es decir, cambiándole al
-     lector su selección: al salir de la pestaña el filtro global quedaba en Colombia (o
-     en Consolidado) y las demás vistas obedecían a algo que nadie eligió.
-     Ahora se pinta con su país y se restaura el del lector al terminar. El estado del
-     lector es del lector. */
-  conAlcanceFijo(area,()=>renderArea(host,area));
+  /* pestañas con país fijo (Gastos Colombia / Gastos Consolidado): se fuerza aquí,
+     no en el clic de la pestaña, para que valga sin importar cómo se llegó al render
+     (clic en la pestaña, cambio del selector superior, o recarga) y el selector de
+     arriba no pueda dejarlas en un país distinto al que anuncian. */
+  if(area.forzarPais!==undefined&&F.pais!==area.forzarPais){
+    F.pais=area.forzarPais;
+    const selPa=document.getElementById("f-pais"); if(selPa)selPa.value=area.forzarPais;
+  }
+  renderArea(host,area);
 }
 
 /* ============================================================
@@ -1999,20 +1960,6 @@ function renderBurnRunway(host){
   const head=document.createElement("div"); head.className="eyebrow";
   head.innerHTML=`<h2>Burn &amp; Runway</h2><span class="hint">Caja, quema y cobertura · corte ${d?d.corte:"—"} · cifras en COP millones</span>`;
   host.appendChild(head);
-  /* Esta pestaña no sale de la base: la genera el Modelo financiero y llega en
-     burn_runway.json. Por eso no obedece los filtros de país ni de moneda, y su tasa
-     puede diferir de la del resto del tablero. Verse igual que las demás invitaba a
-     comparar cifras que no son comparables; ahora lo declara. */
-  if(d){
-    const trmBR=d.trm_junio, trmTab=trmOf(F.periodo);
-    const diff=(trmBR&&trmTab)?Math.abs(trmBR/trmTab-1):0;
-    const fuente=document.createElement("div"); fuente.className="fuente-externa";
-    fuente.innerHTML=`<div class="fe-t">📄 Fuente externa · no sale de la base</div>
-      <div class="fe-d">Esta pestaña la genera el <b>Modelo financiero</b> (<span class="mono">burn_runway.json</span>, ${d.generado||"sin fecha"}), no <span class="mono">BD_Indicadores</span>.
-      Por eso <b>no responde a los filtros de país ni de moneda</b> y su corte es ${d.corte||"—"}.
-      ${trmBR?`Convierte a <b>TRM ${fNum(trmBR)}</b>${diff>0.005?` mientras el resto del tablero usa <b>${fNum(trmTab)}</b> — una diferencia de ${fPctN(diff*100,1)}. <b>No compares estas cifras de frente</b> con las de las otras pestañas.`:"."}`:""}</div>`;
-    host.appendChild(fuente);
-  }
   if(!d){
     const nd=document.createElement("div"); nd.className="chart-card";
     noData(nd,"No encuentro burn_runway.json. Genéralo con: modelo\\extraer_burn_runway.py (o el .bat de Burn & Runway).");
@@ -2184,7 +2131,7 @@ function avisoConsol(host,nombre){
   const d=document.createElement("div"); d.className="chart-card"; d.style.marginTop="14px";
   d.innerHTML=`<h3>${nombre||"Este panel"} · datos de Colombia</h3>
     <div style="font-size:12.5px;color:var(--ink2);margin-top:8px;line-height:1.7">
-      Tienes seleccionado <b>País = ${etiquetaPais()}</b>. La información multipaís (EE.UU., Perú, Costa Rica y Colombia) está en las pestañas
+      Tienes seleccionado <b>País = Consolidado</b>. La información multipaís (EE.UU., Perú, Costa Rica y Colombia) está en las pestañas
       <b>«Consolidado»</b> y <b>«P&G»</b> — allí verás el estado de resultados por país y el total.<br>
       Este panel usa indicadores que por ahora solo tienen datos de <b>Colombia</b>. Cambia el filtro <b>País → Colombia</b> para verlos.</div>`;
   host.appendChild(d);
@@ -2311,24 +2258,13 @@ function ppuestoCard(){
 function renderArea(host,area){
   if(esPaisConsol(F.pais)){
     if(CONSOL_SLICES[area.id]) return renderConsolArea(host,area);
-    /* Antes, elegir una filial reemplazaba TODA la vista por un aviso y no se veía una
-       sola cifra. El aviso decía la verdad, pero de más: en estas pestañas hay
-       indicadores que sí existen por entidad junto a otros que solo tiene Colombia.
-       Ahora el aviso encabeza la vista y debajo se pinta lo que sí hay; lo que no
-       aplica sale marcado, como en el Resumen. */
-    avisoConsol(host,area.label);
+    return avisoConsol(host,area.label);
   }
   const per=F.periodo;
   const head=document.createElement("div"); head.className="eyebrow";
   const rango=(F.start&&F.start!==F.periodo)?(mesCorto(F.start)+" – "+mesCorto(F.periodo)):per;
   head.innerHTML=`<h2>${area.label}</h2><span class="hint">${area.hint||""} · ${etiquetaPais()} · ${rango} · ${F.moneda}</span>`;
   host.appendChild(head);
-  /* La pestaña declara su alcance en vez de cambiarle el filtro al lector. */
-  if(area.alcanceFijo!==undefined){
-    const fr=document.createElement("div"); fr.className="alcance-fijo";
-    fr.innerHTML=`<span>🔒</span><span>Esta pestaña muestra siempre <b>${area.alcanceFijo==="__ALL__"?"el consolidado de los cuatro países":area.alcanceFijo}</b>. El selector de país no aplica aquí y vuelve a tu elección al cambiar de pestaña.</span>`;
-    host.appendChild(fr);
-  }
   /* tarjetas KPI data-driven */
   const grid=document.createElement("div"); grid.className="grid g4"; host.appendChild(grid);
   const defs=(area.id==="costos_col"||area.id==="costos_consol")?[
@@ -2350,15 +2286,9 @@ function renderArea(host,area){
     if(vRaw==null){ const lp=lastPeriodoWith(code); if(lp){ vRawShown=valueOf(code,{periodo:lp}); perShown=lp; } }
     const has=vRawShown!=null; const s=statusFor(code,vRawShown);
     const meta=META[code]; const bench=(has&&meta)?benchBarNative(vRawShown,meta):"";
-    /* "Por medir" significa que el indicador está definido pero nadie lo ha medido. Es
-       distinto de que no exista para la entidad elegida, que es lo que pasa con los 45
-       códigos que solo tiene Colombia cuando se mira una filial. Decir "Por medir" ahí
-       manda a perseguir un dato que nadie va a entregar. */
-    const noAplicaAqui=esSoloColombia(code)&&esPaisConsol(F.pais);
-    const sub=has?(perShown!==per?("último dato: "+perShown):(c.tipo||"").toString())
-                 :(noAplicaAqui?motivoSinDato(code):"aún sin cargar en la BD");
+    const sub=has?(perShown!==per?("último dato: "+perShown):(c.tipo||"").toString()):"aún sin cargar en la BD";
     const freqTag=(area.id==="marketing"&&c.frec)?(" · "+c.frec):"";
-    return {k:(c.nombre||code)+chipAlcance(code,per),v:has?fmtValue(code,vRawShown,perShown):(noAplicaAqui?"—":"Por medir"),dummy:!has&&!noAplicaAqui,real:has,s:has?s:null,bench,
+    return {k:(c.nombre||code),v:has?fmtValue(code,vRawShown,perShown):"Por medir",dummy:!has,real:has,s:has?s:null,bench,
       src:(c.fuente?(c.fuente+(c.origen?" · "+c.origen:"")):(c.origen||""))+freqTag};
   });
   mkCards(grid,area.id==="finanzas"?defs.filter(d=>!d.dummy):defs);
