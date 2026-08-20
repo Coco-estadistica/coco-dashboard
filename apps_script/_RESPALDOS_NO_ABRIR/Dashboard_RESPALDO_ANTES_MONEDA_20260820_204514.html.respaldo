@@ -815,30 +815,6 @@ function pygGastosTotales(o){
   return s;
 }
 function usdToDisplay(v,per){ return F.moneda==="COP"?v*trmOf(per):v; }
-
-/* ---------- Cifras nativas en USD (bloque consolidado) ----------
-   Estas vistas leen el bloque 'Consolidación USD', que ya viene en dólares. Cuando el
-   lector pide COP hay que convertirlas, y con la TRM DEL MES de cada cifra: convertir
-   enero con la tasa de julio da un número que no existió nunca. Por eso todos estos
-   ayudantes exigen el periodo.
-
-   Hasta el 20-ago-2026 estas vistas escribían dólares fijos sin consultar el selector de
-   moneda. El efecto era peor que no convertir: el botón COP/USD funcionaba en unas
-   pestañas y no en otras, y dentro de una misma pestaña dejaba de funcionar al cambiar
-   de país, porque las filiales entran por otro renderizador. Quien lo usaba concluía,
-   con razón, que el botón "a veces sirve". */
-function usdEn(v,per){ return v==null?null:usdToDisplay(v,per||F.periodo); }
-const fCon  =(v,per)=>fMoney(usdEn(v,per));                    /* cifra sola, ya convertida */
-const fConU =(v,per)=>conMon(fMoney(usdEn(v,per)),F.moneda);   /* cifra + moneda */
-const fDispU=v=>conMon(fMoney(v),F.moneda);                    /* valor que ya viene convertido */
-/* Acumulado: cada mes con SU propia tasa. Sumar en dólares y convertir el total al final
-   daría otro número en cuanto la tasa se mueva, y entre enero y julio de 2026 se movió
-   de 3.703 a 3.269. Los márgenes se siguen calculando sobre los dólares, para que el
-   tipo de cambio no le meta ruido a un porcentaje. */
-function acumEnMoneda(getMes,meses){ let s=null; (meses||[]).forEach(m=>{ const v=getMes(m); if(v!=null)s=(s||0)+usdEn(v,m); }); return s; }
-/* Cuando la fuente entrega el acumulado ya totalizado (el H1 oficial) no se puede
-   convertir mes a mes: se usa la tasa del corte y la tarjeta lo dice. */
-function notaTasaAcum(per){ return F.moneda==="COP"?" · a TRM "+fNum(trmOf(per)):""; }
 /* ============================================================
    ALCANCE REAL DE CADA INDICADOR
    ============================================================
@@ -1424,7 +1400,7 @@ function bridgeSVG(pais,periodo,escalaMax){
     const fill=s.falta?"rgba(148,163,184,.28)":(esNeg?"#F4685E":"#5FD68A");
     svg+=`<rect x="${x0.toFixed(1)}" y="${yTop.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="${fill}"${s.falta?' stroke="rgba(148,163,184,.7)" stroke-width="1.5" stroke-dasharray="4 3"':''}/>`;
     /* etiqueta de valor arriba de la barra */
-    const txt=s.falta?s.marca:(esNeg?"("+fCon(Math.abs(s.val),periodo)+")":fCon(s.val,periodo));
+    const txt=s.falta?s.marca:(esNeg?"("+fUSD(Math.abs(s.val))+")":fUSD(s.val));
     const colTxt=s.falta?"rgba(148,163,184,.95)":(esNeg?"#F4685E":"#5FD68A");
     svg+=`<text x="${cx.toFixed(1)}" y="${(yTop-13).toFixed(1)}" text-anchor="middle" font-size="17" font-weight="700"
       font-family="Inter,sans-serif" fill="${colTxt}">${txt}</text>`;
@@ -1564,22 +1540,17 @@ function renderPyGConsol(host){
   const ebitdaYTD=usaAcumOficial?officialAccumVal("_utilidad_operativa",ent,periodoAcum):factValConsol("_utilidad_operativa",mesesAcum,ent);
   const netaYTD=usaAcumOficial?officialAccumVal("pyg_utilidad_neta",ent,periodoAcum):factValSum("pyg_utilidad_neta",mesesAcum,ent,"Consolidación USD");
   const rango=periodoPendiente?"ene–jun · oficial; julio pendiente":(usaAcumOficial?("ene–"+mesCorto(per).split(" ")[0]+" · oficial"):(mesesHasta.length>1?(mesCorto(mesesHasta[0])+"–"+mesCorto(mesesHasta[mesesHasta.length-1])):mesCorto(mesesHasta[0])));
-  /* acumulados convertidos mes a mes; ver acumEnMoneda */
-  const ingYTDd  = usaAcumOficial?usdEn(ingYTD,periodoAcum)   :acumEnMoneda(m=>factValSum("pyg_ingresos_operacionales",[m],ent,"Consolidación USD"),mesesAcum);
-  const ebitYTDd = usaAcumOficial?usdEn(ebitdaYTD,periodoAcum):acumEnMoneda(m=>factValConsol("_utilidad_operativa",m,ent),mesesAcum);
-  const netaYTDd = usaAcumOficial?usdEn(netaYTD,periodoAcum)  :acumEnMoneda(m=>factValSum("pyg_utilidad_neta",[m],ent,"Consolidación USD"),mesesAcum);
-  const notaAc   = usaAcumOficial?notaTasaAcum(periodoAcum):"";
   const grid=document.createElement("div"); grid.className="grid g4"; host.appendChild(grid);
   mkCards(grid,[
-    {k:"Ingresos ("+ent+") · mes",v:periodoPendiente?"Dato no recibido":(ing==null?"—":fConU(ing,per)),meta:mesCorto(per),real:true},
-    {k:"EBITDA · mes",v:periodoPendiente?"Dato no recibido":(ebitda==null?"—":conMon(ebitda<0?"("+fCon(-ebitda,per)+")":fCon(ebitda,per),F.moneda)),meta:(ebitda!=null&&ing)?fPctN(ebitda/ing*100,1)+" margen":"",s:ebitda>=0?"green":"red",real:true},
-    {k:"Utilidad neta · mes",v:periodoPendiente?"Dato no recibido":(neta==null?"—":conMon(neta<0?"("+fCon(-neta,per)+")":fCon(neta,per),F.moneda)),meta:(neta!=null&&ing)?fPctN(neta/ing*100,1)+" margen":"",s:neta>=0?"green":"red",real:true},
-    {k:"Ingresos acumulados",v:fDispU(ingYTDd),meta:rango+notaAc,real:true}
+    {k:"Ingresos ("+ent+") · mes",v:periodoPendiente?"Dato no recibido":(ing==null?"—":fUSDU(ing)),meta:mesCorto(per),real:true},
+    {k:"EBITDA · mes",v:periodoPendiente?"Dato no recibido":(ebitda==null?"—":conMon(ebitda<0?"("+fUSD(-ebitda)+")":fUSD(ebitda),"USD")),meta:(ebitda!=null&&ing)?fPctN(ebitda/ing*100,1)+" margen":"",s:ebitda>=0?"green":"red",real:true},
+    {k:"Utilidad neta · mes",v:periodoPendiente?"Dato no recibido":(neta==null?"—":conMon(neta<0?"("+fUSD(-neta)+")":fUSD(neta),"USD")),meta:(neta!=null&&ing)?fPctN(neta/ing*100,1)+" margen":"",s:neta>=0?"green":"red",real:true},
+    {k:"Ingresos acumulados",v:fUSDU(ingYTD),meta:rango,real:true}
   ]);
   const grid2=document.createElement("div"); grid2.className="grid g3"; grid2.style.marginTop="13px"; host.appendChild(grid2);
   mkCards(grid2,[
-    {k:"EBITDA acumulado",v:fDispU(ebitYTDd),meta:rango+notaAc+(ingYTD?" · margen "+fPctN(ebitdaYTD/ingYTD*100,1):""),s:ebitdaYTD>=0?"green":"red",real:true},
-    {k:"Utilidad neta acumulada",v:fDispU(netaYTDd),meta:rango+notaAc,s:netaYTD>=0?"green":"red",real:true},
+    {k:"EBITDA acumulado",v:fUSDU(ebitdaYTD),meta:rango+(ingYTD?" · margen "+fPctN(ebitdaYTD/ingYTD*100,1):""),s:ebitdaYTD>=0?"green":"red",real:true},
+    {k:"Utilidad neta acumulada",v:fUSDU(netaYTD),meta:rango,s:netaYTD>=0?"green":"red",real:true},
     {k:"Margen neto acumulado",v:ingYTD?fPctN(netaYTD/ingYTD*100,1):"—",s:netaYTD>=0?"green":"red",real:true}
   ]);
 
@@ -1598,14 +1569,12 @@ function peruSpecialProjectCard(hasta){
   const pers=[...new Set(rows.map(r=>r.periodo))].sort();
   if(!rows.length){ card.innerHTML=`<h3>Perú · Proyecto especial PROINNOVATE</h3><div style="font-size:12px;color:var(--mute);margin-top:8px">Sin movimientos cargados hasta ${mesCorto(hasta)}. Se mantiene separado del P&G oficial y del consolidado.</div>`; return card; }
   const sum=code=>rows.filter(r=>r.codigo===code).reduce((a,r)=>a+r.valor,0);
-  /* cada movimiento a la tasa de SU mes: el proyecto abarca varios periodos */
-  const sumD=code=>rows.filter(r=>r.codigo===code).reduce((a,r)=>a+usdEn(r.valor,r.periodo),0);
   const ing=sum("proinnovate_ingresos"), gas=sum("proinnovate_gastos"), res=sum("proinnovate_resultado");
   card.innerHTML=`<h3>Perú · Proyecto especial PROINNOVATE <span style="color:var(--amber);font-size:10px;margin-left:6px">FUERA DEL CONSOLIDADO</span></h3>
     <div class="grid g3" style="margin-top:12px">
-      <div class="card"><div class="k">Ingresos / desembolsos</div><div class="v mono">${fDispU(sumD("proinnovate_ingresos"))}</div><div class="sub">${pers.length} mes(es) cargados</div></div>
-      <div class="card"><div class="k">Gastos asociados</div><div class="v mono">${fDispU(sumD("proinnovate_gastos"))}</div><div class="sub">registro separado</div></div>
-      <div class="card"><div class="k">Resultado del proyecto</div><div class="v mono" style="color:${res<0?'var(--red)':'var(--green)'}">${res<0?conMon("("+fMoney(-sumD("proinnovate_resultado"))+")",F.moneda):fDispU(sumD("proinnovate_resultado"))}</div><div class="sub">no contabilizado en P&G oficial</div></div>
+      <div class="card"><div class="k">Ingresos / desembolsos</div><div class="v mono">${fUSDU(ing)}</div><div class="sub">${pers.length} mes(es) cargados</div></div>
+      <div class="card"><div class="k">Gastos asociados</div><div class="v mono">${fUSDU(gas)}</div><div class="sub">registro separado</div></div>
+      <div class="card"><div class="k">Resultado del proyecto</div><div class="v mono" style="color:${res<0?'var(--red)':'var(--green)'}">${res<0?'('+fUSD(-res)+') USD':fUSDU(res)}</div><div class="sub">no contabilizado en P&G oficial</div></div>
     </div>
     <div style="font-size:11px;color:var(--mute);margin-top:10px">Estos movimientos siguen disponibles en la base bajo el segmento PROINNOVATE. Se presentan aquí para seguimiento, sin mezclarlos con la operación ordinaria de Coco Perú.</div>`;
   return card;
@@ -1757,23 +1726,18 @@ function renderConsolidado(host){
   const accNeta  = usaAcumOficial?officialAccumVal("pyg_utilidad_neta","Consolidado",per):sumNeta;
   const accEbitda= usaAcumOficial?officialAccumVal("_utilidad_operativa","Consolidado",per)
                                 :factValConsol("_utilidad_operativa",mesesAcc,"Consolidado");
-  let etqAcc = usaAcumOficial?("ene–"+mesCorto(per).split(" ")[0]+" · oficial"):rango+" · "+mesesAcc.length+" mes(es)";
-  /* acumulados en la moneda elegida: mes a mes cuando se pueden recorrer los meses */
-  const accIngD    = usaAcumOficial?usdEn(accIng,per)   :acumEnMoneda(m=>consIng(m),mesesAcc);
-  const accNetaD   = usaAcumOficial?usdEn(accNeta,per)  :acumEnMoneda(m=>consNeta(m),mesesAcc);
-  const accEbitdaD = usaAcumOficial?usdEn(accEbitda,per):acumEnMoneda(m=>factValConsol("_utilidad_operativa",m,"Consolidado"),mesesAcc);
-  if(usaAcumOficial) etqAcc += notaTasaAcum(per);
+  const etqAcc = usaAcumOficial?("ene–"+mesCorto(per).split(" ")[0]+" · oficial"):rango+" · "+mesesAcc.length+" mes(es)";
 
   mkCards(grid,[
-    {k:"Ingresos consolidados",v:cIng==null?"—":fConU(cIng,per),meta:mesCorto(per),real:true},
-    {k:"EBITDA consol. (mes)",v:cEbitda==null?"—":fConU(cEbitda,per),meta:(cEbitda!=null&&cIng)?"margen "+fPctN(cEbitda/cIng*100,1):"",s:cEbitda>=0?"green":"red",real:true},
-    {k:"Utilidad neta consol.",v:cNeta==null?"—":fConU(cNeta,per),meta:(cNeta!=null&&cIng)?"margen "+fPctN(cNeta/cIng*100,1):"",s:cNeta>=0?"green":"red",real:true},
-    {k:"Ingresos acumulados",v:fDispU(accIngD),meta:etqAcc,real:true}
+    {k:"Ingresos consolidados",v:cIng==null?"—":fUSDU(cIng),meta:mesCorto(per),real:true},
+    {k:"EBITDA consol. (mes)",v:cEbitda==null?"—":fUSDU(cEbitda),meta:(cEbitda!=null&&cIng)?"margen "+fPctN(cEbitda/cIng*100,1):"",s:cEbitda>=0?"green":"red",real:true},
+    {k:"Utilidad neta consol.",v:cNeta==null?"—":fUSDU(cNeta),meta:(cNeta!=null&&cIng)?"margen "+fPctN(cNeta/cIng*100,1):"",s:cNeta>=0?"green":"red",real:true},
+    {k:"Ingresos acumulados",v:fUSDU(accIng),meta:etqAcc,real:true}
   ]);
   const grid2=document.createElement("div"); grid2.className="grid g4"; grid2.style.marginTop="13px"; host.appendChild(grid2);
   mkCards(grid2,[
-    {k:"EBITDA acumulado",v:fDispU(accEbitdaD),meta:etqAcc+(accIng?" · margen "+fPctN(accEbitda/accIng*100,1):""),s:accEbitda>=0?"green":"red",real:true},
-    {k:"Utilidad neta acumulada",v:accNetaD!=null&&accNetaD<0?conMon("("+fMoney(-accNetaD)+")",F.moneda):fDispU(accNetaD),meta:etqAcc,s:accNeta>=0?"green":"red",real:true},
+    {k:"EBITDA acumulado",v:fUSDU(accEbitda),meta:etqAcc+(accIng?" · margen "+fPctN(accEbitda/accIng*100,1):""),s:accEbitda>=0?"green":"red",real:true},
+    {k:"Utilidad neta acumulada",v:accNeta<0?conMon("("+fMoney(-accNeta)+")","USD"):fUSDU(accNeta),meta:etqAcc,s:accNeta>=0?"green":"red",real:true},
     {k:"Margen EBITDA acumulado",v:accIng?fPctN(accEbitda/accIng*100,1):"—",s:accEbitda>=0?"green":"red",real:true},
     {k:"Margen neto acumulado",v:accIng?fPctN(accNeta/accIng*100,1):"—",s:accNeta>=0?"green":"red",real:true}
   ]);
@@ -1862,12 +1826,12 @@ function consolStatementCard(perOrMeses,resaltar,soloCodes,titulo,segmentoBloque
            una pérdida nunca debe verse en verde aunque esté en la columna del total */
         const peso=(c.total||c.subtotal)?";font-weight:700":"";
         const hl=neg?("color:var(--red)"+peso):(p==="Consolidado"?("color:var(--green)"+peso):peso.replace(/^;/,""));
-        return `<td class="r mono" style="${hl}${sel?';background:var(--panel2)':''}">${pendiente(p)?"Dato no recibido":(v==null?"—":(neg?"("+fCon(-v,per)+")":fCon(v,per)))}</td>`; }).join("")+`</tr>`; });
+        return `<td class="r mono" style="${hl}${sel?';background:var(--panel2)':''}">${pendiente(p)?"Dato no recibido":(v==null?"—":(neg?"("+fUSD(-v)+")":fUSD(v)))}</td>`; }).join("")+`</tr>`; });
   html+=`</tbody></table></div>`;
   const crIng=factVal("pyg_ingresos_operacionales",per,"Costa Rica",segmentoBloque);
   let avisos=`<div style="font-size:11px;color:var(--mute);margin-top:8px">Cada país se convierte a USD con su factor mensual (Perú: BCRP; Colombia: COP/USD implícito). Los rubros se muestran con su signo — valores en rojo/paréntesis son negativos (créditos o gasto neto). La Utilidad Operativa (EBITDA) es calculada: Ingresos − Costo del servicio − Administración − Ventas − Operación. La Utilidad neta de cada país es la cifra oficial de su contabilidad. PROINNOVATE (Perú) no entra al consolidado.</div>`;
   if(!acumulado&&segmentoBloque!=="__ACUM_OFICIAL__"&&datoNoRecibidoPaisPeriodo("Perú",per)&&cols.includes("Perú")){ avisos+=`<div style="font-size:11.5px;color:var(--amber);background:var(--amber-b);border:1px solid rgba(244,183,64,.35);border-radius:8px;padding:8px 11px;margin-top:8px"><b>Perú · ${mesCorto(per)}:</b> dato no recibido. El consolidado del mes no incorpora actividad ordinaria de Perú y debe considerarse provisional.</div>`; }
-  if(!acumulado && !etiquetaOverride && per==="2026-06" && crIng!=null && crIng>100000){ avisos+=`<div style="font-size:11.5px;color:var(--amber);background:var(--amber-b);border:1px solid rgba(244,183,64,.35);border-radius:8px;padding:8px 11px;margin-top:8px">⚠ Costa Rica · junio: ingresos atípicamente altos (${fConU(crIng,per)}). Pendiente de validación.</div>`; }
+  if(!acumulado && !etiquetaOverride && per==="2026-06" && crIng!=null && crIng>100000){ avisos+=`<div style="font-size:11.5px;color:var(--amber);background:var(--amber-b);border:1px solid rgba(244,183,64,.35);border-radius:8px;padding:8px 11px;margin-top:8px">⚠ Costa Rica · junio: ingresos atípicamente altos (${fUSD(crIng)}). Pendiente de validación.</div>`; }
   card.innerHTML+=html+avisos;
   return card;
 }
@@ -1882,18 +1846,12 @@ const CONSOL_SLICES={
 function renderConsolArea(host,area){
   const meses=mesesIntl(); const ent=F.pais; const slice=CONSOL_SLICES[area.id];
   const head=document.createElement("div"); head.className="eyebrow";
-  head.innerHTML=`<h2>${slice.titulo}${(ent==="Consolidado"||ent==="__ALL__")?"":" — "+ent}</h2><span class="hint">${(ent==="Consolidado"||ent==="__ALL__")?"multi-país":ent} · ${F.moneda} · bloque consolidado</span>`;
+  head.innerHTML=`<h2>${slice.titulo}${ent==="Consolidado"?"":" — "+ent}</h2><span class="hint">multi-país · USD · bloque consolidado</span>`;
   host.appendChild(head);
   if(!meses.length){ const nd=document.createElement("div"); nd.className="chart-card"; noData(nd,"Aún no hay bloque consolidado en la base."); host.appendChild(nd); return; }
   let per=meses.includes(F.periodo)?F.periodo:meses[meses.length-1];
   const rango=meses.length>1?(mesCorto(meses[0])+"–"+mesCorto(meses[meses.length-1])):mesCorto(meses[0]);
-  /* El rótulo debe decir lo que la tarjeta realmente suma. La rebanada 'finanzas' trae
-     TODAS las cuentas del P&L —ingresos incluidos—, así que llamarla "Costos y gastos"
-     era falso: mostraba USD 702.251 bajo ese título cuando el consolidado del mes eran
-     USD 350.895, y el lector no tenía cómo saber que estaba viendo otra cosa. */
-  const etqTot=area.id==="mrr"?"Ingresos consolidados"
-              :area.id==="costos"?"Costos y gastos consolidados"
-              :"Suma de las líneas del P&L";
+  const etqTot=area.id==="mrr"?"Ingresos consolidados":"Costos y gastos consolidados";
 
   /* selector de mes */
   const bar=document.createElement("div"); bar.style.cssText="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap";
@@ -1904,43 +1862,30 @@ function renderConsolArea(host,area){
 
   /* total del área por país: mes seleccionado Y acumulado (suma de todos los meses del bloque) */
   const totPais=(p,mesesArr)=>slice.codes.reduce((a,code)=>{ const v=factValSum(code,mesesArr,p,"Consolidación USD"); return a+(v||0); },0);
-  /* mismos totales pero en la moneda elegida, cada mes a su tasa */
-  const totPaisD=(p,mesesArr)=>acumEnMoneda(m=>totPais(p,[m]),mesesArr);
-  /* Antes estas cuatro tarjetas leían siempre "Consolidado", aunque el encabezado dijera
-     "— Perú". Es decir: el título anunciaba una entidad y las cifras eran de otra. Ahora
-     leen la entidad seleccionada, y el desglose Colombia/Subsidiarias —que solo tiene
-     sentido dentro del consolidado— aparece únicamente cuando esa es la entidad. */
-  const esConsolidado=(ent==="Consolidado"||ent==="__ALL__");
-  const entLee=esConsolidado?"Consolidado":ent;
-  const tEnt=totPais(entLee,[per]), tEntYTD=totPais(entLee,meses);
+  const tCons=totPais("Consolidado",[per]), tColMes=totPais("Colombia",[per]);
   const tConsYTD=totPais("Consolidado",meses), tColYTD=totPais("Colombia",meses);
   const tSubYTD=["EE.UU.","Perú","Costa Rica"].reduce((a,p)=>a+totPais(p,meses),0);
-  const grid=document.createElement("div"); grid.className=esConsolidado?"grid g4":"grid g2"; host.appendChild(grid);
-  const tarjetas=[
-    {k:etqTot+" · "+entLee+" (mes)",v:fConU(tEnt,per),meta:mesCorto(per),real:true},
-    {k:etqTot+" · "+entLee+" (acumulado)",v:fDispU(totPaisD(entLee,meses)),meta:rango+" · "+meses.length+" mes(es)",real:true}
-  ];
-  if(esConsolidado) tarjetas.push(
-    {k:"Colombia acumulado",v:fDispU(totPaisD("Colombia",meses)),meta:tConsYTD?fPctN(tColYTD/tConsYTD*100,0)+" del total":"",real:true},
-    {k:"Subsidiarias acumulado",v:fDispU(["EE.UU.","Perú","Costa Rica"].reduce((a,pz)=>a+(totPaisD(pz,meses)||0),0)),meta:tConsYTD?fPctN(tSubYTD/tConsYTD*100,0)+" del total":"",real:true});
-  mkCards(grid,tarjetas);
+  const grid=document.createElement("div"); grid.className="grid g4"; host.appendChild(grid);
+  mkCards(grid,[
+    {k:etqTot+" (mes)",v:fUSDU(tCons),meta:mesCorto(per),real:true},
+    {k:etqTot+" (acumulado)",v:fUSDU(tConsYTD),meta:rango+" · "+meses.length+" mes(es)",real:true},
+    {k:"Colombia acumulado",v:fUSDU(tColYTD),meta:tConsYTD?fPctN(tColYTD/tConsYTD*100,0)+" del total":"",real:true},
+    {k:"Subsidiarias acumulado",v:fUSDU(tSubYTD),meta:tConsYTD?fPctN(tSubYTD/tConsYTD*100,0)+" del total":"",real:true}
+  ]);
 
-  /* Tendencia mensual: de la ENTIDAD seleccionada y en la moneda elegida. Antes graficaba
-     siempre Consolidado, así que con Perú el encabezado decía Perú y las barras eran del
-     consolidado — la misma incoherencia de las tarjetas, un renglón más abajo. Cada mes se
-     convierte con su propia tasa. */
+  /* tendencia mensual del total consolidado del área */
   const trend=document.createElement("div"); trend.className="chart-card"; trend.style.marginTop="14px";
-  trend.innerHTML=`<h3>${etqTot} · ${entLee} · por mes (${F.moneda})</h3>`;
+  trend.innerHTML=`<h3>${etqTot} por mes (USD)</h3>`;
   const tb=document.createElement("div"); tb.style.marginTop="8px"; trend.appendChild(tb);
-  barChart(tb,meses.map(mesCorto),meses.map(m=>usdEn(totPais(entLee,[m]),m)),{fmt:v=>fAxisMoney(v),fill:area.id==="mrr"?"var(--green)":"var(--amber)"});
+  barChart(tb,meses.map(mesCorto),meses.map(m=>totPais("Consolidado",[m])),{fmt:v=>fAxisMoney(v),fill:area.id==="mrr"?"var(--green)":"var(--amber)"});
   host.appendChild(trend);
 
   /* barra: aporte de cada país al ACUMULADO del área */
   const cc=document.createElement("div"); cc.className="chart-card"; cc.style.marginTop="14px";
-  cc.innerHTML=`<h3>${etqTot} por país · acumulado ${rango} (${F.moneda})</h3>`;
+  cc.innerHTML=`<h3>${etqTot} por país · acumulado ${rango} (USD)</h3>`;
   const cb=document.createElement("div"); cb.style.marginTop="8px"; cc.appendChild(cb);
   const paisesB=["EE.UU.","Perú","Costa Rica","Colombia"];
-  barChart(cb,paisesB,paisesB.map(p=>totPaisD(p,meses)),{fmt:v=>fAxisMoney(v),fill:area.id==="mrr"?"var(--green)":"var(--amber)"});
+  barChart(cb,paisesB,paisesB.map(p=>totPais(p,meses)),{fmt:v=>fAxisMoney(v),fill:area.id==="mrr"?"var(--green)":"var(--amber)"});
   host.appendChild(cc);
 
   /* tabla del mes seleccionado */
