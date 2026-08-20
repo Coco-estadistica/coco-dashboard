@@ -1,0 +1,33 @@
+﻿activo,tipo,origen,codigo_indicador,periodo,pais,escenario,unidad,nota
+NO,nombre,CostoVentasBase,costo_ventas_base_plan,2026-12,Colombia,Modelo,COP,Supuesto del modelo (Inputs!$C$40)
+NO,nombre,DeltaModQ2,,2026-12,Colombia,Modelo,,Supuesto del modelo (Inputs!$D$75)
+NO,nombre,DeltaModQ3,,2026-12,Colombia,Modelo,,Supuesto del modelo (Inputs!$D$76)
+NO,nombre,DeltaModQ4,,2026-12,Colombia,Modelo,,Supuesto del modelo (Inputs!$D$77)
+NO,nombre,DeltaVtasQ2,,2026-12,Colombia,Modelo,,Supuesto del modelo (Inputs!$E$75)
+NO,nombre,DeltaVtasQ3,,2026-12,Colombia,Modelo,,Supuesto del modelo (Inputs!$E$76)
+NO,nombre,DeltaVtasQ4,,2026-12,Colombia,Modelo,,Supuesto del modelo (Inputs!$E$77)
+NO,nombre,GtosAdminBase,gasto_admin_base_plan,2026-12,Colombia,Modelo,COP,Supuesto del modelo (Inputs!$C$44)
+NO,nombre,GtosNoOpBase,gastos_no_op_base_plan,2026-12,Colombia,Modelo,COP,Supuesto del modelo (Inputs!$C$54)
+NO,nombre,GtosOpInflado,gasto_operacion_base_plan,2026-12,Colombia,Modelo,COP,Supuesto del modelo (Inputs!$D$55)
+NO,nombre,GtosVentasBase,gasto_ventas_base_plan,2026-12,Colombia,Modelo,COP,Supuesto del modelo (Inputs!$C$48)
+NO,nombre,InflacionAnual,inflacion_plan,2026-12,Colombia,Modelo,%,Supuesto del modelo (Inputs!$C$11)
+NO,nombre,IngNoOpBase,ingresos_no_op_base_plan,2026-12,Colombia,Modelo,COP,Supuesto del modelo (Inputs!$C$53)
+NO,nombre,TasaDeudaLp,tasa_deuda_lp_plan,2026-12,Colombia,Modelo,%,Supuesto del modelo (Inputs!$C$28)
+NO,nombre,TasaImpuesto,tasa_impuesto_plan,2026-12,Colombia,Modelo,%,Supuesto del modelo (Inputs!$C$25)
+NO,nombre,TrmLargoPlazo,trm_plan,2026-12,Colombia,Modelo,COP/USD,Supuesto del modelo (Inputs!$C$6)
+NO,celda,'Seg. Ppto Jun-26'!C7,,2026-06,Colombia,Real,,Ingresos operacionales — Real YTD
+NO,celda,'Seg. Ppto Jun-26'!D7,,2026-06,Colombia,Presupuesto,,Ingresos operacionales — Ppto YTD
+NO,celda,'Seg. Ppto Jun-26'!C8,,2026-06,Colombia,Real,,Utilidad bruta — Real YTD
+NO,celda,'Seg. Ppto Jun-26'!D8,,2026-06,Colombia,Presupuesto,,Utilidad bruta — Ppto YTD
+NO,celda,'Seg. Ppto Jun-26'!C9,,2026-06,Colombia,Real,,Margen bruto — Real YTD
+NO,celda,'Seg. Ppto Jun-26'!D9,,2026-06,Colombia,Presupuesto,,Margen bruto — Ppto YTD
+NO,celda,'Seg. Ppto Jun-26'!C10,,2026-06,Colombia,Real,,EBITDA / utilidad operacional — Real YTD
+NO,celda,'Seg. Ppto Jun-26'!D10,,2026-06,Colombia,Presupuesto,,EBITDA / utilidad operacional — Ppto YTD
+NO,celda,'Seg. Ppto Jun-26'!C11,,2026-06,Colombia,Real,,Margen EBITDA — Real YTD
+NO,celda,'Seg. Ppto Jun-26'!D11,,2026-06,Colombia,Presupuesto,,Margen EBITDA — Ppto YTD
+NO,celda,'Seg. Ppto Jun-26'!C12,,2026-06,Colombia,Real,,Utilidad neta — Real YTD
+NO,celda,'Seg. Ppto Jun-26'!D12,,2026-06,Colombia,Presupuesto,,Utilidad neta — Ppto YTD
+NO,celda,'Seg. Ppto Jun-26'!C13,,2026-06,Colombia,Real,,Flujo operativo — Real YTD
+NO,celda,'Seg. Ppto Jun-26'!D13,,2026-06,Colombia,Presupuesto,,Flujo operativo — Ppto YTD
+NO,celda,'Seg. Ppto Jun-26'!C14,,2026-06,Colombia,Real,,Caja final mayo — Real YTD
+NO,celda,'Seg. Ppto Jun-26'!D14,,2026-06,Colombia,Presupuesto,,Caja final mayo — Ppto YTD
