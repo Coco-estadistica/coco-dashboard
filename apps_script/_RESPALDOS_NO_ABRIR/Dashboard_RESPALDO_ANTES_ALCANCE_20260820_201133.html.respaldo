@@ -111,12 +111,6 @@ section{margin-top:26px}
 
 .chart-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px 12px}
 .chart-card h3{font-size:13px;font-weight:600}
-/* declara el alcance real de una cifra cuando no es el que sugiere el filtro */
-.alcance{display:inline-block;font-size:9px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;
-  color:#F4B740;background:rgba(244,183,64,.12);border:1px solid rgba(244,183,64,.32);
-  border-radius:999px;padding:1px 5px;margin-left:5px;vertical-align:middle;white-space:nowrap}
-/* el título del KPI debe poder envolver: si no, el chip se sale de la tarjeta */
-.vital .k{display:flex;flex-wrap:wrap;align-items:center;gap:3px}
 .chart-card .leg{display:flex;gap:16px;margin-top:4px;font-size:11px;color:var(--ink2);flex-wrap:wrap}
 .chart-card .leg span{display:inline-flex;align-items:center;gap:6px}
 .swatch{width:11px;height:11px;border-radius:3px;flex:none}
@@ -815,128 +809,13 @@ function pygGastosTotales(o){
   return s;
 }
 function usdToDisplay(v,per){ return F.moneda==="COP"?v*trmOf(per):v; }
-/* ============================================================
-   ALCANCE REAL DE CADA INDICADOR
-   ============================================================
-   No todos los indicadores existen para los cuatro países. De los 59 códigos de la
-   base, solo 12 (los pyg_*) viven en el bloque 'Consolidación USD'; los otros 45
-   —cartera, MRR, marketing, gastos por área, ingresos_totales— solo tienen Colombia.
-   Un filtro de país no puede repartir un dato que nunca se capturó por país.
-
-   El riesgo no es quedarse sin cifra: es mostrar la de Colombia bajo un rótulo
-   consolidado. Eso no es un dato incompleto, es un dato equivocado. Por eso el
-   alcance se calcula aquí y las funciones de abajo lo consultan antes de caer a la
-   serie de Colombia.
-
-   Se deduce de los datos, nunca de una lista escrita a mano: si mañana Costa Rica
-   carga MRR, ese código cambia de grupo solo. Es el mismo criterio que ya usa
-   codigoAplicaA() para distinguir s/d de n/a. */
-const CONSOL_SEG="Consolidación USD";
-const PAISES_CONSOL=["Colombia","EE.UU.","Perú","Costa Rica"];
-let _alc=null,_alcTok="";
-function alcanceIndex(){
-  const tok=S.facts.length+"|"+S.fileName;
-  if(_alc&&_alcTok===tok)return _alc;
-  const m={}; let filialDesde=null;
-  for(const f of S.facts){
-    const seg=f.segmento||"";
-    const a=m[f.codigo]||(m[f.codigo]={normal:new Set(),consol:new Set()});
-    if(seg===CONSOL_SEG)a.consol.add(f.pais);
-    else if(!INTL_SEG.has(seg))a.normal.add(f.pais);
-    if(f.pais&&f.pais!=="Colombia"&&f.pais!=="Otros"&&f.pais!=="Consolidado"&&f.periodo)
-      if(filialDesde===null||f.periodo<filialDesde)filialDesde=f.periodo;
-  }
-  for(const c in m){ const a=m[c];
-    a.grupo = a.consol.has("Consolidado") ? "consolidable"
-            : a.consol.size>1             ? "varios"
-            : (a.consol.size===0&&a.normal.size===1&&a.normal.has("Colombia")) ? "solo_colombia"
-            : "parcial"; }
-  m.__filialDesde=filialDesde;
-  _alcTok=tok; _alc=m; return m;
-}
-function alcanceDe(code){ const a=alcanceIndex()[code]; return a&&a.grupo?a.grupo:"parcial"; }
-/* Chip que declara el alcance real de una cifra. Solo aparece cuando el filtro es
-   consolidado y el indicador únicamente tiene Colombia: la cifra en sí es correcta —
-   lo que sería falso es dejar que se lea como multipaís. Preferimos declararlo a
-   esconder el indicador: la cartera y el MRR de Colombia siguen siendo información
-   útil para la junta, siempre que se sepa de qué son. */
-/* Por qué una cifra sale vacía. Un guion solo no dice nada: el lector no sabe si el
-   dato no llegó, no aplica, o el tablero está roto. Las tres respuestas son distintas
-   y llevan a acciones distintas (perseguir el dato / no hacer nada / avisar). */
-/* Nombre del alcance que está viendo el lector. Con __ALL__ el rótulo es
-   "Consolidado": es la única opción consolidada que quedó en el selector. */
-function etiquetaPais(){ return F.pais==="__ALL__"?"Consolidado":F.pais; }
-/* Qué tasa se aplicó, dicho con todas las letras. Hay tres posibles y dan cifras
-   distintas: la implícita de los EEFF, el promedio de mercado y la que alguien haya
-   escrito a mano en el campo TRM. Mostrar solo el número deja al lector sin saber
-   cuál está mirando — y la diferencia entre implícita y mercado ya provocó una
-   confusión real con la TRM de julio (3.268,95 vs 3.505,27). */
-function etiquetaTasa(per){
-  const manual=F.trm&&!isNaN(F.trm)&&F.trm>0;
-  const base=F.trmBase==="mercado"?"tasa promedio de mercado":"tasa implícita de los EEFF";
-  return "TRM "+fNum(trmOf(per))+" · "+(manual?"tasa fijada a mano":base);
-}
-function motivoSinDato(code){
-  if(code&&esSoloColombia(code)&&esPaisConsol(F.pais))
-    return "No disponible en la base: solo se captura para Colombia";
-  if(F.pais==="__ALL__"||esPaisConsol(F.pais))
-    return "No disponible en la base para "+(F.pais==="__ALL__"?"el consolidado":F.pais)+" en este periodo";
-  return "No disponible en la base de datos para este periodo";
-}
-function chipAlcance(code,per){
-  if(!code||!esSoloColombia(code))return "";
-  /* Un código puede ser solo-Colombia en la serie legacy y aun así mostrarse
-     consolidado: los códigos de la vista financiera se sirven del bloque
-     'Consolidación USD' cuando existe. En ese caso la cifra SÍ es multipaís y marcarla
-     "solo Colombia" sería mentir al revés. Se mira de dónde salió el número, no cómo
-     se llama el código. */
-  if(FINANCE_VIEW_CODES.has(code)&&officialFinanceDisplay(code,per||F.periodo)!=null)return "";
-  if(F.pais==="__ALL__")
-    return `<span class="alcance" title="Este indicador solo tiene datos de Colombia; las filiales todavía no lo reportan. La cifra es correcta, pero no es multipaís.">solo Colombia</span>`;
-  if(esPaisConsol(F.pais))
-    /* n/a, no s/d: esa entidad nunca ha reportado este indicador, así que no hay nada
-       que perseguir. Sin la marca, el blanco se leería como un dato pendiente. */
-    return `<span class="alcance" title="Este indicador no aplica a esta entidad: solo se captura para Colombia.">n/a en ${F.pais}</span>`;
-  return "";
-}
-function esSoloColombia(code){ return alcanceDe(code)==="solo_colombia"; }
-/* Antes de que existieran las filiales, Colombia ERA la compañía: en esos meses
-   mostrar Colombia bajo el rótulo consolidado es correcto (n/a, no s/d). Marcarlos
-   como faltantes sería una alarma falsa. */
-function eraSoloColombia(per){ const d=alcanceIndex().__filialDesde; return d==null||per<d; }
-function filtroEsConsolidado(){ return F.pais==="__ALL__"||esPaisConsol(F.pais); }
-/* Suma de los cuatro países del bloque USD, para los meses en que la fila de la
-   entidad 'Consolidado' no existe.
-
-   Exige que estén LOS CUATRO. En ene-mar 2026 el bloque USD solo trae las filiales:
-   Colombia no se cargó ahí hasta abril. Sumar lo que hubiera daba USD 3.499 en enero
-   frente a USD 214.383 en abril — un consolidado sin Colombia, que es el 98% de la
-   compañía. Una suma parcial es peor que no tener el dato: se ve completa y no lo
-   está. Si falta un país, devuelve null y el mes sale s/d.
-
-   Cuando están los cuatro no inventa nada: son cifras ya cargadas y ya en USD, y el
-   control A de conciliar_capas.py verifica que en los meses donde además existe la
-   fila oficial esta suma coincide con ella. */
-function sumaPaisesConsol(code,per){
-  let s=0;
-  for(const p of PAISES_CONSOL){ const v=factVal(code,per,p,CONSOL_SEG); if(v==null)return null; s+=v; }
-  return s;
-}
-/* true si el consolidado de ese mes se armó sumando países en vez de leer la fila
-   oficial. La pestaña lo rotula para que nadie lo confunda con el cierre contable. */
-function consolEsSuma(per){
-  return factVal("pyg_ingresos_operacionales",per,"Consolidado",CONSOL_SEG)==null
-      && sumaPaisesConsol("pyg_ingresos_operacionales",per)!=null;
-}
-
-/* El P&G oficial es la fuente de control. Para el consolidado se usa el bloque USD,
+/* El P&G oficial es la fuente de control. Para Todos se usa el Consolidado USD,
    evitando sumar directamente COP, USD y PEN como si fueran la misma moneda. */
 function officialPygDisplay(code,per){
   const filtro=F.pais;
   if(filtro==="__ALL__"||esPaisConsol(filtro)){
     const entidad=filtro==="__ALL__"?"Consolidado":filtro;
-    let usd=factVal(code,per,entidad,CONSOL_SEG);
-    if(usd==null&&entidad==="Consolidado")usd=sumaPaisesConsol(code,per);
+    const usd=factVal(code,per,entidad,"Consolidación USD");
     return usd==null?null:usdToDisplay(usd,per);
   }
   const local=rawStored(code,{periodo:per,pais:filtro});
@@ -954,13 +833,7 @@ function officialOperatingDisplay(per){
   if(F.escenario!=="Real")return null;
   if(F.pais==="__ALL__"||esPaisConsol(F.pais)){
     const entidad=F.pais==="__ALL__"?"Consolidado":F.pais;
-    let usd=factValConsol("_utilidad_operativa",per,entidad,CONSOL_SEG);
-    if(usd==null&&entidad==="Consolidado"){
-      /* mismo hueco de ene-mar: se arma sumando la utilidad operativa de cada país */
-      let s=0,completo=true;
-      for(const pz of PAISES_CONSOL){ const v=factValConsol("_utilidad_operativa",per,pz,CONSOL_SEG); if(v==null){completo=false;break;} s+=v; }
-      usd=completo?s:null;
-    }
+    const usd=factValConsol("_utilidad_operativa",per,entidad,"Consolidación USD");
     return usd==null?null:usdToDisplay(usd,per);
   }
   return officialPygDisplay("pyg_utilidad_operativa",per);
@@ -995,11 +868,6 @@ function officialFinanceAccumDisplay(code,per){
 function financeDisplayValue(code,per){
   const official=officialFinanceDisplay(code,per);
   if(official!=null)return official;
-  /* Sin cifra consolidada oficial. Caer a la serie legacy —que es Colombia— solo es
-     legítimo mientras Colombia fuera la compañía entera. Desde que existen filiales,
-     devolver Colombia bajo un filtro consolidado presenta un número equivocado con
-     apariencia de completo. Regla 1 del proyecto: mejor s/d. */
-  if(filtroEsConsolidado()&&!eraSoloColombia(per))return null;
   const legacy=valueOf(code,{periodo:per});
   return legacy==null?null:(isMoney(code)?toDisplay(legacy,per):legacy);
 }
@@ -2083,13 +1951,7 @@ function avisoConsol(host,nombre){
 }
 
 function renderResumen(host){
-  /* Antes, elegir EE.UU./Perú/Costa Rica reemplazaba todo el Resumen por un aviso y no
-     se veía ni una cifra. Era demasiado: los cuatro KPIs financieros (ingresos, EBITDA,
-     utilidad, acumulados) sí existen por país en el bloque 'Consolidación USD' — los
-     únicos que no son MRR y Cartera, que solo tiene Colombia.
-     Ahora el Resumen se pinta siempre: lo que hay se muestra, y lo que no aplica a esa
-     entidad sale en blanco con su marca de alcance, que es justo la distinción entre
-     s/d y n/a de la sección 4.1 del README. */
+  if(esPaisConsol(F.pais)) return avisoConsol(host,"El Resumen ejecutivo");
   const per=F.periodo, year=per.slice(0,4);
   const ytdMonths=S.periodos.filter(p=>p.slice(0,4)===year && p<=per);
   /* Los indicadores financieros ya vienen convertidos mes a mes y conciliados con
@@ -2108,32 +1970,32 @@ function renderResumen(host){
   const mnyRaw=(v,p)=>v==null?"—":fMoney(toDisplay(v,p||per));
   host.innerHTML=`
     <div class="summary">
-      <div><div class="eb">Lectura ejecutiva · ${etiquetaPais()} · ${per} · escenario ${F.escenario} · ${F.moneda}</div>
+      <div><div class="eb">Lectura ejecutiva · ${per} · escenario ${F.escenario}</div>
         <p id="sum-text">El periodo <b>${per}</b> cerró con ingresos de <b>${mnyFin(revMes)}</b> y EBITDA de <b>${mnyFin(ebMes)}</b>
         (margen ${mEbitda!=null?fPctN(mEbitda,1):"—"}). En el acumulado ${year} los ingresos suman <b>${mnyFin(revYTD)}</b> y la utilidad neta <b>${mnyFin(unYTD)}</b>.
-        ${carTot!=null?`La cartera total va en <b>${mnyRaw(carTot,carPer)}</b>${dso!=null?` con un DSO de <b>${fNum(dso)} días</b>`:""}${esSoloColombia("cartera_total")&&F.pais==="__ALL__"?" (solo Colombia)":""}. `:""}Cifras de <b>${etiquetaPais()}</b> en <b>${F.moneda}</b> · ${etiquetaTasa(per)}.</p>
+        La cartera total va en <b>${mnyRaw(carTot,carPer)}</b>${dso!=null?` con un DSO de <b>${fNum(dso)} días</b>`:""}. Datos en <b>${F.moneda}</b> (TRM ${fNum(trmOf(per))}).</p>
       </div>
       <div class="verdict"><div class="lbl">Fuente</div><div class="val" style="font-size:13px;color:var(--ink2)">${S.fileName||"BD_Indicadores"}</div></div>
     </div>
     <div class="hero" id="hero"></div>
-    <section><div class="eyebrow"><h2>Ingresos totales por mes</h2><span class="hint">${etiquetaPais()} · ${F.moneda}</span></div><div class="chart-card"><div id="ch-rev"></div></div></section>
-    <section><div class="eyebrow"><h2>EBITDA y margen</h2><span class="hint">${etiquetaPais()} · ${F.moneda} · %</span></div>
+    <section><div class="eyebrow"><h2>Ingresos totales por mes</h2><span class="hint">${F.moneda}</span></div><div class="chart-card"><div id="ch-rev"></div></div></section>
+    <section><div class="eyebrow"><h2>EBITDA y margen</h2><span class="hint">${F.moneda} · %</span></div>
       <div class="grid g2"><div class="chart-card"><h3>EBITDA por mes</h3><div id="ch-eb"></div></div><div class="chart-card"><h3>Margen EBITDA (%)</h3><div id="ch-me"></div></div></div>
     </section>`;
   const st=v=>statusFor("margen_ebitda",v);
   const mnyFinU=v=>v==null?"—":conMon(fMoney(v));
   const mnyRawU=(v,p)=>v==null?"—":conMon(fMoney(toDisplay(v,p||per)));
   const hero=[
-    {k:"Ingresos mes",code:"ingresos_totales",v:mnyFinU(revMes),meta:revMes!=null?per:motivoSinDato("ingresos_totales"),real:revMes!=null},
-    {k:"Ingresos "+year,code:"ingresos_totales",v:mnyFinU(revYTD),meta:revYTD!=null?ytdMonths.length+" meses":motivoSinDato("ingresos_totales")},
-    {k:"EBITDA mes",code:"ebitda",v:mnyFinU(ebMes),meta:ebMes!=null?(mEbitda!=null?"Margen "+fPctN(mEbitda,0):"—"):motivoSinDato("ebitda"),s:st(mEbitda)},
-    {k:"Utilidad neta "+year,code:"utilidad_neta",v:mnyFinU(unYTD),meta:unYTD!=null?"acumulado":motivoSinDato("utilidad_neta"),s:unYTD!=null?(unYTD>=0?"green":"red"):null},
-    {k:"MRR / ARR",code:"mrr_final",v:mnyRawU(mrr,mrrPer),meta:mrr!=null?"ARR "+mnyRaw(mrr*12,mrrPer)+" "+F.moneda:motivoSinDato("mrr_final")},
-    {k:"Cartera / DSO",code:"cartera_total",v:mnyRawU(carTot,carPer),meta:carTot!=null?(dso!=null?"DSO "+fNum(dso)+"d":"cartera total"):motivoSinDato("cartera_total"),s:dso!=null?statusFor("dso",dso):null}
+    {k:"Ingresos mes",v:mnyFinU(revMes),meta:per,real:revMes!=null},
+    {k:"Ingresos "+year,v:mnyFinU(revYTD),meta:ytdMonths.length+" meses"},
+    {k:"EBITDA mes",v:mnyFinU(ebMes),meta:mEbitda!=null?"Margen "+fPctN(mEbitda,0):"—",s:st(mEbitda)},
+    {k:"Utilidad neta "+year,v:mnyFinU(unYTD),meta:"acumulado",s:unYTD!=null?(unYTD>=0?"green":"red"):null},
+    {k:"MRR / ARR",v:mnyRawU(mrr,mrrPer),meta:mrr!=null?"ARR "+mnyRaw(mrr*12,mrrPer)+" "+F.moneda:"—"},
+    {k:"Cartera / DSO",v:mnyRawU(carTot,carPer),meta:dso!=null?"DSO "+fNum(dso)+"d":"cartera total",s:dso!=null?statusFor("dso",dso):null}
   ];
   document.getElementById("hero").innerHTML=hero.map(h=>{ const dot=h.s?`<span class="dot ${h.s}"></span>`:""; const rt=h.real?`<span class="realtag">Real</span>`:"";
     const cn=esNegativo(h.v)?' style="color:var(--red)"':"";   /* pérdidas en rojo */
-    return`<div class="vital ${h.s?'s-'+h.s:''}"><div class="k">${dot}${h.k} ${rt}${chipAlcance(h.code,per)}</div><div class="v mono"${cn}>${h.v}</div><div class="meta">${h.meta}</div></div>`; }).join("");
+    return`<div class="vital ${h.s?'s-'+h.s:''}"><div class="k">${dot}${h.k} ${rt}</div><div class="v mono"${cn}>${h.v}</div><div class="meta">${h.meta}</div></div>`; }).join("");
   const sr=seriesOf("ingresos_totales"); barChart(document.getElementById("ch-rev"),sr.labels,sr.values,{fmt:v=>F.moneda==="USD"?fNum(v/1000):fNum(v/1e6)});
   const se=seriesOf("ebitda"); barChart(document.getElementById("ch-eb"),se.labels,se.values,{fmt:v=>F.moneda==="USD"?fNum(v/1000):fNum(v/1e6)});
   const sm=seriesOf("margen_ebitda"); sparseLineChart(document.getElementById("ch-me"),sm.labels,[{color:"#00CC58",values:sm.values}],{fmt:v=>fPctN(v,0)});
@@ -2208,7 +2070,7 @@ function renderArea(host,area){
   const per=F.periodo;
   const head=document.createElement("div"); head.className="eyebrow";
   const rango=(F.start&&F.start!==F.periodo)?(mesCorto(F.start)+" – "+mesCorto(F.periodo)):per;
-  head.innerHTML=`<h2>${area.label}</h2><span class="hint">${area.hint||""} · ${etiquetaPais()} · ${rango} · ${F.moneda}</span>`;
+  head.innerHTML=`<h2>${area.label}</h2><span class="hint">${area.hint||""} · ${rango} · ${F.moneda}</span>`;
   host.appendChild(head);
   /* tarjetas KPI data-driven */
   const grid=document.createElement("div"); grid.className="grid g4"; host.appendChild(grid);
@@ -2503,16 +2365,9 @@ function renderCatalogo(host){
 /* ============================================================
    TABS + FILTROS
    ============================================================ */
-/* Pestañas apagadas temporalmente (20-ago-2026, decisión del responsable del tablero).
-   Son las tres áreas comerciales: su cobertura de datos llega a mayo/junio mientras lo
-   financiero va a julio, y presentarlas medio vacías resta credibilidad al resto.
-   NO se borra nada: el código, los gráficos y los indicadores siguen intactos. Para
-   volver a encenderlas, quita el id de esta lista y listo. */
-const PESTANAS_APAGADAS=["ventas","marketing","cs"];
-function areasVisibles(){ return AREAS.filter(a=>!PESTANAS_APAGADAS.includes(a.id)); }
 function buildTabs(){
   const nav=document.getElementById("tabnav");
-  nav.innerHTML=areasVisibles().map((a,i)=>`<button class="tab-btn ${i===0?'active':''}" data-go="${a.id}"><span class="n">${String(i+1).padStart(2,'0')}</span>${a.label}</button>`).join("");
+  nav.innerHTML=AREAS.map((a,i)=>`<button class="tab-btn ${i===0?'active':''}" data-go="${a.id}"><span class="n">${String(i+1).padStart(2,'0')}</span>${a.label}</button>`).join("");
   nav.querySelectorAll(".tab-btn").forEach(b=>b.addEventListener("click",()=>{
     nav.querySelectorAll(".tab-btn").forEach(x=>x.classList.remove("active")); b.classList.add("active");
     renderTab(b.dataset.go); window.scrollTo({top:0,behavior:"smooth"}); }));
@@ -2553,19 +2408,8 @@ function fillFilters(){
   /* países con datos generales (Colombia/Otros) + entidades del bloque consolidado presentes */
   const paisesGen=[...new Set(S.facts.filter(f=>!INTL_SEG.has(f.segmento)&&f.pais).map(f=>f.pais))].sort();
   const consolExisten=ENTIDADES_CONSOL.filter(e=>S.facts.some(f=>f.segmento==="Consolidación USD"&&f.pais===e));
-  /* Un solo estado consolidado (20-ago-2026). Antes convivían "Todos" y "Consolidado"
-     y no eran lo mismo: "Todos" no filtraba por país pero excluía el bloque
-     'Consolidación USD', así que terminaba leyendo ~98% Colombia y presentándolo como
-     multipaís; "Consolidado" era la entidad contable, un corte más angosto sin
-     desglose por área. Tener los dos en el mismo selector obligaba al lector a saber
-     esa diferencia para no equivocarse.
-     Ahora hay una sola opción, "Consolidado", que internamente sigue siendo __ALL__ —
-     el token que la pestaña Gastos Consolidado ya usaba para la suma real de los 4
-     países— y que para el P&G lee la entidad oficial. Se cae también "Otros", que solo
-     tiene 4 filas de pipeline y no es un país. */
-  const paisesFiltro=["__ALL__",...new Set(paisesGen.concat(consolExisten))]
-        .filter(x=>x!=="Consolidado"&&x!=="Otros");
-  const etiqueta=x=>x==="__ALL__"?"Consolidado":(x==="Perú"?"Perú (oficial)":x);
+  const paisesFiltro=["__ALL__",...new Set(paisesGen.concat(consolExisten))];
+  const etiqueta=x=>x==="__ALL__"?"Todos":(x==="Consolidado"?"Consolidado (multipaís)":(x==="Perú"?"Perú (oficial)":x));
   const selPa=document.getElementById("f-pais"); selPa.innerHTML=paisesFiltro.map(x=>`<option value="${x}">${etiqueta(x)}</option>`).join("");
   F.pais="__ALL__"; selPa.value="__ALL__"; selPa.onchange=e=>{F.pais=e.target.value;render();};
   document.querySelectorAll("#f-moneda button").forEach(b=>b.onclick=()=>{ F.moneda=b.dataset.m; document.querySelectorAll("#f-moneda button").forEach(x=>x.classList.toggle("on",x===b)); render(); });
