@@ -47,28 +47,7 @@ echo.
 git status --short
 echo.
 
-REM --- 2. Comprobar que nadie subio algo mientras tanto -----------------
-REM     Un .xlsx es binario: Git no puede fusionarlo. Si subimos encima de
-REM     una version mas nueva, una de las dos se pierde entera.
-echo   Comprobando que no haya versiones mas nuevas en GitHub...
-git fetch origin %RAMA% >nul 2>&1
-set PENDIENTES=0
-for /f %%n in ('git rev-list --count HEAD..origin/%RAMA% 2^>nul') do set PENDIENTES=%%n
-if not "%PENDIENTES%"=="0" (
-  echo.
-  echo   ALTO. En GitHub hay %PENDIENTES% version^(es^) mas nueva^(s^) que la tuya.
-  echo   Si subes ahora se pueden perder cifras: un Excel no se puede fusionar.
-  echo.
-  echo   Que hacer: guarda una copia de tu Excel FUERA de esta carpeta,
-  echo   ejecuta Actualizar_Desde_GitHub.bat, y vuelve a cargar tus cifras
-  echo   sobre la version actualizada.
-  echo.
-  pause
-  exit /b 1
-)
-
-REM --- 3. Descripcion y confirmacion -----------------------------------
-echo.
+REM --- 2. Descripcion y confirmacion -----------------------------------
 set "DESC="
 set /p "DESC=  Describe en pocas palabras que cambiaste (ej: cierre agosto 2026): "
 if not defined DESC set "DESC=Actualizacion de la base"
@@ -84,10 +63,14 @@ if /i not "%OK%"=="S" (
   exit /b 0
 )
 
-REM --- 4. Subir --------------------------------------------------------
+REM --- 3. Guardar tu trabajo PRIMERO -----------------------------------
+REM     Registrar el cambio antes de traer nada de GitHub. Asi tu trabajo
+REM     queda a salvo pase lo que pase despues, y si algo sale mal siempre
+REM     se puede volver a este punto.
 echo.
+echo   Guardando tu trabajo...
 git add -A
-git commit -m "%DESC%"
+git commit -q -m "%DESC%"
 if errorlevel 1 (
   echo.
   echo   No se pudo registrar el cambio. Nada se subio.
@@ -95,11 +78,42 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
+echo   Guardado.
 
+REM --- 4. Traer lo que haya nuevo en GitHub ----------------------------
+echo.
+echo   Comprobando si hay algo nuevo en GitHub...
+git fetch origin %RAMA% >nul 2>&1
+set PENDIENTES=0
+for /f %%n in ('git rev-list --count HEAD..origin/%RAMA% 2^>nul') do set PENDIENTES=%%n
+
+if not "%PENDIENTES%"=="0" (
+  echo   Hay %PENDIENTES% cambio^(s^) nuevo^(s^) en GitHub. Juntandolos con el tuyo...
+  git pull --no-rebase --no-edit origin %RAMA%
+  if errorlevel 1 (
+    echo.
+    echo   ------------------------------------------------------------
+    echo   NO SE PUDIERON JUNTAR AUTOMATICAMENTE.
+    echo   Tu y GitHub cambiaron lo mismo, y un Excel no se puede fusionar.
+    echo.
+    echo   Tu trabajo NO se perdio: quedo guardado en el paso anterior.
+    echo   Dejo la carpeta como estaba y no subo nada. Pide ayuda.
+    echo   ------------------------------------------------------------
+    git merge --abort
+    echo.
+    pause
+    exit /b 1
+  )
+  echo   Juntados sin problema.
+)
+
+REM --- 5. Subir --------------------------------------------------------
+echo.
+echo   Enviando a GitHub...
 git push -u origin %RAMA%
 if errorlevel 1 (
   echo.
-  echo   Se registro el cambio en tu computador pero NO se pudo enviar a GitHub.
+  echo   Se guardo tu cambio en el computador pero NO se pudo enviar a GitHub.
   echo   Revisa tu conexion y vuelve a ejecutar este boton: reintentara el envio.
   echo.
   pause
