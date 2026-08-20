@@ -22,6 +22,21 @@ En esta carpeta hay tres archivos `.bat`. **Doble clic, nada más.**
 Los archivos `.py` que hay en las subcarpetas son las instrucciones que ejecutan esos
 botones. **No hay que abrirlos ni ejecutarlos a mano.**
 
+### 1.0 La primera vez: `Instalar_Primera_Vez.bat`
+
+Si tu carpeta es una carpeta normal (no bajada de GitHub), los dos botones de GitHub no
+funcionarán todavía: te dirán *"esta carpeta no es un repositorio"*. Falta conectarla,
+y eso se hace **una sola vez** con `Instalar_Primera_Vez.bat`.
+
+Ese botón crea una carpeta nueva ya conectada a GitHub. **No borra ni modifica tu carpeta
+actual**, así que la vieja queda intacta como respaldo hasta que compruebes que todo
+funciona. Requiere tener Git instalado (https://git-scm.com/download/win); el botón lo
+comprueba y avisa si falta.
+
+Al terminar quedan dos cosas por hacer a mano, y el propio botón las recuerda en pantalla:
+copiar la carpeta `modelo/` desde la carpeta vieja (no está en GitHub, ver sección 5), y
+comparar el Excel viejo con el nuevo por si el tuyo trae cifras más recientes.
+
 ### 1.1 Una sola copia manda: la de GitHub
 
 El mismo Excel puede existir en tu computador, en GitHub y en Google Sheets. Para que no
