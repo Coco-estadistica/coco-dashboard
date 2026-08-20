@@ -3,7 +3,7 @@
 Tablero financiero y operativo multipaís (Colombia, EE.UU., Perú, Costa Rica).
 Corre en tu computador leyendo un Excel, y está preparado para publicarse en Google.
 
-Última revisión de este documento: **13 de agosto de 2026**.
+Última revisión de este documento: **20 de agosto de 2026**.
 
 ---
 
@@ -171,6 +171,14 @@ prioridad y el ajuste no duplica nada.
 
 ### Si además actualizaste el Modelo financiero
 
+> **Ojo: la carpeta `modelo/` no está en el repositorio de GitHub.** Solo existe en la
+> copia local. Por eso `Revisar_Base.bat` reporta *"No encuentro modelo/Modelo_COCO.xlsx
+> — no se puede verificar"* en el control E cuando se corre desde un clon del repo: no es
+> una avería, es que el modelo nunca se subió. La pestaña 03 sí funciona, porque se pinta
+> con `burn_runway.json`, que sí está versionado. Lo que no se puede desde el clon es
+> **regenerar** ese JSON ni validar su huella. Pendiente de decidir: subir la carpeta o
+> dejar constancia de que ese control solo corre en la máquina que tiene el modelo.
+
 - Reemplaza `modelo/Modelo_COCO.xlsx` por la versión nueva.
 - Doble clic en `modelo/Actualizar_Burn_Runway.bat` → refresca la pestaña 03.
 - Si el modelo trae un cierre posterior a junio, **cambia el `corte`** en
@@ -217,6 +225,10 @@ Los huecos hoy visibles en el tablero, y todos verificados contra la base:
 - **Customer Success**: junio y julio de churn, y el NPS de ago-25 a feb-26.
 - **Consolidado**: la reclasificación de honorarios de Perú sale `n/a` en el puente de
   Colombia — es un ajuste de consolidación que solo vive en EE.UU. y Consolidado.
+- **Pipeline comercial**: la hoja `Pipeline_Comercial` de la base está **vacía** (solo la
+  fila de encabezado), pese a que la tabla de arriba declara cobertura hasta julio.
+  Verificado el 20-ago-2026. Es un **`s/d`**, no un pipeline en cero: hay que perseguir
+  el dato con Comercial, no rellenarlo.
 
 ---
 
@@ -233,11 +245,26 @@ Los huecos hoy visibles en el tablero, y todos verificados contra la base:
   **pregunta de precios de transferencia** pendiente de resolver.
 - **La utilidad de julio no trajo caja.** Los USD 134.104 de Costa Rica se registraron
   contra Clientes, no contra el banco. Sin Costa Rica, julio da pérdida de USD 886.
-- **La tasa de Perú de julio es provisional** (promedio hasta el 9 de julio). Debe
-  reemplazarse por el promedio mensual definitivo.
+- **La tasa de Perú de julio ya es definitiva** (corregido el 18-ago-2026). `TRM_Peru`
+  trae **3,400 PEN/USD**, promedio mensual completo del BCRP (punto medio compra/venta
+  SBS). Ya no hay que reemplazarla: hasta el 13-ago era provisional, cortada al 9 de
+  julio.
 - **Burn & Runway va un mes atrás.** Está cortada a **junio**, mientras las otras once
   pestañas van a julio. Además convierte la caja de EE.UU. a **3.248,87** (tasa de
   cierre de un saldo) y no a los 3.505 del resto. No compares esas cifras de frente.
+- **Corregido (20-ago-2026): el julio de Colombia en `BD_PYG_OFICIAL` estaba convertido
+  a la TRM de junio.** Cuando el 14-ago se pasó la TRM de julio de 3.505,2683
+  (autoderivada) a 3.268,95 (oficial), se reconvirtió `BD_Indicadores` pero no la capa de
+  archivo. Las 12 líneas del P&G de Colombia diferían con un **ratio idéntico de
+  1,072292** — que es exactamente 3.505,2683 / 3.268,95. Un ratio constante en todos los
+  rubros es diferencia de *tasa*, no de cifra: sirve para diagnosticar de un vistazo.
+  El tablero nunca mostró mal ese dato, porque no lee esa hoja. Se corrigió con
+  `migracion/corregir_trm_julio_trazabilidad.py`, recalculando desde la fila **COP** de la
+  propia hoja (Colombia se origina en COP), no copiando de `BD_Indicadores`. El
+  Consolidado se ajustó **sumando el delta de Colombia**, no igualándolo a
+  `BD_Indicadores`: igualarlo habría borrado también el desfase de EE.UU./Perú que está
+  congelado a propósito desde el 13-ago. El control C bajó de 86 a 67 diferencias, y las
+  5 que quedan en julio están atribuidas al céntimo a ese desfase congelado.
 - **Las alertas de `EEFF_Alertas`** (libro de trazabilidad) se cierran, no se borran.
   El 13-ago-2026 se cerró la de cobertura de Costa Rica y se anotó lo verificado sobre
   los PEN 64.960,94 de Perú (es saldo acumulado, no ingreso de julio). Las de alta

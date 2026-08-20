@@ -1,6 +1,6 @@
 INICIO RAPIDO
 =============
-Actualizado: 13 de agosto de 2026.
+Actualizado: 20 de agosto de 2026.
 
 ORDEN DE LECTURA
   1. README.md          <- estado ACTUAL del proyecto (este manda)
@@ -12,6 +12,15 @@ ARCHIVOS OFICIALES
   Base operativa: migracion/BD_MAESTRA_COCO.xlsx        14 hojas
   Trazabilidad:   migracion/BD_TRAZABILIDAD_COCO.xlsx   24 hojas (el tablero NO la lee)
   Lanzador:       Abrir_Dashboard_COCO.bat     (puerto 8740)
+
+LO QUE CAMBIO EL 20-AGO-2026
+  - BD_PYG_OFICIAL (capa de archivo): el julio de Colombia estaba convertido a la
+    TRM de junio. Corregido con migracion/corregir_trm_julio_trazabilidad.py.
+    El tablero nunca mostro mal ese dato: no lee esa hoja. Ver seccion 8 del README.
+  - La tasa de Peru de julio YA NO es provisional: 3,400 PEN/USD definitiva (BCRP).
+    El README anterior decia lo contrario; quedo corregido.
+  - Pendientes anotados en el README: la carpeta modelo/ no esta en GitHub (control E
+    de Revisar_Base.bat no puede correr desde un clon) y Pipeline_Comercial esta vacia.
 
 LO QUE CAMBIO EL 13-AGO-2026
   - La base se separo en dos libros para eliminar la duplicacion de cifras.
