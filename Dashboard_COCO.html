@@ -447,13 +447,12 @@ const AREAS=[
   {id:"consolidado", label:"Consolidado", hint:"Vista CEO · multi-país en USD"},
   {id:"burn",     label:"Burn & Runway", hint:"Caja, quema y cobertura · del Modelo"},
   {id:"finanzas", label:"Finanzas & P&L", hint:"P&L del periodo",
-     codes:["ingresos_totales","ingresos_recurrentes","ingresos_no_recurrentes","margen_bruto_pct","ebitda","margen_ebitda","utilidad_neta","margen_neto","egresos_totales","gastos_totales","burn_rate_neto","runway_meses"],
+     codes:["ingresos_totales","margen_bruto_pct","ebitda","margen_ebitda","utilidad_neta","margen_neto","egresos_totales","gastos_totales"],
      charts:[{type:"factura12",title:"Facturación a 12 meses"},
              {type:"yoybars",code:"ingresos_totales",title:"Facturación 2025 vs 2026"},
              {type:"recon",title:"Facturación Contable vs Ejecutada"},
-             {type:"bar",code:"ebitda",title:"EBITDA por mes"}]},
-  {id:"pyg",      label:"P&G Colombia", hint:"Estado de resultados mensual · líneas contables oficiales",
-     alcanceFijo:"Colombia"},
+             {type:"bar",code:"ebitda",title:"EBITDA por mes"},
+             {type:"pyg",title:"Estado de resultados (EEFF oficial)"}]},
   {id:"mrr",      label:"Ingresos & MRR", hint:"Recurrencia y movimiento de MRR",
      codes:["mrr_final","arr","arpa","retained_mrr","new_mrr","expansion_mrr","reactivacion_mrr","contraction_mrr","churned_mrr","churn_mrr_mensual"],
      charts:[{type:"mrrbridge",title:"Ejecución real de MRR a 12 meses"},
@@ -465,27 +464,7 @@ const AREAS=[
      charts:[{type:"line",code:"dso",title:"DSO por mes (días)",bench:60,benchLabel:"60d"},
              {type:"carterasplit",title:"Composición de cartera (sana vs vencida)"},
              {type:"pie",code:"cartera_vencida_cliente",title:"Clientes por cartera vencida"}]},
-  /* Antes era una sola pestaña que seguía el selector global de país — causaba
-     confusión ("por qué si cambio el país no cambian los números") porque el usuario
-     no siempre notaba que el selector de arriba también decidía qué veía aquí. Se
-     separó en dos pestañas fijas: cada una fuerza su propio país al entrar y no
-     depende del selector superior. "Consolidado" usa __ALL__ (suma real de los 4
-     países, con el arreglo del puente de gastos) y no la entidad "Consolidado" del
-     selector, que es un corte contable más angosto sin desglose por área. */
-  {id:"costos_col",   label:"Gastos Colombia", hint:"Estructura de costos por área",
-     alcanceFijo:"Colombia",
-     codes:["gasto_area","gasto_admin","gasto_comercial","gasto_desarrollo","costo_operacion","costo_proveedor","costo_proveedor_ventas_pct","salario_area_pct"],
-     charts:[{type:"pygcosts",title:"Costos y gastos oficiales P&G"},
-             {type:"stackcol",code:"gasto_area",money:true,title:"Costos y gastos por área"},
-             {type:"stackcol",code:"gasto_admin",money:true,title:"Zoom a los gastos Administrativos"},
-             {type:"stackcol",code:"gasto_comercial",money:true,title:"Zoom a los gastos de Comercial"},
-             {type:"stackcol",code:"costo_operacion",money:true,title:"Zoom a los costos de Operaciones"},
-             {type:"stackcol",code:"gasto_desarrollo",money:true,title:"Zoom a los gastos de Desarrollo"},
-             {type:"stackcol",code:"costo_proveedor",money:true,title:"Zoom a los costos de Proveedores"},
-             {type:"colavg",code:"costo_proveedor_ventas_pct",title:"Proporción de costos de proveedores sobre las ventas"},
-             {type:"pieyear",code:"salario_area_pct",title:"Salarios por áreas"}]},
-  {id:"costos_consol",label:"Gastos Consolidado", hint:"Estructura de costos por área · Colombia + EE.UU. + Perú + Costa Rica",
-     alcanceFijo:"__ALL__",
+  {id:"gastos",   label:"Gastos", hint:"Estructura de costos por área · responde al selector de país",
      codes:["gasto_area","gasto_admin","gasto_comercial","gasto_desarrollo","costo_operacion","costo_proveedor","costo_proveedor_ventas_pct","salario_area_pct"],
      charts:[{type:"pygcosts",title:"Costos y gastos oficiales P&G"},
              {type:"stackcol",code:"gasto_area",money:true,title:"Costos y gastos por área"},
@@ -1371,7 +1350,6 @@ function renderTabInterno(id){
   if(id==="resumen") return renderResumen(host);
   if(id==="catalogo") return renderCatalogo(host);
   if(id==="burn") return renderBurnRunway(host);
-  if(id==="pyg") return renderPyG(host);
   if(id==="consolidado"||id==="intl") return renderConsolidado(host);
   const area=AREAS.find(a=>a.id===id); if(!area)return;
   /* Pestañas de alcance fijo (Gastos Colombia / Gastos Consolidado). Su alcance es parte
@@ -1584,7 +1562,7 @@ function renderPyGConsol(host){
   const bar=document.createElement("div"); bar.style.cssText="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap";
   bar.innerHTML=`<span style="font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.6px">Mes</span>`;
   meses.forEach(m=>{ const b=document.createElement("button"); b.className="btn"+(m===per?" primary":""); b.textContent=mesCorto(m);
-    b.onclick=()=>{ F.periodo=m; syncFilterInputs(); clearPreset(); renderTab("pyg"); }; bar.appendChild(b); });
+    b.onclick=()=>{ F.periodo=m; syncFilterInputs(); clearPreset(); renderTab("finanzas"); }; bar.appendChild(b); });
   host.appendChild(bar);
 
   /* KPIs de la entidad seleccionada: mes y acumulado (ingresos, EBITDA, utilidad neta) */
@@ -2332,7 +2310,7 @@ function renderArea(host,area){
   }
   /* tarjetas KPI data-driven */
   const grid=document.createElement("div"); grid.className="grid g4"; host.appendChild(grid);
-  const defs=(area.id==="costos_col"||area.id==="costos_consol")?[
+  const defs=(area.id==="gastos")?[
     {code:null,label:"Costos y gastos oficiales",value:officialExpenseDisplay(per)},
     ...PYG_COST_STACK.map(item=>({code:item.code,label:item.label,value:officialPygDisplay(item.code,per)}))
   ].map(item=>({
@@ -2429,6 +2407,7 @@ function renderChartCard(ch){
   else if(ch.type==="colavg"){ renderColAvg(card,body,h,ch); }
   else if(ch.type==="churnpanel"){ renderChurnPanel(card,body,h); }
   else if(ch.type==="churn"){ renderChurn(card,body,h); }
+  else if(ch.type==="pyg"){ renderPyG(body); }
   if(body.dataset.empty==="1")return null;
   return card;
 }
