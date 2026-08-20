@@ -13,12 +13,33 @@ En esta carpeta hay tres archivos `.bat`. **Doble clic, nada más.**
 
 | Botón | Para qué | ¿Modifica algo? |
 |---|---|---|
+| **`Actualizar_Desde_GitHub.bat`** | Traer la última versión. **Empieza siempre por aquí** | Sí: baja archivos |
 | **`Abrir_Dashboard_COCO.bat`** | Abrir el tablero | No |
 | **`Revisar_Base.bat`** | Comprobar que la base esté sana, antes de publicar un cierre | **No** |
 | **`Corregir_Base.bat`** | Alinear capas desfasadas. Muestra qué cambiaría y pide confirmación | Sí, con respaldo |
+| **`Subir_A_GitHub.bat`** | Guardar tu trabajo en GitHub. **Termina siempre por aquí** | Sí: publica |
 
 Los archivos `.py` que hay en las subcarpetas son las instrucciones que ejecutan esos
 botones. **No hay que abrirlos ni ejecutarlos a mano.**
+
+### 1.1 Una sola copia manda: la de GitHub
+
+El mismo Excel puede existir en tu computador, en GitHub y en Google Sheets. Para que no
+se repita el problema de la sección 3 —una cifra en varios sitios desalineándose sin
+avisar—, **la copia oficial es la de GitHub**. La de tu computador es la copia de
+trabajo: se baja antes de empezar y se sube al terminar.
+
+**La regla que no se puede romper: un `.xlsx` es binario, y Git no lo puede fusionar.**
+Si dos personas editan la base a la vez, no hay forma de combinar los dos archivos —
+uno gana y el otro se pierde entero. Por eso los botones nunca fusionan: si detectan
+que hay trabajo cruzado, se detienen y avisan en lugar de arriesgar cifras.
+
+De ahí salen dos costumbres:
+
+- **Antes de tocar nada**, `Actualizar_Desde_GitHub.bat`. Si tienes cambios sin subir,
+  el botón se detiene y te lo dice: primero sube, luego baja.
+- **Mientras alguien más esté trabajando sobre la base**, tú no la editas. Se avisa
+  cuando queda libre. Nunca los dos a la vez sobre el mismo archivo.
 
 > Si al abrir el tablero aparece "Carga la base de datos", espera unos segundos: la base
 > vive en OneDrive y a veces tarda en descargarse. El tablero reintenta solo 3 veces.
@@ -159,15 +180,18 @@ prioridad y el ajuste no duplica nada.
 
 ## 5. Cierre mensual
 
-1. **Respalda** la base (o corre `Corregir_Base.bat`, que respalda solo).
-2. Revisa la fuente de cada país **en su moneda de origen**.
-3. Carga las cifras en `BD_Indicadores`.
-4. Recalcula el bloque `Consolidado` en USD.
-5. **Corre `Revisar_Base.bat`.** Si dice "todas las capas están alineadas", sigue.
-6. Abre el tablero y revisa las pestañas afectadas.
-7. Confirma que los periodos sin datos aparezcan como **`s/d`** y no como cero.
+1. **`Actualizar_Desde_GitHub.bat`** — parte siempre de la última versión.
+2. **Respalda** la base (o corre `Corregir_Base.bat`, que respalda solo).
+3. Revisa la fuente de cada país **en su moneda de origen**.
+4. Carga las cifras en `BD_Indicadores`.
+5. Recalcula el bloque `Consolidado` en USD.
+6. **Corre `Revisar_Base.bat`.** Si dice "todas las capas están alineadas", sigue.
+7. Abre el tablero y revisa las pestañas afectadas.
+8. Confirma que los periodos sin datos aparezcan como **`s/d`** y no como cero.
    Cada `s/d` es un pendiente de cargue; si sobra alguno, es que el dato ya llegó
    y no se subió.
+9. **`Subir_A_GitHub.bat`** — el cierre no está terminado hasta que está publicado.
+   El botón te muestra qué va a subir y pide confirmación antes de hacerlo.
 
 ### Si además actualizaste el Modelo financiero
 

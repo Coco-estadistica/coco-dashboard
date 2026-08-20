@@ -13,6 +13,14 @@ ARCHIVOS OFICIALES
   Trazabilidad:   migracion/BD_TRAZABILIDAD_COCO.xlsx   24 hojas (el tablero NO la lee)
   Lanzador:       Abrir_Dashboard_COCO.bat     (puerto 8740)
 
+COMO SE TRABAJA (desde el 20-ago-2026)
+  La copia OFICIAL de la base es la de GitHub. La del computador es copia de trabajo.
+  Empezar siempre con  Actualizar_Desde_GitHub.bat
+  Terminar siempre con Subir_A_GitHub.bat
+  Un .xlsx es binario y Git NO lo puede fusionar: nunca dos personas editando la base
+  a la vez. Si hay trabajo cruzado, los botones se detienen en vez de arriesgar cifras.
+  Ver seccion 1.1 del README.
+
 LO QUE CAMBIO EL 20-AGO-2026
   - BD_PYG_OFICIAL (capa de archivo): el julio de Colombia estaba convertido a la
     TRM de junio. Corregido con migracion/corregir_trm_julio_trazabilidad.py.
