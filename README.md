@@ -210,18 +210,11 @@ prioridad y el ajuste no duplica nada.
 
 ### Si además actualizaste el Modelo financiero
 
-> **Ojo: la carpeta `modelo/` no está en el repositorio de GitHub.** Solo existe en la
-> copia local. Por eso `Revisar_Base.bat` reporta *"No encuentro modelo/Modelo_COCO.xlsx
-> — no se puede verificar"* en el control E cuando se corre desde un clon del repo: no es
-> una avería, es que el modelo nunca se subió. La pestaña 03 sí funciona, porque se pinta
-> con `burn_runway.json`, que sí está versionado. Lo que no se puede desde el clon es
-> **regenerar** ese JSON ni validar su huella. Pendiente de decidir: subir la carpeta o
-> dejar constancia de que ese control solo corre en la máquina que tiene el modelo.
-
 - Reemplaza `modelo/Modelo_COCO.xlsx` por la versión nueva.
 - Doble clic en `modelo/Actualizar_Burn_Runway.bat` → refresca la pestaña 03.
-- Si el modelo trae un cierre posterior a junio, **cambia el `corte`** en
-  `modelo/extraer_burn_runway.py`: está escrito a mano y no se deduce solo.
+- **El `corte` ya no se escribe a mano.** `modelo/extraer_burn_runway.py` lo deduce del
+  bloque mensual del propio modelo y aborta si no puede (verificado el 20-ago-2026). Si
+  antes leíste que había que editarlo, ya no aplica.
 
 `Revisar_Base.bat` compara la huella del modelo contra la que quedó sellada en
 `burn_runway.json`. Si reemplazas el modelo y olvidas regenerar, avisa
@@ -288,9 +281,13 @@ Los huecos hoy visibles en el tablero, y todos verificados contra la base:
   trae **3,400 PEN/USD**, promedio mensual completo del BCRP (punto medio compra/venta
   SBS). Ya no hay que reemplazarla: hasta el 13-ago era provisional, cortada al 9 de
   julio.
-- **Burn & Runway va un mes atrás.** Está cortada a **junio**, mientras las otras once
-  pestañas van a julio. Además convierte la caja de EE.UU. a **3.248,87** (tasa de
-  cierre de un saldo) y no a los 3.505 del resto. No compares esas cifras de frente.
+- **Burn & Runway va a julio, igual que el resto** (verificado el 20-ago-2026: el informe
+  declara `corte: Julio 2026`). Lo que sí difiere es la **tasa**: la pestaña muestra
+  *"TRM Julio aplicada: 3.505,27"*, que es la tasa autoderivada que se sustituyó el
+  14-ago por la oficial de **3.268,95** que usa el resto del tablero. Esa etiqueta solo
+  se muestra —no convierte nada en el HTML—, pero las cifras vienen ya convertidas desde
+  el modelo a esa tasa. **No compares la caja de esta pestaña de frente contra las otras**
+  hasta que el modelo se rehaga con la TRM oficial: hay ~7,2% de diferencia.
 - **Corregido (20-ago-2026): el julio de Colombia en `BD_PYG_OFICIAL` estaba convertido
   a la TRM de junio.** Cuando el 14-ago se pasó la TRM de julio de 3.505,2683
   (autoderivada) a 3.268,95 (oficial), se reconvirtió `BD_Indicadores` pero no la capa de

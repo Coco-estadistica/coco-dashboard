@@ -27,8 +27,13 @@ LO QUE CAMBIO EL 20-AGO-2026
     El tablero nunca mostro mal ese dato: no lee esa hoja. Ver seccion 8 del README.
   - La tasa de Peru de julio YA NO es provisional: 3,400 PEN/USD definitiva (BCRP).
     El README anterior decia lo contrario; quedo corregido.
-  - Pendientes anotados en el README: la carpeta modelo/ no esta en GitHub (control E
-    de Revisar_Base.bat no puede correr desde un clon) y Pipeline_Comercial esta vacia.
+  - Ya esta en GitHub la carpeta modelo/ completa (Modelo_COCO.xlsx, extraer_burn_runway.py
+    y sus .bat), mas respaldos/ y tres xlsx sueltos que solo vivian en OneDrive.
+  - burn_runway.json resellado contra el modelo actual: el control E vuelve a estar en OK.
+    No cambio ninguna cifra; solo la huella estaba vieja.
+  - OJO: la pestana Burn & Runway trae las cifras convertidas a TRM 3.505,27, no a la
+    oficial de julio 3.268,95 que usa el resto. ~7,2% de diferencia. Ver seccion 8.
+  - Pendiente: Pipeline_Comercial esta vacia (s/d, no cero).
 
 LO QUE CAMBIO EL 13-AGO-2026
   - La base se separo en dos libros para eliminar la duplicacion de cifras.
