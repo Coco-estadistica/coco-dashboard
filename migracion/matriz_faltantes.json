@@ -1,0 +1,949 @@
+[
+ [
+  "ingresos_one_off",
+  "Finanzas",
+  "Ingresos one-off",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "margen_bruto",
+  "Finanzas",
+  "Margen bruto",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "margen_bruto_pct",
+  "Finanzas",
+  "Margen bruto %",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "gastos_totales",
+  "Finanzas",
+  "Gastos operativos totales",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "egresos_totales",
+  "Finanzas",
+  "Egresos totales",
+  "hasta 2026-06",
+  [
+   "2026-07"
+  ]
+ ],
+ [
+  "utilidad_neta",
+  "Finanzas",
+  "Utilidad neta",
+  "hasta 2026-06",
+  [
+   "2026-07"
+  ]
+ ],
+ [
+  "ebitda",
+  "Finanzas",
+  "EBITDA",
+  "hasta 2026-06",
+  [
+   "2026-07"
+  ]
+ ],
+ [
+  "margen_ebitda",
+  "Finanzas",
+  "Margen EBITDA",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "cobros_periodo",
+  "Finanzas",
+  "Cobros del periodo",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "burn_rate_neto",
+  "Finanzas",
+  "Burn rate neto",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "runway_meses",
+  "Finanzas",
+  "Runway",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "ppto_vs_real_ingresos",
+  "Finanzas",
+  "Ingresos real vs presupuesto",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "ppto_vs_real_gastos",
+  "Finanzas",
+  "Gastos real vs presupuesto",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "arr",
+  "SaaS / Revenue",
+  "ARR",
+  "hasta 2026-06",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-07"
+  ]
+ ],
+ [
+  "grr",
+  "SaaS / Revenue",
+  "GRR",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "arpa",
+  "SaaS / Revenue",
+  "ARPA",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "ingresos_internacionales",
+  "Internacional",
+  "Ingresos internacionales",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "mrr_internacional",
+  "Internacional",
+  "MRR internacional",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "pipeline_internacional",
+  "Internacional",
+  "Pipeline internacional",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "clientes_internacionales",
+  "Internacional",
+  "Clientes internacionales",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "new_mrr",
+  "Contabilidad",
+  "Nuevas ventas MRR",
+  "hasta 2026-05",
+  [
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "expansion_mrr",
+  "Contabilidad",
+  "Expansión MRR",
+  "hasta 2026-05",
+  [
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "reactivacion_mrr",
+  "Contabilidad",
+  "Rescatadas MRR",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "contraction_mrr",
+  "Contabilidad",
+  "Contracción MRR",
+  "hasta 2026-05",
+  [
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "churned_mrr",
+  "Contabilidad",
+  "Churned MRR",
+  "hasta 2026-05",
+  [
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "retained_mrr",
+  "Contabilidad",
+  "Retenidas MRR",
+  "hasta 2026-05",
+  [
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "churn_mrr_mensual",
+  "Contabilidad",
+  "Churn MRR mensual",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "cartera_total",
+  "Contabilidad",
+  "Cartera total",
+  "hasta 2026-06",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-07"
+  ]
+ ],
+ [
+  "cartera_vencida",
+  "Contabilidad",
+  "Cartera vencida",
+  "hasta 2026-06",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-07"
+  ]
+ ],
+ [
+  "cartera_sana",
+  "Contabilidad",
+  "Cartera sana",
+  "hasta 2026-06",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-07"
+  ]
+ ],
+ [
+  "cartera_vencida_cliente",
+  "Contabilidad",
+  "Cartera vencida por cliente",
+  "hasta 2026-06",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-07"
+  ]
+ ],
+ [
+  "liquidez_total",
+  "Contabilidad",
+  "Liquidez total",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "dso",
+  "Contabilidad",
+  "DSO",
+  "hasta 2026-06",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-07"
+  ]
+ ],
+ [
+  "dpo",
+  "Contabilidad",
+  "DPO",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "ccc",
+  "Contabilidad",
+  "CCC",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "gasto_area",
+  "Contabilidad",
+  "Costos y gastos por área",
+  "hasta 2026-06",
+  [
+   "2026-07"
+  ]
+ ],
+ [
+  "gasto_admin",
+  "Contabilidad",
+  "Gastos administrativos",
+  "hasta 2026-06",
+  [
+   "2026-07"
+  ]
+ ],
+ [
+  "costo_operacion",
+  "Contabilidad",
+  "Costos de operación",
+  "hasta 2026-05",
+  [
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "costo_proveedor",
+  "Contabilidad",
+  "Costos de proveedores",
+  "hasta 2026-05",
+  [
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "costo_proveedor_ventas_pct",
+  "Contabilidad",
+  "Costos de proveedores / ventas %",
+  "hasta 2026-05",
+  [
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "salario_area_pct",
+  "Contabilidad",
+  "Salarios por área %",
+  "hasta 2026-05",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "distribucion_clientes",
+  "Contabilidad",
+  "Distribución de clientes",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "escenarios_fin",
+  "Financiero",
+  "Escenarios financieros",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "cartera_cobro_legal",
+  "Contabilidad",
+  "Cartera en cobro legal",
+  "hasta 2026-06",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-07"
+  ]
+ ],
+ [
+  "indice_morosidad",
+  "Contabilidad",
+  "Índice de morosidad",
+  "hasta 2026-06",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-07"
+  ]
+ ],
+ [
+  "cartera_mayor_60_pct",
+  "Contabilidad",
+  "% Cartera mayor a 60 días",
+  "hasta 2026-06",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-07"
+  ]
+ ],
+ [
+  "cartera_arr_pct",
+  "Contabilidad",
+  "Cartera como % de ARR",
+  "hasta 2026-06",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-07"
+  ]
+ ],
+ [
+  "concentracion_cartera",
+  "Contabilidad",
+  "Concentración de cartera",
+  "hasta 2026-06",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-07"
+  ]
+ ],
+ [
+  "write_off_ratio",
+  "Contabilidad",
+  "Write-off ratio (castigo real)",
+  "hasta 2026-06",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-07"
+  ]
+ ],
+ [
+  "ingresos_no_recurrentes",
+  "Finanzas",
+  "Ingresos no recurrentes",
+  "hasta 2026-05",
+  [
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "gasto_desarrollo",
+  "Contabilidad",
+  "Gastos de Desarrollo",
+  "hasta 2026-05",
+  [
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "gasto_comercial",
+  "Contabilidad",
+  "Gastos Comercial",
+  "hasta 2026-05",
+  [
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "distribucion_ingresos",
+  "Finanzas",
+  "Distribución de ingresos por tipo",
+  "hasta 2026-05",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "mrr_inicio",
+  "Finanzas",
+  "MRR inicio",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "mrr_final",
+  "Finanzas",
+  "MRR final",
+  "hasta 2026-05",
+  [
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "ingresos_recurrentes",
+  "Finanzas",
+  "Ingresos recurrentes",
+  "hasta 2026-05",
+  [
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "ingresos_totales",
+  "Finanzas",
+  "Ingresos totales",
+  "hasta 2026-06",
+  [
+   "2026-07"
+  ]
+ ],
+ [
+  "costo_directo",
+  "Finanzas",
+  "Costo directo",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "caja_disponible",
+  "Finanzas",
+  "Caja disponible",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "pagos_periodo",
+  "Finanzas",
+  "Pagos del periodo",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "facturacion_periodo",
+  "Finanzas",
+  "Facturación del periodo",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "churn_ingresos_pct",
+  "SaaS / Revenue",
+  "Churn de ingresos %",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "pyg_ingresos_operacionales",
+  "P&G oficial",
+  "P&G · Ingresos operacionales netos",
+  "hasta 2026-07",
+  []
+ ],
+ [
+  "pyg_servicio_software",
+  "P&G oficial",
+  "P&G · Servicio de software",
+  "hasta 2026-07",
+  []
+ ],
+ [
+  "pyg_devoluciones",
+  "P&G oficial",
+  "P&G · Devoluciones en ventas",
+  "hasta 2026-07",
+  []
+ ],
+ [
+  "pyg_costo_ventas",
+  "P&G oficial",
+  "P&G · Costo de ventas",
+  "hasta 2026-07",
+  []
+ ],
+ [
+  "pyg_utilidad_bruta",
+  "P&G oficial",
+  "P&G · Utilidad bruta",
+  "hasta 2026-07",
+  []
+ ],
+ [
+  "pyg_gasto_administracion",
+  "P&G oficial",
+  "P&G · Gastos de administración",
+  "hasta 2026-07",
+  []
+ ],
+ [
+  "pyg_gasto_proyectos",
+  "P&G oficial",
+  "P&G · Gastos operación/proyectos",
+  "hasta 2026-07",
+  []
+ ],
+ [
+  "pyg_gasto_ventas",
+  "P&G oficial",
+  "P&G · Gastos de ventas",
+  "hasta 2026-07",
+  []
+ ],
+ [
+  "pyg_utilidad_operativa",
+  "P&G oficial",
+  "P&G · Utilidad operativa",
+  "hasta 2026-07",
+  []
+ ],
+ [
+  "pyg_ingresos_no_operacionales",
+  "P&G oficial",
+  "P&G · Ingresos no operacionales",
+  "hasta 2026-07",
+  []
+ ],
+ [
+  "pyg_gastos_financieros",
+  "P&G oficial",
+  "P&G · Gastos financieros",
+  "hasta 2026-07",
+  []
+ ],
+ [
+  "pyg_utilidad_neta",
+  "P&G oficial",
+  "P&G · Utilidad neta",
+  "hasta 2026-07",
+  []
+ ],
+ [
+  "(subsidiarias)",
+  "Internacional",
+  "Subsidiarias USA / Perú / Costa Rica",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "proinnovate_ingresos",
+  "P&G oficial",
+  "PROINNOVATE · Ingresos/desembolsos",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "proinnovate_gastos",
+  "P&G oficial",
+  "PROINNOVATE · Gastos asociados",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ],
+ [
+  "proinnovate_resultado",
+  "P&G oficial",
+  "PROINNOVATE · Resultado neto",
+  "NUNCA",
+  [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07"
+  ]
+ ]
+]

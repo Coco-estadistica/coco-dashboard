@@ -1,0 +1,42 @@
+INICIO RAPIDO
+=============
+Actualizado: 13 de agosto de 2026.
+
+ORDEN DE LECTURA
+  1. README.md          <- estado ACTUAL del proyecto (este manda)
+  2. CLAUDE_HANDOFF.md  <- contexto de agosto 2026; ojo, quedo desactualizado en 2 puntos
+                           (ver seccion 10 del README)
+
+ARCHIVOS OFICIALES
+  Tablero:        Dashboard_COCO.html          (unico; los demas HTML son respaldos)
+  Base operativa: migracion/BD_MAESTRA_COCO.xlsx        14 hojas
+  Trazabilidad:   migracion/BD_TRAZABILIDAD_COCO.xlsx   24 hojas (el tablero NO la lee)
+  Lanzador:       Abrir_Dashboard_COCO.bat     (puerto 8740)
+
+LO QUE CAMBIO EL 13-AGO-2026
+  - La base se separo en dos libros para eliminar la duplicacion de cifras.
+  - Se unificaron los 3 HTML identicos en uno solo.
+  - Botones nuevos: Revisar_Base.bat (control) y Corregir_Base.bat (arregla desfases).
+  - Los graficos ya distinguen "sin dato" de "cero real" (ver seccion 4.1 del README).
+
+REGLAS
+  1. No inventes datos. Un faltante se marca s/d, NUNCA cero.
+     Tres estados en los graficos:  cifra = dato (incluido un $0 reportado)
+                                    s/d   = no recibido, hay que perseguirlo
+                                    n/a   = no aplica a esa entidad
+     Los constructores de series devuelven null, no 0. No los "arregles" con ||0.
+  2. Peru se origina en PEN (TRM_Peru). PROINNOVATE va aparte, fuera del consolidado.
+  3. Colombia se origina en COP; el PDF oficial manda sobre el acumulado.
+  4. El consolidado multipais se presenta en USD. No sumar monedas distintas.
+  5. Acumulado no es lo mismo que movimiento del mes.
+  6. Respalda antes de editar la base.
+  7. No borres graficos ni funcionalidades para resolver un problema de datos.
+
+ANTES DE TOCAR CIFRAS
+  - Ejecuta Revisar_Base.bat y confirma que las capas esten alineadas.
+  - Traza cada indicador hasta la funcion del HTML y la hoja que lo alimenta.
+  - No asumas que una hoja llamada "oficial" es la que el tablero consume:
+    BD_PYG_OFICIAL y Subsidiarias_PyG NO alimentan el tablero.
+
+PARA VALIDAR
+  Usa siempre servidor HTTP (el .bat). Con file:// el tablero no puede leer la base.
