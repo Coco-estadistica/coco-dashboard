@@ -243,7 +243,7 @@ footer b{color:var(--ink2)}
     <div class="ctrl"><label>País</label><select id="f-pais"></select></div>
     <div class="ctrl"><label>Moneda</label><div class="toggle" id="f-moneda"><button data-m="USD" class="on">USD</button><button data-m="COP">COP</button></div></div>
     <div class="ctrl"><label>Base TRM</label><select id="f-trmbase" title="Tasa COP/USD usada para convertir: implícita (EEFF) o promedio de mercado"><option value="implicita">Implícita</option><option value="mercado">Mercado</option></select></div>
-    <div class="ctrl"><label>TRM</label><input id="f-trm" class="trm-in" type="number" min="0" step="1" title="TRM COP/USD (editable). Default = base elegida para el periodo."></div>
+    <div class="ctrl"><label>TRM</label><input id="f-trm" class="trm-in" type="number" min="0" step="1" title="TRM COP/USD (editable). Default = base elegida para el periodo."><span id="trm-warn" style="display:none;cursor:help;margin-left:4px" title="Sin TRM en la base para este periodo: el tablero está convirtiendo con la tasa de respaldo 4.170. Carga la hoja TRM o escribe una tasa manual.">⚠️</span></div>
     <button class="btn primary" id="btn-cloud" title="Lee la última versión de BD_MAESTRA_COCO (Google Sheets)">☁ Actualizar desde la nube</button>
     <button class="btn" id="btn-datos" title="Registro individual o carga masiva con plantilla">✎ Ingresar datos</button>
     <button class="btn" id="btn-load" title="Respaldo: cargar un archivo Excel local">Cargar BD</button>
@@ -413,6 +413,9 @@ const S={ catalog:{}, order:[], facts:[], burnRunway:null, trm:{}, trmMercado:{}
      (segmento vacío, escenario=Presupuesto) es el que se compara por defecto contra
      Real; estas dos versiones históricas solo se leen en el comparativo de versiones. */
 const INTL_SEG=new Set(["Consolidación USD","PROINNOVATE","Original enero","Revisado mayo","Acumulado H1 2026","Modelo"]);
+/* Un segmento "Acumulado ..." futuro (H2, otro año) debe clasificarse igual que el H1
+   actual sin editar la lista: la membresía se consulta por este helper, no por el Set. */
+function esSegIntl(seg){ return INTL_SEG.has(seg)||/^Acumulado\b/i.test(seg||""); }
 const PPTO_VERSIONES=["Original enero","Revisado mayo"];
 /* entidades del bloque consolidado (USD). Si el filtro País apunta a una de ellas,
    las consultas leen el bloque 'Consolidación USD' de esa entidad en vez del mundo COP. */
@@ -650,7 +653,7 @@ function matchFilters(f,o){
      - en el mundo normal (Colombia/Todos), excluye el bloque internacional USD. */
   if(o.segmento!==undefined){ if((f.segmento||"")!==o.segmento) return false; }
   else if(esPaisConsol(pais)){ if(f.segmento!=="Consolidación USD") return false; }
-  else if(INTL_SEG.has(f.segmento)) return false;
+  else if(esSegIntl(f.segmento)) return false;
   return true;
 }
 /* suma cruda (COP para dinero) de un código para el periodo/filtros dados, agregando segmento/detalle */
@@ -858,7 +861,7 @@ function alcanceIndex(){
     const seg=f.segmento||"";
     const a=m[f.codigo]||(m[f.codigo]={normal:new Set(),consol:new Set()});
     if(seg===CONSOL_SEG)a.consol.add(f.pais);
-    else if(!INTL_SEG.has(seg))a.normal.add(f.pais);
+    else if(!esSegIntl(seg))a.normal.add(f.pais);
     if(f.pais&&f.pais!=="Colombia"&&f.pais!=="Otros"&&f.pais!=="Consolidado"&&f.periodo)
       if(filialDesde===null||f.periodo<filialDesde)filialDesde=f.periodo;
   }
@@ -1320,6 +1323,15 @@ function render(){
   if(tIn){ tIn.disabled=esBurn;
     tIn.title=esBurn?"No aplica en Burn & Runway (fuente externa con tasa propia).":"TRM COP/USD (editable). Default = base elegida para el periodo."; }
   if(tBase){ tBase.disabled=esBurn||!!F.trm; }
+  /* TRM de respaldo: si ni la base elegida ni la hoja TRM tienen tasa para el periodo
+     (ni un último dato), la conversión usa el valor fijo de emergencia 4170. Eso se
+     avisa junto al campo con un ⚠️, no se calla. */
+  const warnT=document.getElementById("trm-warn");
+  if(warnT){
+    const hayDatos=S.periodos&&S.periodos.length, m=hayDatos?trmBaseMap():{}, last=hayDatos?S.periodos[S.periodos.length-1]:null;
+    const usaRespaldo=hayDatos&&!F.trm&&!(m[F.periodo]||S.trm[F.periodo]||(last&&(m[last]||S.trm[last])));
+    warnT.style.display=usaRespaldo?"":"none";
+  }
   renderTab(tabId);
   document.getElementById("ts").textContent=S.fileName+" · "+S.periodos.length+" periodos";
 }
@@ -1398,12 +1410,25 @@ const BRIDGE_STEPS=[
   {code:"pyg_utilidad_neta",             label:"Utilidad\nneta",                tipo:"total"}
 ];
 
-/* Acumulado oficial: H1 publicado + meses posteriores disponibles en el bloque USD. */
+/* El corte del acumulado oficial NO es una fecha quemada: se detecta como el último
+   periodo cargado bajo un segmento "Acumulado ..." (hoy "Acumulado H1 2026", jun-26).
+   Cuando contabilidad publique el siguiente corte, el tablero lo toma con solo
+   cargarlo en la base — sin tocar código. */
+function acumOficialInfo(pais){
+  let seg=null,corte=null;
+  for(const f of S.facts){
+    if(!/^Acumulado\b/i.test(f.segmento||""))continue;
+    if(pais!==undefined&&f.pais!==pais)continue;
+    if(f.periodo&&(corte===null||f.periodo>corte)){corte=f.periodo;seg=f.segmento;}
+  }
+  return corte?{seg,corte}:null;
+}
+/* Acumulado oficial: corte publicado + meses posteriores disponibles en el bloque USD. */
 function officialAccumVal(code,pais,periodo){
-  const H1="Acumulado H1 2026", hayH1=S.facts.some(f=>f.segmento===H1&&f.pais===pais);
-  if(hayH1&&periodo>="2026-06"){
-    const base=factValConsol(code,"2026-06",pais,H1);
-    const posteriores=mesesIntl().filter(m=>m>"2026-06"&&m<=periodo);
+  const info=acumOficialInfo(pais);
+  if(info&&periodo>=info.corte){
+    const base=factValConsol(code,info.corte,pais,info.seg);
+    const posteriores=mesesIntl().filter(m=>m>info.corte&&m<=periodo);
     const adicional=posteriores.length?factValConsol(code,posteriores,pais,"Consolidación USD"):null;
     return base==null&&adicional==null?null:(base||0)+(adicional||0);
   }
@@ -1420,8 +1445,12 @@ function officialAccumVal(code,pais,periodo){
 function codigoAplicaA(code,pais){ return S.facts.some(f=>f.codigo===code&&f.pais===pais); }
 
 function accumLabel(periodo){
-  if(periodo==="2026-06")return "Acumulado enero-junio 2026 - estado oficial H1";
-  return "Acumulado enero-"+nombreMes(periodo).toLowerCase()+" 2026 - H1 oficial + movimientos posteriores";
+  /* Ni el año ni el corte van quemados: el año sale del periodo mostrado y el corte
+     del último segmento "Acumulado ..." cargado en la base. */
+  const anio=String(periodo).slice(0,4), info=acumOficialInfo();
+  const rango="Acumulado enero-"+nombreMes(periodo).toLowerCase()+" "+anio;
+  if(info&&periodo===info.corte)return rango+" - corte oficial ("+info.seg+")";
+  return rango+(info?" - "+info.seg+" + movimientos posteriores":"");
 }
 
 /* waterfall VERTICAL en SVG. escalaMax opcional: fuerza la misma escala en dos láminas
@@ -1600,14 +1629,15 @@ function renderPyGConsol(host,embedH){
   }
   const gv=code=>factVal(code,per,ent,"Consolidación USD");
   const ing=periodoPendiente?null:gv("pyg_ingresos_operacionales"), ebitda=periodoPendiente?null:factValConsol("_utilidad_operativa",[per],ent), neta=periodoPendiente?null:gv("pyg_utilidad_neta");
-  const usaAcumOficial=per>="2026-06"&&S.facts.some(f=>f.segmento==="Acumulado H1 2026"&&f.pais===ent);
+  const infoAcum=acumOficialInfo(ent);
+  const usaAcumOficial=!!infoAcum&&per>=infoAcum.corte;
   const mesesHasta=meses.filter(m=>m<=per);
-  const periodoAcum=periodoPendiente?"2026-06":per;
+  const periodoAcum=(periodoPendiente&&infoAcum)?infoAcum.corte:per;
   const mesesAcum=mesesHasta.filter(m=>m<=periodoAcum);
   const ingYTD=usaAcumOficial?officialAccumVal("pyg_ingresos_operacionales",ent,periodoAcum):factValSum("pyg_ingresos_operacionales",mesesAcum,ent,"Consolidación USD");
   const ebitdaYTD=usaAcumOficial?officialAccumVal("_utilidad_operativa",ent,periodoAcum):factValConsol("_utilidad_operativa",mesesAcum,ent);
   const netaYTD=usaAcumOficial?officialAccumVal("pyg_utilidad_neta",ent,periodoAcum):factValSum("pyg_utilidad_neta",mesesAcum,ent,"Consolidación USD");
-  const rango=periodoPendiente?"ene–jun · oficial; julio pendiente":(usaAcumOficial?("ene–"+mesCorto(per).split(" ")[0]+" · oficial"):(mesesHasta.length>1?(mesCorto(mesesHasta[0])+"–"+mesCorto(mesesHasta[mesesHasta.length-1])):mesCorto(mesesHasta[0])));
+  const rango=periodoPendiente?("ene–"+mesCorto(periodoAcum).split(" ")[0]+" · oficial; "+mesCorto(per).split(" ")[0]+" pendiente"):(usaAcumOficial?("ene–"+mesCorto(per).split(" ")[0]+" · oficial"):(mesesHasta.length>1?(mesCorto(mesesHasta[0])+"–"+mesCorto(mesesHasta[mesesHasta.length-1])):mesCorto(mesesHasta[0])));
   /* acumulados convertidos mes a mes; ver acumEnMoneda */
   const ingYTDd  = usaAcumOficial?usdEn(ingYTD,periodoAcum)   :acumEnMoneda(m=>factValSum("pyg_ingresos_operacionales",[m],ent,"Consolidación USD"),mesesAcum);
   const ebitYTDd = usaAcumOficial?usdEn(ebitdaYTD,periodoAcum):acumEnMoneda(m=>factValConsol("_utilidad_operativa",m,ent),mesesAcum);
@@ -1812,7 +1842,17 @@ function consolStatementCard(perOrMeses,resaltar,soloCodes,titulo,segmentoBloque
   const crIng=factVal("pyg_ingresos_operacionales",per,"Costa Rica",segmentoBloque);
   let avisos=`<div style="font-size:11px;color:var(--mute);margin-top:8px">Cada país se convierte a USD con su factor mensual (Perú: BCRP; Colombia: COP/USD implícito). Los rubros se muestran con su signo — valores en rojo/paréntesis son negativos (créditos o gasto neto). La Utilidad Operativa (EBITDA) es calculada: Ingresos − Costo del servicio − Administración − Ventas − Operación. La Utilidad neta de cada país es la cifra oficial de su contabilidad. PROINNOVATE (Perú) no entra al consolidado.</div>`;
   if(!acumulado&&segmentoBloque!=="__ACUM_OFICIAL__"&&datoNoRecibidoPaisPeriodo("Perú",per)&&cols.includes("Perú")){ avisos+=`<div style="font-size:11.5px;color:var(--amber);background:var(--amber-b);border:1px solid rgba(244,183,64,.35);border-radius:8px;padding:8px 11px;margin-top:8px"><b>Perú · ${mesCorto(per)}:</b> dato no recibido. El consolidado del mes no incorpora actividad ordinaria de Perú y debe considerarse provisional.</div>`; }
-  if(!acumulado && !etiquetaOverride && per==="2026-06" && crIng!=null && crIng>100000){ avisos+=`<div style="font-size:11.5px;color:var(--amber);background:var(--amber-b);border:1px solid rgba(244,183,64,.35);border-radius:8px;padding:8px 11px;margin-top:8px">⚠ Costa Rica · junio: ingresos atípicamente altos (${fConU(crIng,per)}). Pendiente de validación.</div>`; }
+  /* El aviso de ingresos atípicos de Costa Rica se decide con los datos, no con una
+     fecha fija: dispara cuando el mes supera 3x la mediana de los demás meses de CR
+     con dato en el bloque. Cubre junio hoy y cualquier mes atípico futuro. */
+  if(!acumulado && !etiquetaOverride && crIng!=null && crIng>0){
+    const otrosCR=mesesIntl().filter(m=>m!==per)
+      .map(m=>factVal("pyg_ingresos_operacionales",m,"Costa Rica",segmentoBloque))
+      .filter(v=>v!=null&&v>0).sort((a,b)=>a-b);
+    const medCR=otrosCR.length?otrosCR[Math.floor(otrosCR.length/2)]:null;
+    if(medCR!=null&&otrosCR.length>=2&&crIng>medCR*3){
+      avisos+=`<div style="font-size:11.5px;color:var(--amber);background:var(--amber-b);border:1px solid rgba(244,183,64,.35);border-radius:8px;padding:8px 11px;margin-top:8px">⚠ Costa Rica · ${mesCorto(per)}: ingresos atípicamente altos (${fConU(crIng,per)}) frente a su nivel habitual. Pendiente de validación.</div>`; }
+  }
   card.innerHTML+=html+avisos;
   return card;
 }
@@ -2381,7 +2421,12 @@ function renderFactura12(card,body,h){
   const pers=windowPeriodos(); if(!pers.length){ noData(body); return; }
   const ingV=pers.map(p=>financeDisplayValue("ingresos_totales",p));
   const egrV=pers.map(p=>financeDisplayValue("egresos_totales",p));
-  const utiV=pers.map((p,i)=>{ const u=financeDisplayValue("utilidad_neta",p); return u==null&&ingV[i]!=null&&egrV[i]!=null?ingV[i]-egrV[i]:u; });
+  /* Cuando el mes no tiene utilidad neta oficial se estima como ingresos − egresos;
+     ese fallback se marca en la tabla ("est.") en vez de presentarse como oficial. */
+  const utiEst=pers.map(()=>false);
+  const utiV=pers.map((p,i)=>{ const u=financeDisplayValue("utilidad_neta",p);
+    if(u==null&&ingV[i]!=null&&egrV[i]!=null){ utiEst[i]=true; return ingV[i]-egrV[i]; }
+    return u; });
   if(!ingV.some(v=>v!=null)){ noData(body); return; }
   card.insertBefore(legendRow([{name:"Ingresos",color:"#3B82F6"},{name:"Egresos",color:"#F4685E"},{name:"Utilidad",color:"#00CC58"}]),body);
   const chartHost=document.createElement("div"); body.appendChild(chartHost);
@@ -2389,8 +2434,10 @@ function renderFactura12(card,body,h){
     {color:"#3B82F6",values:ingV},{color:"#F4685E",values:egrV},{color:"#00CC58",values:utiV}],{fmt:v=>fAxisMoney(v),axisFmt:fAxisMoney});
   /* tabla */
   let t=`<table class="cat-table" style="margin-top:12px"><thead><tr><th>Mes</th><th style="text-align:right">Ingresos</th><th style="text-align:right">Egresos</th><th style="text-align:right">Utilidad</th></tr></thead><tbody>`;
-  pers.forEach((p,i)=>{ t+=`<tr><td style="color:var(--ink)">${nombreMes(p)} ${p.slice(0,4)}</td><td class="mono" style="text-align:right">${fMoney(ingV[i])}</td><td class="mono" style="text-align:right">${fMoney(egrV[i])}</td><td class="mono" style="text-align:right;color:${utiV[i]<0?'var(--red)':'var(--ink2)'}">${fMoney(utiV[i])}</td></tr>`; });
-  t+="</tbody></table>"; const tbl=document.createElement("div"); tbl.innerHTML=t; body.appendChild(tbl);
+  pers.forEach((p,i)=>{ t+=`<tr><td style="color:var(--ink)">${nombreMes(p)} ${p.slice(0,4)}</td><td class="mono" style="text-align:right">${fMoney(ingV[i])}</td><td class="mono" style="text-align:right">${fMoney(egrV[i])}</td><td class="mono" style="text-align:right;color:${utiV[i]<0?'var(--red)':'var(--ink2)'}">${fMoney(utiV[i])}${utiEst[i]?' <span style="font-size:9px;color:var(--amber)">est.</span>':''}</td></tr>`; });
+  t+="</tbody></table>";
+  if(utiEst.some(Boolean)) t+=`<div style="font-size:10.5px;color:var(--mute);margin-top:6px"><span style="color:var(--amber)">est.</span> = utilidad estimada (ingresos − egresos): el mes aún no tiene cifra oficial de utilidad neta.</div>`;
+  const tbl=document.createElement("div"); tbl.innerHTML=t; body.appendChild(tbl);
 }
 
 /* Facturación 2025 vs 2026 por mes (barras agrupadas + Δ%) */
@@ -2560,7 +2607,7 @@ function fillFilters(){
   const selEsc=document.getElementById("f-escenario"); selEsc.innerHTML=["__ALL__"].concat(S.escenarios).map(x=>`<option value="${x}">${x==="__ALL__"?"Todos":x}</option>`).join("");
   F.escenario=S.escenarios.includes("Real")?"Real":(S.escenarios[0]||"__ALL__"); selEsc.value=F.escenario; selEsc.onchange=e=>{F.escenario=e.target.value;render();};
   /* países con datos generales (Colombia/Otros) + entidades del bloque consolidado presentes */
-  const paisesGen=[...new Set(S.facts.filter(f=>!INTL_SEG.has(f.segmento)&&f.pais).map(f=>f.pais))].sort();
+  const paisesGen=[...new Set(S.facts.filter(f=>!esSegIntl(f.segmento)&&f.pais).map(f=>f.pais))].sort();
   const consolExisten=ENTIDADES_CONSOL.filter(e=>S.facts.some(f=>f.segmento==="Consolidación USD"&&f.pais===e));
   /* Un solo estado consolidado (20-ago-2026). Antes convivían "Todos" y "Consolidado"
      y no eran lo mismo: "Todos" no filtraba por país pero excluía el bloque
