@@ -2021,38 +2021,9 @@ function renderBurnRunway(host){
       Necesidad máxima: <b class="mono">${MM1((busca(d.proyeccion_kpis,"necesidad máxima")||{}).valor)} COP MM</b>.</div>`;
   host.appendChild(cP);
 
-  /* ---- Sensibilidad DSO ---- */
-  const cD=document.createElement("div"); cD.className="chart-card"; cD.style.marginTop="14px";
-  cD.innerHTML=`<h3>Sensibilidad de caja según días de cobro (DSO)</h3>
-    <div style="font-size:11.5px;color:var(--mute);margin:6px 0 10px">
-      Hoy: DSO <b class="mono">${MM1(d.dso_actual.dso)} días</b> · cartera <b class="mono">${MM1(d.dso_actual.cxc)} COP MM</b> ·
-      caja <b class="mono">${MM1(d.dso_actual.caja)} COP MM</b> · mínimo operativo <b class="mono">${MM1(d.dso_actual.caja_minima)} COP MM</b></div>
-    <div class="tbl-scroll"><table class="ptable"><thead><tr>
-      <th class="r">DSO objetivo</th><th class="r">Cartera</th><th class="r">Caja liberada</th><th class="r">Caja resultante</th><th>vs mínimo</th></tr></thead>
-    <tbody>${d.dso.map(x=>{const ok=String(x.estado||"").toUpperCase()==="OK";
-      return `<tr><td class="r mono">${Math.round(x.dso)}</td><td class="r mono">${MM1(x.cxc)}</td>
-        <td class="r mono"${x.liberada<0?' style="color:var(--red)"':' style="color:var(--green)"'}>${MM1(x.liberada)}</td>
-        <td class="r mono" style="font-weight:700">${MM1(x.resultante)}</td>
-        <td><span class="tag ${ok?'green':'red'}">${x.estado||""}</span></td></tr>`;}).join("")}</tbody></table></div>`;
-  host.appendChild(cD);
-
-  /* El puente de caja mensual (COP MM) se retiró de la vista (21-ago, decisión del
-     responsable: demasiado detalle contable para esta pestaña). El dato sigue en
-     burn_runway.json (d.puente) por si vuelve a necesitarse. */
-  const par=document.createElement("div"); par.className="grid g2"; par.style.marginTop="14px"; host.appendChild(par);
-  const cI=document.createElement("div"); cI.className="chart-card";
-  cI.innerHTML=`<h3>Flujo de caja internacional · ${mesCorte} (USD)</h3>
-    <div class="tbl-scroll" style="margin-top:10px"><table class="ptable"><thead><tr>
-      <th>País</th><th class="r">Ingresos</th><th class="r">Egresos</th><th class="r">Flujo neto</th><th class="r">COP MM</th></tr></thead>
-    <tbody>${d.intl.map(x=>{const tot=/total/i.test(String(x.pais));
-      return `<tr style="${tot?'font-weight:700;color:var(--ink);border-top:1px solid var(--line2)':''}">
-        <td>${x.pais}</td><td class="r mono">${x.ingresosUSD==null?"—":fNum(x.ingresosUSD)}</td>
-        <td class="r mono"${x.egresosUSD<0?' style="color:var(--red)"':''}>${x.egresosUSD==null?"—":MM(x.egresosUSD)}</td>
-        <td class="r mono"${x.netoUSD<0?' style="color:var(--red)"':''}>${x.netoUSD==null?"—":MM(x.netoUSD)}</td>
-        <td class="r mono"${x.netoCOP<0?' style="color:var(--red)"':''}>${x.netoCOP==null?"—":MM1(x.netoCOP)}</td></tr>`;}).join("")}</tbody></table></div>
-    <div style="font-size:11px;color:var(--mute);margin-top:8px">TRM ${mesCorte} aplicada: <b class="mono">${fNum(d.trm_junio)}</b></div>`;
-  par.appendChild(cI);
-
+  /* La sensibilidad DSO, el puente de caja mensual y el flujo internacional se
+     retiraron de la vista (21-ago, decisión del responsable: demasiado detalle para
+     esta pestaña). Los datos siguen en burn_runway.json (d.dso, d.puente, d.intl). */
   /* ---- Presupuesto vs ejecutado ---- */
   const cPE=document.createElement("div"); cPE.className="chart-card"; cPE.style.marginTop="14px";
   cPE.innerHTML=`<h3>Ingresos: presupuesto vs ejecutado (COP MM)</h3>
