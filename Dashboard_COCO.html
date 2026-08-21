@@ -445,16 +445,13 @@ const META={
 /* ---------- organización por área (segmentación) ---------- */
 const AREAS=[
   {id:"resumen",  label:"Resumen"},
-  {id:"consolidado", label:"Consolidado", hint:"Vista CEO · multi-país en USD",
-     alcanceFijo:"__ALL__"},
+  {id:"consolidado", label:"PyG en Cascada", hint:"Del ingreso al resultado · responde al selector de país"},
   {id:"burn",     label:"Burn & Runway", hint:"Caja, quema y cobertura · del Modelo"},
   {id:"finanzas", label:"Finanzas & P&L", hint:"P&L del periodo",
      codes:["ingresos_totales","margen_bruto_pct","ebitda","margen_ebitda","utilidad_neta","margen_neto","egresos_totales","gastos_totales"],
      charts:[{type:"factura12",title:"Facturación a 12 meses"},
              {type:"yoybars",code:"ingresos_totales",title:"Facturación 2025 vs 2026"},
-             {type:"recon",title:"Facturación Contable vs Ejecutada"},
-             {type:"bar",code:"ebitda",title:"EBITDA por mes"},
-             {type:"pyg",title:"Estado de resultados (EEFF oficial)"}]},
+             {type:"recon",title:"Facturación Contable vs Ejecutada"}]},
   {id:"mrr",      label:"Ingresos & MRR", hint:"Recurrencia y movimiento de MRR",
      codes:["mrr_final","arr","arpa","retained_mrr","new_mrr","expansion_mrr","reactivacion_mrr","contraction_mrr","churned_mrr","churn_mrr_mensual"],
      charts:[{type:"mrrbridge",title:"Ejecución real de MRR a 12 meses"},
@@ -1369,10 +1366,7 @@ function renderTabInterno(id){
   if(id==="resumen") return renderResumen(host);
   if(id==="catalogo") return renderCatalogo(host);
   if(id==="burn") return renderBurnRunway(host);
-  if(id==="consolidado"||id==="intl"){
-    const a=AREAS.find(x=>x.id==="consolidado");
-    return conAlcanceFijo(a,()=>renderConsolidado(host));
-  }
+  if(id==="consolidado"||id==="intl") return renderConsolidado(host);
   const area=AREAS.find(a=>a.id===id); if(!area)return;
   /* Pestañas de alcance fijo (Gastos Colombia / Gastos Consolidado). Su alcance es parte
      de su identidad y el selector superior no debe poder sacarlas de él.
@@ -1484,26 +1478,20 @@ function bridgeSVG(pais,periodo,escalaMax){
   return {svg,max,neta:segs[segs.length-1].val,ingresos:segs[0].val};
 }
 
-/* las dos láminas del puente H1: Colombia y Consolidado, con escala vertical compartida */
-/* Una lámina de puente (Colombia o Consolidado). Ambas comparten la MISMA escala
-   vertical, así la diferencia de altura entre una y otra es la diferencia real. */
-const BRIDGE_LAMINAS={
-  "Colombia":{titulo:"Colombia acumulado"},
-  "Consolidado":{titulo:"Consolidado acumulado — Colombia + EE.UU. + Perú + Costa Rica"}
-};
+/* Una lámina del puente H1 para cualquier entidad (Consolidado, Colombia, EE.UU.,
+   Perú, Costa Rica), con su propia escala. Antes eran dos láminas fijas (Colombia y
+   Consolidado) con escala compartida; ahora la entidad la decide el selector. */
 function bridgeCard(pais,periodo){
   const wrap=document.createElement("div");
   periodo=periodo||F.periodo;
   if(officialAccumVal("pyg_ingresos_operacionales",pais,periodo)==null) return wrap;
-  const escala=Math.max(bridgeSVG("Colombia",periodo).max, bridgeSVG("Consolidado",periodo).max);
-  const L=BRIDGE_LAMINAS[pais]; if(!L) return wrap;
-  const d=bridgeSVG(pais,periodo,escala);
+  const titulo=pais==="Consolidado"?"Consolidado acumulado — Colombia + EE.UU. + Perú + Costa Rica":pais+" acumulado";
+  const d=bridgeSVG(pais,periodo);
   const card=document.createElement("div"); card.className="chart-card"; card.style.marginTop="14px";
   card.style.padding="26px 28px 22px";
-  card.innerHTML=`<h3 style="color:#5FD68A;font-size:27px;font-weight:800;letter-spacing:-.3px;line-height:1.15">${L.titulo}</h3>
-    <div style="font-size:14px;color:#AEC0CE;font-style:italic;margin:8px 0 4px">${accumLabel(periodo)} · cifras en dólares${pais==="Colombia"?" · solo Colombia":""}</div>
-    <div style="margin-top:6px">${d.svg}</div>
-    <div style="font-size:12px;color:var(--mute);font-style:italic;margin-top:14px">Las dos láminas usan la misma escala vertical: la diferencia de altura entre una y otra es la diferencia real.</div>`;
+  card.innerHTML=`<h3 style="color:#5FD68A;font-size:27px;font-weight:800;letter-spacing:-.3px;line-height:1.15">${titulo}</h3>
+    <div style="font-size:14px;color:#AEC0CE;font-style:italic;margin:8px 0 4px">${accumLabel(periodo)} · cifras en dólares${pais!=="Consolidado"?" · solo "+pais:""}</div>
+    <div style="margin-top:6px">${d.svg}</div>`;
   wrap.appendChild(card);
   return wrap;
 }
@@ -1770,105 +1758,21 @@ function trmInsightCard(refPer){
 }
 
 function renderConsolidado(host){
-  /* Esta pestaña es de alcance fijo (__ALL__): su identidad es la comparación de las
-     4 filiales lado a lado, que no existe en ninguna otra parte. El estado de una
-     entidad individual vive en 04 Finanzas (sección EEFF), no aquí — antes esta
-     pestaña se transformaba en eso mismo al elegir país, duplicando la 04. */
-  const meses=mesesIntl();
+  /* Pestaña "PyG en Cascada": una sola lámina — el puente del ingreso al resultado
+     de la entidad elegida en el selector de país. Antes esta pestaña acumulaba KPIs,
+     tendencias, dos cascadas y varios estados de resultados que replicaban lo que ya
+     vive en Resumen y en Finanzas; quedó solo la lectura visual, que es su identidad. */
+  const ent=(F.pais==="__ALL__"||F.pais==="Todos")?"Consolidado":F.pais;
+  const per=F.periodo;
   const head=document.createElement("div"); head.className="eyebrow";
-  head.innerHTML=`<h2>Datos Consolidados</h2><span class="hint">Vista CEO · multi-país en USD · consolidado = suma de los 4 países</span>`;
+  head.innerHTML=`<h2>PyG en Cascada</h2><span class="hint">Del ingreso al resultado · ${ent==="Consolidado"?"Colombia + EE.UU. + Perú + Costa Rica":ent} · acumulado oficial · USD</span>`;
   host.appendChild(head);
-  /* Misma franja 🔒 que las demás pestañas de alcance fijo. Este tab tiene render
-     propio (no pasa por renderArea, donde la franja se pinta), así que se pinta aquí:
-     un selector apagado sin explicación visible parece un control dañado. */
-  const frFijo=document.createElement("div"); frFijo.className="alcance-fijo";
-  frFijo.innerHTML=`<span>🔒</span><span>Esta pestaña muestra siempre <b>el consolidado de los cuatro países</b>. El selector de país no aplica aquí y vuelve a tu elección al cambiar de pestaña.</span>`;
-  host.appendChild(frFijo);
-  if(!meses.length){ const nd=document.createElement("div"); nd.className="chart-card"; noData(nd,"Sin bloque de consolidación USD en la base. Aparecerá aquí en cuanto se cargue (segmento 'Consolidación USD')."); host.appendChild(nd); return; }
-  /* Mes: obedece al periodo global (HASTA). Antes había una barra de botones propia
-     (window._intlPer) que competía con el filtro global — dos controles decidiendo
-     "qué mes veo" y podían quedar en meses distintos. Un solo dueño: el filtro. */
-  const per=meses.includes(F.periodo)?F.periodo:meses[meses.length-1];
-  const consIng=m=>factVal("pyg_ingresos_operacionales",m,"Consolidado","Consolidación USD");
-  const consNeta=m=>factVal("pyg_utilidad_neta",m,"Consolidado","Consolidación USD");
-  const consEbitda=m=>factValConsol("_utilidad_operativa",[m],"Consolidado");
-
-  const bar=document.createElement("div"); bar.style.cssText="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap";
-  bar.innerHTML=`<span style="font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.6px">Mes</span><b style="font-size:12.5px">${mesCorto(per)}</b><span style="font-size:11px;color:var(--mute)">· se cambia con el filtro HASTA</span>`;
-  const tp=S.trmPeru[per]||S.trmPeru[per.replace(/\*/,"")];
-  if(tp){ const s=document.createElement("span"); s.style.cssText="font-size:11px;color:var(--ink2);margin-left:auto";
-    s.innerHTML=`TRM Perú: <b class="mono">S/ ${tp.tc}</b>/US$ ${tp.prov?'<span style="color:var(--amber)">· provisional</span>':''}`; bar.appendChild(s); }
-  host.appendChild(bar);
-
-  /* ---- INDICADORES PRINCIPALES ----
-     El acumulado usa el H1 oficial y suma los meses posteriores disponibles. */
-  const H1="Acumulado H1 2026", hayH1=S.facts.some(f=>f.segmento===H1), usaAcumOficial=hayH1&&per>="2026-06";
-  const grid=document.createElement("div"); grid.className="grid g4"; host.appendChild(grid);
-  const cIng=consIng(per), cNeta=consNeta(per), cEbitda=consEbitda(per);
-  const mesesAcc=meses.filter(m=>m<=per);
-  const sumIng=mesesAcc.reduce((a,m)=>a+(consIng(m)||0),0), sumNeta=mesesAcc.reduce((a,m)=>a+(consNeta(m)||0),0);
-  const rango=mesesAcc.length>1?(mesCorto(mesesAcc[0])+"–"+mesCorto(mesesAcc[mesesAcc.length-1])):mesCorto(mesesAcc[0]);
-  /* acumulado: H1 oficial solo hasta junio; si la base trae julio, debe avanzar. */
-  const accIng   = usaAcumOficial?officialAccumVal("pyg_ingresos_operacionales","Consolidado",per):sumIng;
-  const accNeta  = usaAcumOficial?officialAccumVal("pyg_utilidad_neta","Consolidado",per):sumNeta;
-  const accEbitda= usaAcumOficial?officialAccumVal("_utilidad_operativa","Consolidado",per)
-                                :factValConsol("_utilidad_operativa",mesesAcc,"Consolidado");
-  let etqAcc = usaAcumOficial?("ene–"+mesCorto(per).split(" ")[0]+" · oficial"):rango+" · "+mesesAcc.length+" mes(es)";
-  /* acumulados en la moneda elegida: mes a mes cuando se pueden recorrer los meses */
-  const accIngD    = usaAcumOficial?usdEn(accIng,per)   :acumEnMoneda(m=>consIng(m),mesesAcc);
-  const accNetaD   = usaAcumOficial?usdEn(accNeta,per)  :acumEnMoneda(m=>consNeta(m),mesesAcc);
-  const accEbitdaD = usaAcumOficial?usdEn(accEbitda,per):acumEnMoneda(m=>factValConsol("_utilidad_operativa",m,"Consolidado"),mesesAcc);
-  if(usaAcumOficial) etqAcc += notaTasaAcum(per);
-
-  mkCards(grid,[
-    {k:"Ingresos consolidados",v:cIng==null?"—":fConU(cIng,per),meta:mesCorto(per),real:true},
-    {k:"EBITDA consol. (mes)",v:cEbitda==null?"—":fConU(cEbitda,per),meta:(cEbitda!=null&&cIng)?"margen "+fPctN(cEbitda/cIng*100,1):"",s:cEbitda>=0?"green":"red",real:true},
-    {k:"Utilidad neta consol.",v:cNeta==null?"—":fConU(cNeta,per),meta:(cNeta!=null&&cIng)?"margen "+fPctN(cNeta/cIng*100,1):"",s:cNeta>=0?"green":"red",real:true},
-    {k:"Ingresos acumulados",v:fDispU(accIngD),meta:etqAcc,real:true}
-  ]);
-  const grid2=document.createElement("div"); grid2.className="grid g4"; grid2.style.marginTop="13px"; host.appendChild(grid2);
-  mkCards(grid2,[
-    {k:"EBITDA acumulado",v:fDispU(accEbitdaD),meta:etqAcc+(accIng?" · margen "+fPctN(accEbitda/accIng*100,1):""),s:accEbitda>=0?"green":"red",real:true},
-    {k:"Utilidad neta acumulada",v:accNetaD!=null&&accNetaD<0?conMon("("+fMoney(-accNetaD)+")",F.moneda):fDispU(accNetaD),meta:etqAcc,s:accNeta>=0?"green":"red",real:true},
-    {k:"Margen EBITDA acumulado",v:accIng?fPctN(accEbitda/accIng*100,1):"—",s:accEbitda>=0?"green":"red",real:true},
-    {k:"Margen neto acumulado",v:accIng?fPctN(accNeta/accIng*100,1):"—",s:accNeta>=0?"green":"red",real:true}
-  ]);
-
-  /* Nota de alcance: el bloque mensual arranca en abril, mientras el acumulado oficial
-     parte de enero. No es un descuadre: son periodos distintos. */
-  if(usaAcumOficial && meses[0]>"2026-01"){
-    const dif=accNeta-sumNeta;
-    const av=document.createElement("div"); av.className="chart-card"; av.style.cssText="margin-top:13px;border-color:var(--line2)";
-    av.innerHTML=`<div style="font-size:12px;color:var(--ink2);line-height:1.7">
-      <b style="color:var(--ink)">Alcance de cada cifra.</b> Los indicadores <b>acumulados</b> usan el H1 oficial
-      (ene–jun) más los meses posteriores disponibles hasta <b>${mesCorto(per)}</b>. El detalle mes a mes de abajo existe desde <b>${mesCorto(meses[0])}</b>: suma
-      <b class="mono">${sumNeta<0?"("+fMoney(-sumNeta)+")":fMoney(sumNeta)} USD</b> de utilidad, y la diferencia de
-      <b class="mono">${dif<0?"("+fMoney(-dif)+")":fMoney(dif)} USD</b> corresponde a enero–marzo, que aún no está cargado por mes.</div>`;
-    host.appendChild(av);
+  if(officialAccumVal("pyg_ingresos_operacionales",ent,per)==null){
+    const nd=document.createElement("div"); nd.className="chart-card";
+    noData(nd,`Sin acumulado oficial de ${ent} para ${mesLargo(per)}. La cascada usa el P&G oficial (H1 + meses posteriores cargados en el bloque de consolidación).`);
+    host.appendChild(nd); return;
   }
-
-  /* ---- PUENTE CONSOLIDADO + sus números ---- */
-  if(usaAcumOficial){
-    host.appendChild(bridgeCard("Consolidado",per));
-    host.appendChild(consolStatementCardAcumulado(per));
-    /* ---- PUENTE COLOMBIA + sus números ---- */
-    host.appendChild(bridgeCard("Colombia",per));
-    host.appendChild(consolStatementCardAcumulado(per,["Colombia"]));
-  }
-
-  /* ---- Detalle mensual (debajo de lo principal) ---- */
-  const trend=document.createElement("div"); trend.className="grid g3"; trend.style.marginTop="14px"; host.appendChild(trend);
-  const labels=meses.map(mesCorto);
-  const c1=document.createElement("div"); c1.className="chart-card"; c1.innerHTML="<h3>Ingresos consolidados por mes (USD)</h3>"; const b1=document.createElement("div"); b1.style.marginTop="8px"; c1.appendChild(b1); trend.appendChild(c1);
-  barChart(b1,labels,meses.map(consIng),{fmt:v=>fAxisMoney(v),compacto:true});
-  const ce=document.createElement("div"); ce.className="chart-card"; ce.innerHTML="<h3>EBITDA consolidado por mes (USD)</h3>"; const be=document.createElement("div"); be.style.marginTop="8px"; ce.appendChild(be); trend.appendChild(ce);
-  barChart(be,labels,meses.map(consEbitda),{fmt:v=>fAxisMoney(v),fill:"var(--blue)",compacto:true});
-  const c2=document.createElement("div"); c2.className="chart-card"; c2.innerHTML="<h3>Utilidad neta consolidada por mes (USD)</h3>"; const b2=document.createElement("div"); b2.style.marginTop="8px"; c2.appendChild(b2); trend.appendChild(c2);
-  barChart(b2,labels,meses.map(consNeta),{fmt:v=>fAxisMoney(v),fill:"var(--mint)",compacto:true});
-
-  host.appendChild(trmInsightCard(per));
-  host.appendChild(consolStatementCard(per,null,null,"Estado de Resultados · mes"));
-  host.appendChild(consolStatementCard(mesesAcc,null,null,"Estado de Resultados · acumulado del bloque mensual"));
+  host.appendChild(bridgeCard(ent,per));
 }
 
 /* P&G oficial acumulado: H1 publicado + meses posteriores disponibles. */
@@ -2013,8 +1917,12 @@ function renderConsolArea(host,area){
    ============================================================ */
 function renderBurnRunway(host){
   const d=S.burnRunway;
+  /* El alcance del informe se declara en el título: si trae flujo internacional es el
+     consolidado de los 4 países; si no, es solo Colombia. También la tasa que usa el
+     Modelo, porque difiere de la del tablero y el lector debe verla sin ir a la franja. */
+  const alcanceBR=(d&&d.intl&&d.intl.length)?"Consolidado (4 países)":"Colombia";
   const head=document.createElement("div"); head.className="eyebrow";
-  head.innerHTML=`<h2>Burn &amp; Runway</h2><span class="hint">Caja, quema y cobertura · corte ${d?d.corte:"—"} · cifras en COP millones</span>`;
+  head.innerHTML=`<h2>Burn &amp; Runway · ${alcanceBR}</h2><span class="hint">Caja, quema y cobertura · corte ${d?d.corte:"—"} · cifras en COP millones${d&&d.trm_junio?` · TRM del modelo: ${fNum(d.trm_junio)}`:""}</span>`;
   host.appendChild(head);
   /* Esta pestaña no sale de la base: la genera el Modelo financiero y llega en
      burn_runway.json. Por eso no obedece los filtros de país ni de moneda, y su tasa
@@ -2147,22 +2055,10 @@ function renderBurnRunway(host){
         <td><span class="tag ${ok?'green':'red'}">${x.estado||""}</span></td></tr>`;}).join("")}</tbody></table></div>`;
   host.appendChild(cD);
 
-  /* ---- Puente de caja y flujo internacional ----
-     El mes inicial se toma de la propia fila "Caja inicial (mmm-aa)" y el final del
-     corte del informe: escribirlos a mano fue justo lo que quedó desactualizado
-     cuando el modelo pasó de junio a julio ("Puente de caja may → jun" con corte
-     ya en julio). */
-  const mesInicialPuente=(()=>{ const m=/\(([a-zéí]{3}-\d{2})\)/i.exec(String((d.puente&&d.puente[0]&&d.puente[0].concepto)||"")); return m?m[1]:""; })();
+  /* El puente de caja mensual (COP MM) se retiró de la vista (21-ago, decisión del
+     responsable: demasiado detalle contable para esta pestaña). El dato sigue en
+     burn_runway.json (d.puente) por si vuelve a necesitarse. */
   const par=document.createElement("div"); par.className="grid g2"; par.style.marginTop="14px"; host.appendChild(par);
-  const cPu=document.createElement("div"); cPu.className="chart-card";
-  cPu.innerHTML=`<h3>Puente de caja ${mesInicialPuente?mesInicialPuente+" → ":""}${mesCorte} (COP MM)</h3>`+`
-    <div class="tbl-scroll" style="margin-top:10px"><table class="ptable"><tbody>
-    ${d.puente.map(x=>{const tot=/Caja (inicial|final)/i.test(String(x.concepto));
-      return `<tr style="${tot?'font-weight:700;color:var(--ink);border-top:1px solid var(--line2)':''}">
-        <td>${x.concepto}</td><td class="r mono"${x.valor<0?' style="color:var(--red)"':''}>${MM1(x.valor)}</td>
-        <td style="font-size:11px;color:var(--mute)">${x.comentario||""}</td></tr>`;}).join("")}</tbody></table></div>
-    ${d.puente_chequeo&&d.puente_chequeo.estado?`<div style="font-size:11px;color:var(--green);margin-top:8px">✔ Chequeo: calculada vs reportada cuadra (${d.puente_chequeo.estado}).</div>`:""}`;
-  par.appendChild(cPu);
   const cI=document.createElement("div"); cI.className="chart-card";
   cI.innerHTML=`<h3>Flujo de caja internacional · ${mesCorte} (USD)</h3>
     <div class="tbl-scroll" style="margin-top:10px"><table class="ptable"><thead><tr>
@@ -2262,7 +2158,9 @@ function renderResumen(host){
   const sr=seriesOf("ingresos_totales"); barChart(document.getElementById("ch-rev"),sr.labels,sr.values,{fmt:v=>F.moneda==="USD"?fNum(v/1000):fNum(v/1e6)});
   const se=seriesOf("ebitda"); barChart(document.getElementById("ch-eb"),se.labels,se.values,{fmt:v=>F.moneda==="USD"?fNum(v/1000):fNum(v/1e6)});
   const sm=seriesOf("margen_ebitda"); sparseLineChart(document.getElementById("ch-me"),sm.labels,[{color:"#00CC58",values:sm.values}],{fmt:v=>fPctN(v,0)});
-  host.appendChild(ppuestoCard());
+  /* El presupuesto solo está cargado para Colombia. Mostrarlo bajo otro país o bajo
+     el consolidado presentaba cifras de Colombia con el encabezado en otro alcance. */
+  if(F.pais==="Colombia") host.appendChild(ppuestoCard());
   host.appendChild(trmInsightCard(per));
 }
 
@@ -2541,12 +2439,20 @@ function renderYoYBars(card,body,h,ch){
   const prev=endYear-1; const MES=["01","02","03","04","05","06","07","08","09","10","11","12"];
   const mesLbl=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
   const read=(p)=>FINANCE_VIEW_CODES.has(code)?financeDisplayValue(code,p):(()=>{const v=rawStored(code,{periodo:p});return v==null?null:toDisplay(v,p);})();
-  const vPrev=MES.map(m=>read(prev+"-"+m));
+  /* Con Consolidado elegido, el año anterior no existe en el bloque multipaís (arranca
+     en 2026). En vez de dejar la mitad del gráfico vacía, el año anterior cae a
+     Colombia —que ERA toda la operación— y la leyenda lo declara. */
+  const esConsolYoY=(F.pais==="__ALL__"||F.pais==="Consolidado");
+  let prevSoloColombia=false;
+  const vPrev=MES.map(m=>{ let v=read(prev+"-"+m);
+    if(v==null&&esConsolYoY){ const r=rawStored(code,{periodo:prev+"-"+m,escenario:"Real",pais:"Colombia"});
+      if(r!=null){ v=toDisplay(r,prev+"-"+m); prevSoloColombia=true; } }
+    return v; });
   const vCur =MES.map(m=>read(endYear+"-"+m));
   if(!vPrev.some(v=>v!=null)&&!vCur.some(v=>v!=null)){ noData(body); return; }
   const delta=MES.map((m,i)=>(vPrev[i]&&vCur[i]!=null)?"Δ"+Math.round((vCur[i]/vPrev[i]-1)*100)+"%":"");
   h.textContent=`Facturación ${prev} vs ${endYear}`;
-  card.insertBefore(legendRow([{name:String(prev),color:"#3B82F6"},{name:String(endYear),color:"#00CC58"}]),body);
+  card.insertBefore(legendRow([{name:String(prev)+(prevSoloColombia?" (solo Colombia)":""),color:"#3B82F6"},{name:String(endYear),color:"#00CC58"}]),body);
   const chartHost=document.createElement("div"); body.appendChild(chartHost);
   groupedBarChart(chartHost,mesLbl,[{name:String(prev),color:"#3B82F6",values:vPrev},{name:String(endYear),color:"#00CC58",values:vCur}],{delta});
 }
