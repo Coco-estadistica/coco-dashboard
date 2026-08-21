@@ -1493,9 +1493,11 @@ function bridgeSVG(pais,periodo,escalaMax){
        otra. Rotadas quedan en diagonales paralelas que nunca se tocan (mismo recurso
        que las etiquetas del eje). */
     /* En COP los valores plenos llegan a 13-14 dígitos y son ilegibles: se muestran en
-       millones (COP MM). En USD se mantiene el valor pleno, que sí cabe. */
+       millones (COP MM). En USD se mantiene el valor pleno, que sí cabe. Ojo: las
+       cifras del puente vienen en USD, así que la conversión es usdToDisplay (USD→COP),
+       no toDisplay, que espera pesos. */
     const fmtCasc=v=>{ if(F.moneda!=="COP") return fCon(v,periodo);
-      return "$"+fNum(Math.round(toDisplay(v,periodo)/1e6))+" MM"; };
+      return "$"+fNum(Math.round(usdToDisplay(v,periodo)/1e6))+" MM"; };
     const txt=s.falta?s.marca:(esNeg?"("+fmtCasc(Math.abs(s.val))+")":fmtCasc(s.val));
     const colTxt=s.falta?"rgba(148,163,184,.95)":(esNeg?"#F4685E":"#5FD68A");
     svg+=`<text x="${cx.toFixed(1)}" y="${(yTop-16).toFixed(1)}" text-anchor="middle" font-size="17" font-weight="700"
