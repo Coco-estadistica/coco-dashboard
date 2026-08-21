@@ -444,7 +444,8 @@ const META={
 /* ---------- organización por área (segmentación) ---------- */
 const AREAS=[
   {id:"resumen",  label:"Resumen"},
-  {id:"consolidado", label:"Consolidado", hint:"Vista CEO · multi-país en USD"},
+  {id:"consolidado", label:"Consolidado", hint:"Vista CEO · multi-país en USD",
+     alcanceFijo:"__ALL__"},
   {id:"burn",     label:"Burn & Runway", hint:"Caja, quema y cobertura · del Modelo"},
   {id:"finanzas", label:"Finanzas & P&L", hint:"P&L del periodo",
      codes:["ingresos_totales","margen_bruto_pct","ebitda","margen_ebitda","utilidad_neta","margen_neto","egresos_totales","gastos_totales"],
@@ -1350,7 +1351,10 @@ function renderTabInterno(id){
   if(id==="resumen") return renderResumen(host);
   if(id==="catalogo") return renderCatalogo(host);
   if(id==="burn") return renderBurnRunway(host);
-  if(id==="consolidado"||id==="intl") return renderConsolidado(host);
+  if(id==="consolidado"||id==="intl"){
+    const a=AREAS.find(x=>x.id==="consolidado");
+    return conAlcanceFijo(a,()=>renderConsolidado(host));
+  }
   const area=AREAS.find(a=>a.id===id); if(!area)return;
   /* Pestañas de alcance fijo (Gastos Colombia / Gastos Consolidado). Su alcance es parte
      de su identidad y el selector superior no debe poder sacarlas de él.
@@ -1732,31 +1736,25 @@ function trmInsightCard(refPer){
 }
 
 function renderConsolidado(host){
-  /* Cuando se elige una entidad concreta, esta pestaña debe mostrar ESA entidad y no
-     seguir presentando el total multipaís.
-     Colombia va aparte de ENTIDADES_CONSOL a propósito: esa lista decide qué países se
-     leen SOLO del bloque en dólares, y Colombia además tiene toda su operación cargada
-     en pesos. Meterla en la lista vaciaría el Resumen y convertiría la pestaña de P&G
-     Colombia en el consolidado. Aquí solo se necesita que el filtro la reconozca. */
-  if(F.pais!=="__ALL__"&&F.pais!=="Consolidado"&&(esPaisConsol(F.pais)||F.pais==="Colombia"))
-    return renderPyGConsol(host);
+  /* Esta pestaña es de alcance fijo (__ALL__): su identidad es la comparación de las
+     4 filiales lado a lado, que no existe en ninguna otra parte. El estado de una
+     entidad individual vive en 04 Finanzas (sección EEFF), no aquí — antes esta
+     pestaña se transformaba en eso mismo al elegir país, duplicando la 04. */
   const meses=mesesIntl();
   const head=document.createElement("div"); head.className="eyebrow";
   head.innerHTML=`<h2>Datos Consolidados</h2><span class="hint">Vista CEO · multi-país en USD · consolidado = suma de los 4 países</span>`;
   host.appendChild(head);
   if(!meses.length){ const nd=document.createElement("div"); nd.className="chart-card"; noData(nd,"Sin bloque de consolidación USD en la base. Aparecerá aquí en cuanto se cargue (segmento 'Consolidación USD')."); host.appendChild(nd); return; }
-  /* mes: el global si está disponible, si no el último del bloque */
-  let per=meses.includes(F.periodo)?F.periodo:meses[meses.length-1];
-  if(!window._intlPer||!meses.includes(window._intlPer)) window._intlPer=per; per=window._intlPer;
+  /* Mes: obedece al periodo global (HASTA). Antes había una barra de botones propia
+     (window._intlPer) que competía con el filtro global — dos controles decidiendo
+     "qué mes veo" y podían quedar en meses distintos. Un solo dueño: el filtro. */
+  const per=meses.includes(F.periodo)?F.periodo:meses[meses.length-1];
   const consIng=m=>factVal("pyg_ingresos_operacionales",m,"Consolidado","Consolidación USD");
   const consNeta=m=>factVal("pyg_utilidad_neta",m,"Consolidado","Consolidación USD");
   const consEbitda=m=>factValConsol("_utilidad_operativa",[m],"Consolidado");
 
-  /* selector de mes propio del bloque */
   const bar=document.createElement("div"); bar.style.cssText="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap";
-  bar.innerHTML=`<span style="font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.6px">Mes</span>`;
-  meses.forEach(m=>{ const b=document.createElement("button"); b.className="btn"+(m===per?" primary":""); b.textContent=mesCorto(m);
-    b.onclick=()=>{ window._intlPer=m; renderTab("consolidado"); }; bar.appendChild(b); });
+  bar.innerHTML=`<span style="font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.6px">Mes</span><b style="font-size:12.5px">${mesCorto(per)}</b><span style="font-size:11px;color:var(--mute)">· se cambia con el filtro HASTA</span>`;
   const tp=S.trmPeru[per]||S.trmPeru[per.replace(/\*/,"")];
   if(tp){ const s=document.createElement("span"); s.style.cssText="font-size:11px;color:var(--ink2);margin-left:auto";
     s.innerHTML=`TRM Perú: <b class="mono">S/ ${tp.tc}</b>/US$ ${tp.prov?'<span style="color:var(--amber)">· provisional</span>':''}`; bar.appendChild(s); }
@@ -2675,9 +2673,15 @@ function fillFilters(){
   F.pais="__ALL__"; selPa.value="__ALL__"; selPa.onchange=e=>{F.pais=e.target.value;render();};
   document.querySelectorAll("#f-moneda button").forEach(b=>b.onclick=()=>{ F.moneda=b.dataset.m; document.querySelectorAll("#f-moneda button").forEach(x=>x.classList.toggle("on",x===b)); render(); });
   const trmIn=document.getElementById("f-trm");
-  trmIn.onchange=()=>{ const v=parseFloat(trmIn.value); F.trm=(v>0)?v:null; render(); };
   const trmBaseSel=document.getElementById("f-trmbase");
-  if(trmBaseSel){ trmBaseSel.value=F.trmBase; trmBaseSel.onchange=e=>{ F.trmBase=e.target.value; F.trm=null; trmIn.value=Math.round(trmSheet(F.periodo)); render(); }; }
+  /* Una TRM manual manda sobre la base (Implícita/Mercado). Ese dominio se muestra:
+     el selector de base se apaga mientras haya tasa manual, en vez de quedar ignorado
+     en silencio. Borrar la caja TRM lo reactiva. */
+  const sincronizarBaseTRM=()=>{ if(trmBaseSel){ trmBaseSel.disabled=!!F.trm;
+    trmBaseSel.title=F.trm?"Escribiste una TRM manual: esa tasa manda. Borra la caja TRM para volver a usar la base.":"Tasa COP/USD usada para convertir: implícita (EEFF) o promedio de mercado"; } };
+  trmIn.onchange=()=>{ const v=parseFloat(trmIn.value); F.trm=(v>0)?v:null; sincronizarBaseTRM(); render(); };
+  if(trmBaseSel){ trmBaseSel.value=F.trmBase; trmBaseSel.onchange=e=>{ F.trmBase=e.target.value; F.trm=null; trmIn.value=Math.round(trmSheet(F.periodo)); sincronizarBaseTRM(); render(); }; }
+  sincronizarBaseTRM();
   F.trm=null; applyPreset("def"); trmIn.value=Math.round(trmSheet(F.periodo));
 }
 
@@ -2696,7 +2700,6 @@ function ingestWB(wb){
   S.paises=Array.from(new Set(p.facts.map(f=>f.pais).filter(Boolean))).sort();
   S.companias=Array.from(new Set(p.facts.map(f=>f.compania).filter(Boolean))).sort();
   S.escenarios=Array.from(new Set(p.facts.map(f=>f.escenario).filter(Boolean))).sort();
-  window._intlPer=null;
   fillFilters();
   document.getElementById("drop").classList.add("hidden");
   render();
