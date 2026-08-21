@@ -445,7 +445,6 @@ const META={
 /* ---------- organización por área (segmentación) ---------- */
 const AREAS=[
   {id:"resumen",  label:"Resumen"},
-  {id:"consolidado", label:"PyG en Cascada", hint:"Del ingreso al resultado · responde al selector de país"},
   {id:"burn",     label:"Burn & Runway", hint:"Caja, quema y cobertura · del Modelo"},
   {id:"finanzas", label:"Finanzas & P&L", hint:"P&L del periodo",
      codes:["ingresos_totales","margen_bruto_pct","ebitda","margen_ebitda","utilidad_neta","margen_neto","egresos_totales","gastos_totales"],
@@ -1366,7 +1365,6 @@ function renderTabInterno(id){
   if(id==="resumen") return renderResumen(host);
   if(id==="catalogo") return renderCatalogo(host);
   if(id==="burn") return renderBurnRunway(host);
-  if(id==="consolidado"||id==="intl") return renderConsolidado(host);
   const area=AREAS.find(a=>a.id===id); if(!area)return;
   /* Pestañas de alcance fijo (Gastos Colombia / Gastos Consolidado). Su alcance es parte
      de su identidad y el selector superior no debe poder sacarlas de él.
@@ -1757,23 +1755,6 @@ function trmInsightCard(refPer){
   return card;
 }
 
-function renderConsolidado(host){
-  /* Pestaña "PyG en Cascada": una sola lámina — el puente del ingreso al resultado
-     de la entidad elegida en el selector de país. Antes esta pestaña acumulaba KPIs,
-     tendencias, dos cascadas y varios estados de resultados que replicaban lo que ya
-     vive en Resumen y en Finanzas; quedó solo la lectura visual, que es su identidad. */
-  const ent=(F.pais==="__ALL__"||F.pais==="Todos")?"Consolidado":F.pais;
-  const per=F.periodo;
-  const head=document.createElement("div"); head.className="eyebrow";
-  head.innerHTML=`<h2>PyG en Cascada</h2><span class="hint">Del ingreso al resultado · ${ent==="Consolidado"?"Colombia + EE.UU. + Perú + Costa Rica":ent} · acumulado oficial · USD</span>`;
-  host.appendChild(head);
-  if(officialAccumVal("pyg_ingresos_operacionales",ent,per)==null){
-    const nd=document.createElement("div"); nd.className="chart-card";
-    noData(nd,`Sin acumulado oficial de ${ent} para ${mesLargo(per)}. La cascada usa el P&G oficial (H1 + meses posteriores cargados en el bloque de consolidación).`);
-    host.appendChild(nd); return;
-  }
-  host.appendChild(bridgeCard(ent,per));
-}
 
 /* P&G oficial acumulado: H1 publicado + meses posteriores disponibles. */
 /* soloPaises opcional: ["Colombia"] para la tabla que acompaña al puente de Colombia */
@@ -2158,6 +2139,10 @@ function renderResumen(host){
   const sr=seriesOf("ingresos_totales"); barChart(document.getElementById("ch-rev"),sr.labels,sr.values,{fmt:v=>F.moneda==="USD"?fNum(v/1000):fNum(v/1e6)});
   const se=seriesOf("ebitda"); barChart(document.getElementById("ch-eb"),se.labels,se.values,{fmt:v=>F.moneda==="USD"?fNum(v/1000):fNum(v/1e6)});
   const sm=seriesOf("margen_ebitda"); sparseLineChart(document.getElementById("ch-me"),sm.labels,[{color:"#00CC58",values:sm.values}],{fmt:v=>fPctN(v,0)});
+  /* PyG en cascada: del ingreso al resultado de la entidad elegida (acumulado
+     oficial). Vivía en pestaña propia, pero era su único contenido; aquí cierra la
+     lectura ejecutiva. bridgeCard devuelve vacío si la entidad no tiene acumulado. */
+  host.appendChild(bridgeCard((F.pais==="__ALL__"||F.pais==="Todos")?"Consolidado":F.pais,per));
   /* El presupuesto solo está cargado para Colombia. Mostrarlo bajo otro país o bajo
      el consolidado presentaba cifras de Colombia con el encabezado en otro alcance. */
   if(F.pais==="Colombia") host.appendChild(ppuestoCard());
