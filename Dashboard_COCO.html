@@ -111,7 +111,8 @@ section{margin-top:26px}
 
 .chart-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px 12px}
 .chart-card h3{font-size:13px;font-weight:600}
-select:disabled{opacity:.55;cursor:not-allowed}
+select:disabled,input:disabled{opacity:.55;cursor:not-allowed}
+.toggle button:disabled{opacity:.35;cursor:not-allowed}
 /* franja que declara el alcance fijo de una pestaña */
 .alcance-fijo{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--ink2);
   background:rgba(0,204,88,.07);border:1px solid rgba(0,204,88,.28);border-radius:8px;
@@ -233,7 +234,7 @@ footer b{color:var(--ink2)}
       <div><h1>COCO <span style="color:var(--green)">Tecnologías</span></h1><div class="sub">AI &amp; E-Health · Cockpit Financiero</div></div>
     </div>
     <div class="spacer"></div>
-    <div class="ctrl"><label>Rango</label><div class="toggle" id="f-presets"><button data-p="def">Default</button><button data-p="1">Últ. mes</button><button data-p="6">6m</button><button data-p="12">12m</button><button data-p="all">Total</button></div></div>
+    <div class="ctrl"><label>Rango</label><div class="toggle" id="f-presets"><button data-p="def" title="Últimos 12 meses (rango por defecto)">12m</button><button data-p="1">Últ. mes</button><button data-p="6">6m</button><button data-p="all">Total</button></div></div>
     <div class="ctrl"><label>Desde</label><select id="f-start"></select></div>
     <div class="ctrl"><label>Hasta</label><select id="f-end"></select></div>
     <div class="ctrl"><label>Escenario</label><select id="f-escenario"></select></div>
@@ -1309,6 +1310,16 @@ function render(){
       ?("Esta pestaña siempre muestra "+(fija.alcanceFijo==="__ALL__"?"el consolidado":fija.alcanceFijo)+". Tu selección vuelve al cambiar de pestaña.")
       :"";
   }
+  /* Burn & Runway viene del Modelo con su propia tasa: la moneda y la TRM del tablero
+     no le aplican. Los controles se apagan a la vista en esa pestaña (mismo criterio
+     que el selector de país en las de alcance fijo) y vuelven al salir. */
+  const esBurn=tabId==="burn";
+  document.querySelectorAll("#f-moneda button").forEach(b=>{ b.disabled=esBurn;
+    b.title=esBurn?"Burn & Runway usa la tasa de su propio informe: la moneda del tablero no aplica aquí.":""; });
+  const tIn=document.getElementById("f-trm"), tBase=document.getElementById("f-trmbase");
+  if(tIn){ tIn.disabled=esBurn;
+    tIn.title=esBurn?"No aplica en Burn & Runway (fuente externa con tasa propia).":"TRM COP/USD (editable). Default = base elegida para el periodo."; }
+  if(tBase){ tBase.disabled=esBurn||!!F.trm; }
   renderTab(tabId);
   document.getElementById("ts").textContent=S.fileName+" · "+S.periodos.length+" periodos";
 }
@@ -1348,6 +1359,13 @@ function areaFijaActiva(){
 }
 function renderTabInterno(id){
   const host=document.getElementById("app"); host.innerHTML="";
+  /* Con escenario ≠ Real, las líneas contables oficiales (EEFF) no existen y varias
+     tarjetas quedan en "Por medir". Sin este aviso, el tablero parece dañado. */
+  if(F.escenario!=="Real"&&F.escenario!=="__ALL__"){
+    const av=document.createElement("div"); av.className="alcance-fijo";
+    av.innerHTML=`<span>ℹ️</span><span>Escenario <b>${F.escenario}</b>: solo se muestran los indicadores cargados con ese escenario. Las líneas contables oficiales (EEFF) existen únicamente en escenario <b>Real</b> — por eso varias tarjetas aparecen como "Por medir".</span>`;
+    host.appendChild(av);
+  }
   if(id==="resumen") return renderResumen(host);
   if(id==="catalogo") return renderCatalogo(host);
   if(id==="burn") return renderBurnRunway(host);
@@ -1511,36 +1529,42 @@ function pygLabel(code){ const n=(S.catalog[code]&&S.catalog[code].nombre)||code
 /* último periodo con datos pyg de Colombia */
 function lastPygPeriodo(){ for(let i=S.periodos.length-1;i>=0;i--){ if(pygVal("pyg_utilidad_neta",S.periodos[i])!=null) return S.periodos[i]; } return null; }
 
-function renderPyG(host){
-  if(esPaisConsol(F.pais)) return renderPyGConsol(host);
+function renderPyG(host,embedH){
+  /* __ALL__ (Consolidado del selector) también va al estado consolidado: sin este
+     mapeo, la sección EEFF de Finanzas mostraba el P&G de COLOMBIA con el encabezado
+     diciendo Consolidado — una cifra que no corresponde a lo seleccionado. */
+  if(esPaisConsol(F.pais)||F.pais==="__ALL__") return renderPyGConsol(host,embedH);
   let per=F.periodo;
   if(pygVal("pyg_utilidad_neta",per)==null){ const lp=lastPygPeriodo(); if(lp)per=lp; }
   const disp=v=>v==null?null:toDisplay(v,per);
   const mny=v=>v==null?"—":fMoney(disp(v));
-  const head=document.createElement("div"); head.className="eyebrow";
-  head.innerHTML=`<h2>P&G Colombia · ${mesLargo(per)}</h2><span class="hint">${F.moneda} · líneas contables oficiales (EEFF)</span>`;
-  host.appendChild(head);
-  if(pygVal("pyg_utilidad_neta",per)==null){ const nd=document.createElement("div"); nd.className="chart-card"; noData(nd,"Sin datos de P&G para este periodo. Disponible ene–jun 2026."); host.appendChild(nd); return; }
+  /* Embebido en una tarjeta de Finanzas: el título de la tarjeta lleva país y mes, y
+     los KPIs se omiten (ya están arriba en la misma pestaña — no se replican). */
+  if(embedH){ embedH.textContent=`Estado de resultados · Colombia · ${mesLargo(per)} (${F.moneda}, EEFF oficial)`; }
+  else{
+    const head=document.createElement("div"); head.className="eyebrow";
+    head.innerHTML=`<h2>P&G Colombia · ${mesLargo(per)}</h2><span class="hint">${F.moneda} · líneas contables oficiales (EEFF)</span>`;
+    host.appendChild(head);
+  }
+  if(pygVal("pyg_utilidad_neta",per)==null){ const nd=document.createElement("div"); nd.className=embedH?"":"chart-card"; noData(nd,"Sin datos de P&G para este periodo. Disponible ene–jun 2026."); host.appendChild(nd); return; }
 
-  /* KPIs resumen */
-  const grid=document.createElement("div"); grid.className="grid g4"; host.appendChild(grid);
-  const ing=pygVal("pyg_ingresos_operacionales",per), bruta=pygVal("pyg_utilidad_bruta",per),
-        oper=pygVal("pyg_utilidad_operativa",per), neta=pygVal("pyg_utilidad_neta",per);
-  const kpis=[
-    {k:"Ingresos operacionales",v:conMon(mny(ing)),s:null,real:true},
-    {k:"Utilidad bruta",v:conMon(mny(bruta)),meta:ing?fPctN(bruta/ing*100,1)+" margen":"",s:bruta>=0?"green":"red",real:true},
-    {k:"Utilidad operativa (EBITDA)",v:conMon(mny(oper)),meta:ing?fPctN(oper/ing*100,1)+" margen":"",s:oper>=0?"green":"red",real:true},
-    {k:"Utilidad neta",v:conMon(mny(neta)),meta:ing?fPctN(neta/ing*100,1)+" margen":"",s:neta>=0?"green":"red",real:true}
-  ];
-  mkCards(grid,kpis);
-
-  /* (el waterfall horizontal se retiró: lo reemplazan las láminas del puente H1
-     en la pestaña Consolidado, que muestran lo mismo con mejor lectura) */
+  if(!embedH){
+    const grid=document.createElement("div"); grid.className="grid g4"; host.appendChild(grid);
+    const ing0=pygVal("pyg_ingresos_operacionales",per), bruta=pygVal("pyg_utilidad_bruta",per),
+          oper=pygVal("pyg_utilidad_operativa",per), neta0=pygVal("pyg_utilidad_neta",per);
+    mkCards(grid,[
+      {k:"Ingresos operacionales",v:conMon(mny(ing0)),s:null,real:true},
+      {k:"Utilidad bruta",v:conMon(mny(bruta)),meta:ing0?fPctN(bruta/ing0*100,1)+" margen":"",s:bruta>=0?"green":"red",real:true},
+      {k:"Utilidad operativa (EBITDA)",v:conMon(mny(oper)),meta:ing0?fPctN(oper/ing0*100,1)+" margen":"",s:oper>=0?"green":"red",real:true},
+      {k:"Utilidad neta",v:conMon(mny(neta0)),meta:ing0?fPctN(neta0/ing0*100,1)+" margen":"",s:neta0>=0?"green":"red",real:true}
+    ]);
+  }
+  const ing=pygVal("pyg_ingresos_operacionales",per);
 
   /* Detalle de ingresos + tabla completa */
   const soft=pygVal("pyg_servicio_software",per), dev=pygVal("pyg_devoluciones",per);
-  const card2=document.createElement("div"); card2.className="chart-card"; card2.style.marginTop="14px";
-  card2.innerHTML=`<h3>Detalle del P&G · ${mesLargo(per)}</h3>
+  const card2=document.createElement("div"); if(!embedH){ card2.className="chart-card"; card2.style.marginTop="14px"; }
+  card2.innerHTML=`${embedH?"":`<h3>Detalle del P&G · ${mesLargo(per)}</h3>`}
     <div style="font-size:11px;color:var(--mute);margin:6px 0 10px">Ingresos operacionales netos = servicio de software ${mny(soft)} − devoluciones ${mny(Math.abs(dev||0))}</div>
     <div class="tbl-scroll"><table class="ptable"><thead><tr><th>Concepto</th><th class="r">Valor (${F.moneda})</th><th class="r">% ingresos</th></tr></thead>
     <tbody>${PYG_STEPS.map(s=>{ const v=pygVal(s.code,per); const pct=(ing&&v!=null)?fPctN(v/ing*100,1):"—";
@@ -1552,15 +1576,23 @@ function renderPyG(host){
 
 /* P&G cuando el filtro País = Consolidado / EE.UU. / Perú / Costa Rica → estado de resultados
    del bloque consolidado en USD (la utilidad de cada país es su cifra oficial; no se recalcula). */
-function renderPyGConsol(host){
-  const meses=mesesIntl(); const ent=F.pais;
-  const head=document.createElement("div"); head.className="eyebrow";
+function renderPyGConsol(host,embedH){
+  /* El selector guarda __ALL__ para "Consolidado": aquí se normaliza a la entidad
+     contable, que es como está cargada en el bloque 'Consolidación USD'. */
+  const meses=mesesIntl(); const ent=(F.pais==="__ALL__"||F.pais==="Todos")?"Consolidado":F.pais;
   const titulo=ent==="Consolidado"?"P&G Consolidado (multipaís)":"P&G — "+ent;
-  if(!meses.length){ head.innerHTML=`<h2>${titulo}</h2>`; host.appendChild(head);
-    const nd=document.createElement("div"); nd.className="chart-card"; noData(nd,"Aún no hay bloque consolidado (segmento 'Consolidación USD') en la base."); host.appendChild(nd); return; }
+  if(!meses.length){
+    if(embedH){ embedH.textContent=titulo; } else { const head0=document.createElement("div"); head0.className="eyebrow"; head0.innerHTML=`<h2>${titulo}</h2>`; host.appendChild(head0); }
+    const nd=document.createElement("div"); nd.className=embedH?"":"chart-card"; noData(nd,"Aún no hay bloque consolidado (segmento 'Consolidación USD') en la base."); host.appendChild(nd); return; }
   let per=meses.includes(F.periodo)?F.periodo:meses[meses.length-1];
-  head.innerHTML=`<h2>${titulo}</h2><span class="hint">${mesLargo(per)} · USD · bloque consolidado${meses.includes(F.periodo)?"":" (último mes disponible)"}</span>`;
-  host.appendChild(head);
+  /* Embebido en Finanzas: el título de la tarjeta identifica entidad y mes; los KPIs
+     de mes/acumulado se omiten porque replican las tarjetas superiores de la pestaña. */
+  if(embedH){ embedH.textContent=`Estado de resultados · ${ent} · ${mesLargo(per)} (USD, bloque consolidado)`; }
+  else{
+    const head=document.createElement("div"); head.className="eyebrow";
+    head.innerHTML=`<h2>${titulo}</h2><span class="hint">${mesLargo(per)} · USD · bloque consolidado${meses.includes(F.periodo)?"":" (último mes disponible)"}</span>`;
+    host.appendChild(head);
+  }
 
   /* selector de mes del bloque */
   const bar=document.createElement("div"); bar.style.cssText="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap";
@@ -1591,19 +1623,21 @@ function renderPyGConsol(host){
   const ebitYTDd = usaAcumOficial?usdEn(ebitdaYTD,periodoAcum):acumEnMoneda(m=>factValConsol("_utilidad_operativa",m,ent),mesesAcum);
   const netaYTDd = usaAcumOficial?usdEn(netaYTD,periodoAcum)  :acumEnMoneda(m=>factValSum("pyg_utilidad_neta",[m],ent,"Consolidación USD"),mesesAcum);
   const notaAc   = usaAcumOficial?notaTasaAcum(periodoAcum):"";
-  const grid=document.createElement("div"); grid.className="grid g4"; host.appendChild(grid);
-  mkCards(grid,[
-    {k:"Ingresos ("+ent+") · mes",v:periodoPendiente?"Dato no recibido":(ing==null?"—":fConU(ing,per)),meta:mesCorto(per),real:true},
-    {k:"EBITDA · mes",v:periodoPendiente?"Dato no recibido":(ebitda==null?"—":conMon(ebitda<0?"("+fCon(-ebitda,per)+")":fCon(ebitda,per),F.moneda)),meta:(ebitda!=null&&ing)?fPctN(ebitda/ing*100,1)+" margen":"",s:ebitda>=0?"green":"red",real:true},
-    {k:"Utilidad neta · mes",v:periodoPendiente?"Dato no recibido":(neta==null?"—":conMon(neta<0?"("+fCon(-neta,per)+")":fCon(neta,per),F.moneda)),meta:(neta!=null&&ing)?fPctN(neta/ing*100,1)+" margen":"",s:neta>=0?"green":"red",real:true},
-    {k:"Ingresos acumulados",v:fDispU(ingYTDd),meta:rango+notaAc,real:true}
-  ]);
-  const grid2=document.createElement("div"); grid2.className="grid g3"; grid2.style.marginTop="13px"; host.appendChild(grid2);
-  mkCards(grid2,[
-    {k:"EBITDA acumulado",v:fDispU(ebitYTDd),meta:rango+notaAc+(ingYTD?" · margen "+fPctN(ebitdaYTD/ingYTD*100,1):""),s:ebitdaYTD>=0?"green":"red",real:true},
-    {k:"Utilidad neta acumulada",v:fDispU(netaYTDd),meta:rango+notaAc,s:netaYTD>=0?"green":"red",real:true},
-    {k:"Margen neto acumulado",v:ingYTD?fPctN(netaYTD/ingYTD*100,1):"—",s:netaYTD>=0?"green":"red",real:true}
-  ]);
+  if(!embedH){
+    const grid=document.createElement("div"); grid.className="grid g4"; host.appendChild(grid);
+    mkCards(grid,[
+      {k:"Ingresos ("+ent+") · mes",v:periodoPendiente?"Dato no recibido":(ing==null?"—":fConU(ing,per)),meta:mesCorto(per),real:true},
+      {k:"EBITDA · mes",v:periodoPendiente?"Dato no recibido":(ebitda==null?"—":conMon(ebitda<0?"("+fCon(-ebitda,per)+")":fCon(ebitda,per),F.moneda)),meta:(ebitda!=null&&ing)?fPctN(ebitda/ing*100,1)+" margen":"",s:ebitda>=0?"green":"red",real:true},
+      {k:"Utilidad neta · mes",v:periodoPendiente?"Dato no recibido":(neta==null?"—":conMon(neta<0?"("+fCon(-neta,per)+")":fCon(neta,per),F.moneda)),meta:(neta!=null&&ing)?fPctN(neta/ing*100,1)+" margen":"",s:neta>=0?"green":"red",real:true},
+      {k:"Ingresos acumulados",v:fDispU(ingYTDd),meta:rango+notaAc,real:true}
+    ]);
+    const grid2=document.createElement("div"); grid2.className="grid g3"; grid2.style.marginTop="13px"; host.appendChild(grid2);
+    mkCards(grid2,[
+      {k:"EBITDA acumulado",v:fDispU(ebitYTDd),meta:rango+notaAc+(ingYTD?" · margen "+fPctN(ebitdaYTD/ingYTD*100,1):""),s:ebitdaYTD>=0?"green":"red",real:true},
+      {k:"Utilidad neta acumulada",v:fDispU(netaYTDd),meta:rango+notaAc,s:netaYTD>=0?"green":"red",real:true},
+      {k:"Margen neto acumulado",v:ingYTD?fPctN(netaYTD/ingYTD*100,1):"—",s:netaYTD>=0?"green":"red",real:true}
+    ]);
+  }
 
   /* estado de resultados por país: mes seleccionado y ACUMULADO */
   host.appendChild(consolStatementCard(per, ent==="Consolidado"?null:ent, null, "Estado de Resultados · mes",undefined,undefined,ent==="Consolidado"?null:[ent]));
@@ -1744,6 +1778,12 @@ function renderConsolidado(host){
   const head=document.createElement("div"); head.className="eyebrow";
   head.innerHTML=`<h2>Datos Consolidados</h2><span class="hint">Vista CEO · multi-país en USD · consolidado = suma de los 4 países</span>`;
   host.appendChild(head);
+  /* Misma franja 🔒 que las demás pestañas de alcance fijo. Este tab tiene render
+     propio (no pasa por renderArea, donde la franja se pinta), así que se pinta aquí:
+     un selector apagado sin explicación visible parece un control dañado. */
+  const frFijo=document.createElement("div"); frFijo.className="alcance-fijo";
+  frFijo.innerHTML=`<span>🔒</span><span>Esta pestaña muestra siempre <b>el consolidado de los cuatro países</b>. El selector de país no aplica aquí y vuelve a tu elección al cambiar de pestaña.</span>`;
+  host.appendChild(frFijo);
   if(!meses.length){ const nd=document.createElement("div"); nd.className="chart-card"; noData(nd,"Sin bloque de consolidación USD en la base. Aparecerá aquí en cuanto se cargue (segmento 'Consolidación USD')."); host.appendChild(nd); return; }
   /* Mes: obedece al periodo global (HASTA). Antes había una barra de botones propia
      (window._intlPer) que competía con el filtro global — dos controles decidiendo
@@ -2405,7 +2445,7 @@ function renderChartCard(ch){
   else if(ch.type==="colavg"){ renderColAvg(card,body,h,ch); }
   else if(ch.type==="churnpanel"){ renderChurnPanel(card,body,h); }
   else if(ch.type==="churn"){ renderChurn(card,body,h); }
-  else if(ch.type==="pyg"){ renderPyG(body); }
+  else if(ch.type==="pyg"){ renderPyG(body,h); }
   if(body.dataset.empty==="1")return null;
   return card;
 }
