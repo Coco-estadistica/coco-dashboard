@@ -90,6 +90,8 @@ section{margin-top:26px}
 .grid{display:grid;gap:13px}
 .g4{grid-template-columns:repeat(4,1fr)} .g3{grid-template-columns:repeat(3,1fr)} .g2{grid-template-columns:repeat(2,1fr)}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:15px 16px 14px}
+/* La tarjeta-total es la suma de las demás del bloque: borde verde para que no se lea como un componente más */
+.card-total{border-color:var(--green);border-width:1.5px}
 .card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .card .k{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink2);font-weight:600;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .card .v{font-size:20px;font-weight:700;margin-top:8px;letter-spacing:-.4px}
@@ -1073,13 +1075,15 @@ function benchBarNative(v,meta){
 /* detecta una cifra negativa en el texto ya formateado: "- $123", "($123)" o "-12,3%" */
 function esNegativo(txt){ return /^\s*[-−(]/.test(String(txt==null?"":txt).replace(/<[^>]*>/g,"").trim()); }
 function card(el,o){
-  const tag=o.s?`<span class="tag ${o.s}">${TAGTXT[o.s]}</span>`:"";
+  /* o.total: la tarjeta es la SUMA de las demás del grid; se marca para que el
+     lector no la lea como un componente más. */
+  const tag=(o.total?`<span class="tag green">TOTAL</span>`:"")+(o.s?`<span class="tag ${o.s}">${TAGTXT[o.s]}</span>`:"");
   const flag=o.dummy?`<span class="dummy">Por medir</span>`:(o.real?`<span class="realtag">Real</span>`:"");
   const src=o.src?`<div class="src">📍 ${o.src}</div>`:"";
   const colNeg=esNegativo(o.v)?' style="color:var(--red)"':"";   /* pérdidas siempre en rojo */
   el.innerHTML=`<div class="top"><span class="k">${o.k} ${flag}</span>${tag}</div><div class="v mono"${colNeg}>${o.v}</div>${o.sub?`<div class="sub">${o.sub}</div>`:""}${o.bench||""}${src}`;
 }
-function mkCards(host,defs){ host.innerHTML=""; defs.forEach(p=>{ const e=document.createElement("div"); e.className="card"; host.appendChild(e); card(e,p); }); }
+function mkCards(host,defs){ host.innerHTML=""; defs.forEach(p=>{ const e=document.createElement("div"); e.className="card"+(p.total?" card-total":""); host.appendChild(e); card(e,p); }); }
 
 /* ---------- "dato no recibido" no es "cero" ----------
    Regla 1 del proyecto. Un cero reportado se dibuja como cero (barra sobre la línea
@@ -2203,11 +2207,11 @@ function renderArea(host,area){
   /* tarjetas KPI data-driven */
   const grid=document.createElement("div"); grid.className="grid g4"; host.appendChild(grid);
   const defs=(area.id==="gastos")?[
-    {code:null,label:"Costos y gastos oficiales",value:officialExpenseDisplay(per)},
+    {code:null,label:"Costos y gastos oficiales",value:officialExpenseDisplay(per),total:true},
     ...PYG_COST_STACK.map(item=>({code:item.code,label:item.label,value:officialPygDisplay(item.code,per)}))
   ].map(item=>({
-    k:item.label,v:item.value==null?"Por medir":fMoneyU(Math.abs(item.value)),dummy:item.value==null,real:item.value!=null,
-    sub:item.value==null?"sin P&G oficial para el periodo":("P&G oficial · "+mesCorto(per)),src:"BD_PYG_OFICIAL"
+    k:item.label,v:item.value==null?"Por medir":fMoneyU(Math.abs(item.value)),dummy:item.value==null,real:item.value!=null,total:item.total,
+    sub:item.value==null?"sin P&G oficial para el periodo":(item.total?"suma de las tarjetas de este bloque · "+mesCorto(per):"P&G oficial · "+mesCorto(per)),src:"BD_PYG_OFICIAL"
   })):area.id==="finanzas"?(area.codes||[]).map(code=>{ const c=S.catalog[code]||{};
     let perShown=per, shown=financeDisplayValue(code,perShown);
     if(shown==null){ const lp=lastFinancePeriodo(code); if(lp){perShown=lp;shown=financeDisplayValue(code,lp);} }
