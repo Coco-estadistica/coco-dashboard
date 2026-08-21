@@ -1492,7 +1492,11 @@ function bridgeSVG(pais,periodo,escalaMax){
        13-14 caracteres y en horizontal las de barras vecinas se montaban una sobre
        otra. Rotadas quedan en diagonales paralelas que nunca se tocan (mismo recurso
        que las etiquetas del eje). */
-    const txt=s.falta?s.marca:(esNeg?"("+fCon(Math.abs(s.val),periodo)+")":fCon(s.val,periodo));
+    /* En COP los valores plenos llegan a 13-14 dígitos y son ilegibles: se muestran en
+       millones (COP MM). En USD se mantiene el valor pleno, que sí cabe. */
+    const fmtCasc=v=>{ if(F.moneda!=="COP") return fCon(v,periodo);
+      return "$"+fNum(Math.round(toDisplay(v,periodo)/1e6))+" MM"; };
+    const txt=s.falta?s.marca:(esNeg?"("+fmtCasc(Math.abs(s.val))+")":fmtCasc(s.val));
     const colTxt=s.falta?"rgba(148,163,184,.95)":(esNeg?"#F4685E":"#5FD68A");
     svg+=`<text x="${cx.toFixed(1)}" y="${(yTop-16).toFixed(1)}" text-anchor="middle" font-size="17" font-weight="700"
       font-family="Inter,sans-serif" fill="${colTxt}" transform="rotate(-24 ${cx.toFixed(1)} ${(yTop-16).toFixed(1)})">${txt}</text>`;
@@ -1524,7 +1528,7 @@ function bridgeCard(pais,periodo){
   const card=document.createElement("div"); card.className="chart-card"; card.style.marginTop="14px";
   card.style.padding="26px 28px 22px";
   card.innerHTML=`<h3 style="color:#5FD68A;font-size:27px;font-weight:800;letter-spacing:-.3px;line-height:1.15">${titulo}</h3>
-    <div style="font-size:14px;color:#AEC0CE;font-style:italic;margin:8px 0 4px">${accumLabel(periodo)} · cifras en dólares${pais!=="Consolidado"?" · solo "+pais:""}</div>
+    <div style="font-size:14px;color:#AEC0CE;font-style:italic;margin:8px 0 4px">${accumLabel(periodo)} · cifras en ${F.moneda==="COP"?"COP millones (COP MM)":"dólares (USD)"}${pais!=="Consolidado"?" · solo "+pais:""}</div>
     <div style="margin-top:6px">${d.svg}</div>`;
   wrap.appendChild(card);
   return wrap;
