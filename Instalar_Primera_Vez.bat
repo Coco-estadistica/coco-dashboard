@@ -66,7 +66,7 @@ if /i not "%OK%"=="S" (
 echo.
 echo   Descargando el proyecto desde GitHub. Puede tardar un minuto...
 echo.
-git clone --branch claude/coco-dashboard-cloud-setup-sbqa86 https://github.com/Moscorrofio/coco-dashboard.git coco-dashboard
+git clone https://github.com/Moscorrofio/coco-dashboard.git coco-dashboard
 if errorlevel 1 (
   echo.
   echo   NO SE PUDO DESCARGAR.
