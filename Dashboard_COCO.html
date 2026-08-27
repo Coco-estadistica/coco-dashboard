@@ -2123,14 +2123,24 @@ function renderBurnRunway(host){
     {k:"Runway al burn de "+mesCorte,
       v:rwSinQuema?"—":MM1(rwVal)+'<span class="cur">meses</span>',
       meta:rwSinQuema?"el mes no tuvo quema relevante":"cobertura al ritmo del mes",
-      s:rwSinQuema?"green":(rwVal>=6?"green":(rwVal>=3?"amber":"red")),real:true}
+      /* I-14: sin quema relevante la tarjeta muestra "—", pero lucia el badge SANO.
+         Un guion no es un buen resultado: es ausencia de dato, y ausencia de dato no
+         da veredicto. s=null deja la tarjeta sin badge. */
+      s:rwSinQuema?null:statusFor("runway_meses",rwVal),real:true}
   ]);
   const g2=document.createElement("div"); g2.className="grid g3"; g2.style.marginTop="13px"; host.appendChild(g2);
   mkCards(g2,[
-    {k:"Runway promedio "+(rango(rw3)||"3 meses"),v:MM1(rw3&&rw3.valor)+'<span class="cur">meses</span>',meta:"escenario reciente",s:"green",real:true},
-    {k:"Runway promedio "+(rango(rw6)||"del año"),v:MM1(rw6&&rw6.valor)+'<span class="cur">meses</span>',meta:"escenario conservador",s:"amber",real:true},
+    /* I-13: estos tres badges estaban escritos a mano -- verde, ambar y rojo fijos --
+       sin mirar el valor. Por eso 8,8 meses salia SANO y 10,3 salia VIGILAR: no era
+       un umbral invertido, es que no habia umbral. Ahora los tres usan el mismo de
+       META.runway_meses (sano >= 12, vigilar >= 6) que ya usa el resto del tablero.
+       Las cifras no se tocan: siguen saliendo del modelo. */
+    {k:"Runway promedio "+(rango(rw3)||"3 meses"),v:MM1(rw3&&rw3.valor)+'<span class="cur">meses</span>',meta:"escenario reciente",s:statusFor("runway_meses",rw3&&rw3.valor),real:true},
+    {k:"Runway promedio "+(rango(rw6)||"del año"),v:MM1(rw6&&rw6.valor)+'<span class="cur">meses</span>',meta:"escenario conservador",s:statusFor("runway_meses",rw6&&rw6.valor),real:true},
     {k:"Runway hasta primer déficit",v:(function(){const k=busca(d.proyeccion_kpis,"primer déficit");return k?MM1(k.valor)+'<span class="cur">meses</span>':"—";})(),
-      meta:"con el presupuesto "+(rangoProy||"proyectado"),s:"red",real:true}
+      meta:"con el presupuesto "+(rangoProy||"proyectado"),
+      s:(function(){const k=busca(d.proyeccion_kpis,"primer déficit");
+         return k&&esNum(k.valor)?statusFor("runway_meses",k.valor):null;})(),real:true}
   ]);
 
   /* ---- Mensaje clave ---- */
