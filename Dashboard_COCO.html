@@ -67,9 +67,12 @@ select:focus-visible{box-shadow:0 0 0 2px var(--green)}
 .mtz th{font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--mute);font-weight:700;
   padding:0 8px 9px;text-align:center;white-space:nowrap}
 .mtz th.l,.mtz td.l{text-align:left;padding-left:0}
-.mtz td{padding:13px 10px;text-align:center;border-top:1px solid var(--line);vertical-align:middle}
-.mtz td.l{color:var(--ink);font-weight:600}
-.mtz .cel{display:inline-flex;flex-direction:column;align-items:center;gap:3px;line-height:1.25}
+/* arriba, no al medio: con vertical-align:middle una casilla de 1 concepto quedaba
+   centrada frente a una de 7 y los punticos salian a alturas distintas. Alineados
+   arriba, los cuatro paises de una fila arrancan en la misma linea. */
+.mtz td{padding:13px 10px;text-align:center;border-top:1px solid var(--line);vertical-align:top}
+.mtz td.l{color:var(--ink);font-weight:600;padding-top:11px}
+.mtz .cel{display:inline-flex;flex-direction:column;align-items:center;gap:4px;line-height:1.25;width:100%}
 .mtz .pt{width:11px;height:11px;border-radius:50%;display:block}
 .mtz .cn{font-size:12.5px;color:var(--ink2)}
 .mtz .cn.off{color:var(--mute)}
