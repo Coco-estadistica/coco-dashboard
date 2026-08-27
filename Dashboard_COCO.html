@@ -51,7 +51,7 @@ select:focus-visible{box-shadow:0 0 0 2px var(--green)}
 .trm-in{font-family:'IBM Plex Mono',monospace;font-size:12.5px;width:74px;background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:9px;padding:6px 8px;outline:none}
 .trm-in:focus-visible{box-shadow:0 0 0 2px var(--green)}
 .alc-chip{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:3px 8px;border-radius:999px;margin-left:9px;vertical-align:middle;white-space:nowrap}
-.alc-nota{font-size:11.5px;line-height:1.65;color:var(--ink2);background:var(--panel2);border-left:3px solid var(--line2);border-radius:8px;padding:9px 12px;margin:8px 0 2px}
+.alc-nota{font-size:13px;line-height:1.7;color:var(--ink2);background:rgba(255,255,255,.035);border-left:3px solid var(--line2);border-radius:0 8px 8px 0;padding:11px 15px;margin:10px 0 0}
 .live{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink2)}
 .version-tag{color:var(--green);font-weight:800;white-space:nowrap}
 .pulse{width:8px;height:8px;border-radius:50%;background:var(--green);position:relative}
@@ -2569,8 +2569,6 @@ function renderChartCard(ch){
   if(alc){
     const col={verde:["var(--green)","var(--green-b)"],ambar:["var(--amber)","var(--amber-b)"],
                gris:["var(--mute)","rgba(255,255,255,.06)"]}[alc.clase];
-    if(alc.nota){ const n=document.createElement("div"); n.className="alc-nota";
-      n.style.borderLeftColor=col[0]; n.textContent=alc.nota; card.appendChild(n); }
   }
   const body=document.createElement("div"); body.style.marginTop="8px"; card.appendChild(body);
   const M=F.moneda;
@@ -2608,6 +2606,11 @@ function renderChartCard(ch){
     const chip=document.createElement("span"); chip.className="alc-chip";
     chip.style.color=col[0]; chip.style.background=col[1];
     chip.textContent=alc.chip; h.appendChild(chip);
+    /* la nota va al pie del grafico, dentro de la misma tarjeta: quien acaba de leer
+       las barras tiene la aclaracion ahi mismo, sin una banda que separe el titulo
+       del dibujo */
+    if(alc.nota){ const n=document.createElement("div"); n.className="alc-nota";
+      n.style.borderLeftColor=col[0]; n.textContent=alc.nota; card.appendChild(n); }
   }
   return card;
 }
