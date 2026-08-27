@@ -15,6 +15,18 @@ Recorre Subsidiarias_PyG y, para cada fila, toma el valor vigente de BD_Indicado
 (bloque 'Consolidación USD', misma moneda). Solo escribe donde hay diferencia.
 No inventa datos: si BD_Indicadores no tiene la cifra, deja la fila intacta y la reporta.
 
+ANTES DE USARLO, LEER ESTO
+--------------------------
+El encabezado de conciliar_capas.py dice que Subsidiarias_PyG y BD_PYG_OFICIAL son
+archivo historico y quedaron desalineadas A PROPOSITO el 13-ago-2026, cuando se
+reemplazo el P&G de EE.UU./Costa Rica/Consolidado por cifras homologadas desde los
+auxiliares contables. Las decenas de diferencias de los checks B y C son esperadas.
+El check que importa es el A (Paises vs Consolidado) y debe seguir en OK.
+
+Es decir: correr esto BORRA el antes de esa homologacion. Se ejecuto por error el
+27-ago-2026 y se revirtio desde el respaldo. Usarlo solo si alguien decide, a
+sabiendas, que esa capa debe reflejar las cifras vigentes.
+
 Uso:  python sincronizar_subsidiarias.py            -> vista previa
       python sincronizar_subsidiarias.py --escribir -> aplica (con respaldo)
 """
