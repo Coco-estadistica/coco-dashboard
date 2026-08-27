@@ -1670,7 +1670,12 @@ function renderPyGConsol(host,embedH){
 
   /* estado de resultados por país: mes seleccionado y ACUMULADO */
   host.appendChild(consolStatementCard(per, ent==="Consolidado"?null:ent, null, "Estado de Resultados · mes",undefined,undefined,ent==="Consolidado"?null:[ent]));
-  host.appendChild(usaAcumOficial?consolStatementCardAcumulado(per,[ent]):consolStatementCard(mesesHasta,ent,null,"Estado de Resultados · acumulado",undefined,undefined,[ent]));
+  /* N-12: en Consolidado, la tabla acumulada abre una columna por pais (soloPaises=null),
+     igual que la tarjeta mensual de la linea anterior. Antes pasaba [ent], y con ent="Consolidado"
+     eso colapsaba la tabla a una sola columna de totales: la lectura del grupo es comparar
+     EE.UU., Peru, Costa Rica y Colombia entre si, no ver el total que ya esta en los KPIs. */
+  const soloEnt=ent==="Consolidado"?null:[ent];
+  host.appendChild(usaAcumOficial?consolStatementCardAcumulado(per,soloEnt):consolStatementCard(mesesHasta,ent==="Consolidado"?null:ent,null,"Estado de Resultados · acumulado",undefined,undefined,soloEnt));
   if(ent==="Perú")host.appendChild(peruSpecialProjectCard(per));
 }
 
