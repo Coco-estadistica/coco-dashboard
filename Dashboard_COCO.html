@@ -50,6 +50,8 @@ select:focus-visible{box-shadow:0 0 0 2px var(--green)}
 #f-presets button{padding:6px 9px;font-size:11px}
 .trm-in{font-family:'IBM Plex Mono',monospace;font-size:12.5px;width:74px;background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:9px;padding:6px 8px;outline:none}
 .trm-in:focus-visible{box-shadow:0 0 0 2px var(--green)}
+.alc-chip{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:3px 8px;border-radius:999px;margin-left:9px;vertical-align:middle;white-space:nowrap}
+.alc-nota{font-size:11.5px;line-height:1.65;color:var(--ink2);background:var(--panel2);border-left:3px solid var(--line2);border-radius:8px;padding:9px 12px;margin:8px 0 2px}
 .live{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink2)}
 .version-tag{color:var(--green);font-weight:800;white-space:nowrap}
 .pulse{width:8px;height:8px;border-radius:50%;background:var(--green);position:relative}
@@ -2484,9 +2486,92 @@ function reconData(){ const A=S.reconAOA; if(!A||!A.length)return null;
     rows.push({concepto:String(row[0]).trim(),contCOP:numRaw(row[1]),ejeCOP:numRaw(row[2]),contUSD:numRaw(row[3]),ejeUSD:numRaw(row[4])}); }
   return rows; }
 
+/* ALCANCE DE LOS GRAFICOS DE GASTOS
+   ---------------------------------
+   No todos los cortes existen para los cuatro paises, y hasta ahora nada lo decia. Un
+   grafico que se ve vacio bajo un filtro puede ser dos cosas muy distintas:
+
+     - falta cargar el dato  -> hay que perseguirlo
+     - el corte no existe en ese plan de cuentas -> no hay nada que perseguir
+
+   Es la misma distincion entre s/d y n/a que el README ya fija para los vacios (4.1),
+   pero que nunca se aplico a los graficos de gastos. Lo que hay hoy, verificado contra
+   la base:
+
+     gasto_area       Colombia: 5 rubros de gestion (Financieros, TI, Proveedores,
+                      Comercial, Administracion), 31 meses desde ene-2024
+                      Filiales: desglose contable homologado, ene-jul 2026
+                      -> el total suma bien, el desglose NO es comparable
+     gasto_admin      EE.UU. y Costa Rica con 6 conceptos, Peru solo Honorarios,
+                      Colombia con su propia serie
+     gasto_comercial  EE.UU. solo Servicios, Peru con 4 conceptos, Costa Rica nada
+     costo_operacion  ]
+     gasto_desarrollo ] solo Colombia: las filiales no separan estos cortes
+     costo_proveedor  ]
+     costo_proveedor_ventas_pct, salario_area_pct -> solo Colombia
+
+   Ademas, las lineas del P&G oficial de Colombia (pygcosts) empiezan en 2026-01: el
+   s/d de ago-dic 2025 es correcto, y los datos de Colombia de ese periodo existen pero
+   en la serie de gestion, que es el grafico de al lado. */
+const SOLO_COLOMBIA_GASTOS = new Set(["costo_operacion", "gasto_desarrollo", "costo_proveedor",
+                                      "costo_proveedor_ventas_pct", "salario_area_pct"]);
+
+function alcanceGrafico(ch){
+  const code = ch.code || "";
+  /* OJO: filtroEsConsolidado() NO sirve aqui. Devuelve true tambien para EE.UU., Peru
+     y Costa Rica, porque su sentido es "esta entidad vive en el bloque consolidado en
+     USD", no "el lector esta viendo el consolidado". Usarla ponia el rotulo
+     "Consolidado parcial" sobre la vista de Peru. La vista consolidada es __ALL__. */
+  const consolidado = F.pais==="__ALL__";
+  const pais = consolidado ? "Consolidado" : F.pais;
+
+  if(SOLO_COLOMBIA_GASTOS.has(code)){
+    return {clase:"gris", chip:"Solo Colombia",
+      nota: consolidado
+        ? "Este corte solo existe en el plan de cuentas de Colombia. Las filiales no lo separan, así que no hay consolidado que mostrar — no es un dato pendiente de cargar."
+        : (pais==="Colombia" ? "" : "No aplica a "+pais+": ese corte solo existe en el plan de cuentas de Colombia.")};
+  }
+
+  if(code==="gasto_area"){
+    if(consolidado) return {clase:"ambar", chip:"Consolidado parcial",
+      nota:"Suma los cuatro países, pero el desglose no es comparable: Colombia aporta cinco rubros de gestión (Financieros, TI, Proveedores, Comercial, Administración) y las filiales su desglose contable (personal, honorarios, viajes). El total es correcto; las barras no son la misma cosa."};
+    if(pais==="Colombia") return {clase:"verde", chip:"Colombia",
+      nota:"Cinco rubros de gestión · 31 meses desde ene-2024. No es el mismo corte que el de las filiales."};
+    return {clase:"verde", chip:pais,
+      nota:"Desglose contable homologado desde el auxiliar de la filial · ene–jul 2026."};
+  }
+
+  if(code==="gasto_admin"||code==="gasto_comercial"){
+    const cual = code==="gasto_admin" ? "administrativos" : "comerciales";
+    if(consolidado) return {clase:"ambar", chip:"Consolidado parcial",
+      nota:"Desglose de las filiales. Colombia aporta su total al consolidado pero no este corte: sus gastos "+cual+" no están abiertos por concepto contable."};
+    return {clase:"verde", chip:pais, nota:""};
+  }
+
+  if(ch.type==="pygcosts"){
+    /* la aclaracion del arranque en 2026 solo viene al caso cuando Colombia esta a la
+       vista; bajo el filtro de una filial seria hablar de otra cosa */
+    const tocaColombia = consolidado || pais==="Colombia";
+    return {clase:"verde", chip: consolidado?"Consolidado":pais,
+      nota: tocaColombia
+        ? "Líneas del P&G oficial. Para Colombia empiezan en ene-2026: el s/d de 2025 no es un dato perdido — ese periodo vive en la serie de gestión, en el gráfico de abajo."
+        : "Líneas del P&G oficial de "+pais+", homologadas desde su auxiliar contable."};
+  }
+  return null;
+}
+
 function renderChartCard(ch){
   const card=document.createElement("div"); card.className="chart-card"; card.style.marginTop="14px";
   const h=document.createElement("h3"); h.textContent=ch.title||""; card.appendChild(h);
+  /* el alcance va junto al titulo, no al pie: quien mira la barra tiene que saber
+     que esta mirando antes de sacar una conclusion, no despues */
+  const alc=(AREAS.find(a=>a.id==="gastos")||{}).charts&&alcanceGrafico(ch);
+  if(alc){
+    const col={verde:["var(--green)","var(--green-b)"],ambar:["var(--amber)","var(--amber-b)"],
+               gris:["var(--mute)","rgba(255,255,255,.06)"]}[alc.clase];
+    if(alc.nota){ const n=document.createElement("div"); n.className="alc-nota";
+      n.style.borderLeftColor=col[0]; n.textContent=alc.nota; card.appendChild(n); }
+  }
   const body=document.createElement("div"); body.style.marginTop="8px"; card.appendChild(body);
   const M=F.moneda;
   if(ch.type==="bar"){ const s=seriesOf(ch.code); if(!s.values.some(v=>v!=null)){noData(body);return null;} const mny=isMoney(ch.code); barChart(body,s.labels,s.values,{fmt:v=>mny?fAxisMoney(v):fNum(v)}); }
@@ -2514,6 +2599,16 @@ function renderChartCard(ch){
   else if(ch.type==="churn"){ renderChurn(card,body,h); }
   else if(ch.type==="pyg"){ renderPyG(body,h); }
   if(body.dataset.empty==="1")return null;
+  /* El chip se cuelga al FINAL: varios renderizadores (stackcol, colavg, pieyear)
+     reescriben el h3 para agregar su subtitulo, y se llevaban por delante cualquier
+     cosa colgada antes. La nota sobrevive porque va en la tarjeta, no en el titulo. */
+  if(alc){
+    const col={verde:["var(--green)","var(--green-b)"],ambar:["var(--amber)","var(--amber-b)"],
+               gris:["var(--mute)","rgba(255,255,255,.06)"]}[alc.clase];
+    const chip=document.createElement("span"); chip.className="alc-chip";
+    chip.style.color=col[0]; chip.style.background=col[1];
+    chip.textContent=alc.chip; h.appendChild(chip);
+  }
   return card;
 }
 
