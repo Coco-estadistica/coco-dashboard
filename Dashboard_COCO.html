@@ -50,6 +50,21 @@ select:focus-visible{box-shadow:0 0 0 2px var(--green)}
 #f-presets button{padding:6px 9px;font-size:11px}
 .trm-in{font-family:'IBM Plex Mono',monospace;font-size:12.5px;width:74px;background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:9px;padding:6px 8px;outline:none}
 .trm-in:focus-visible{box-shadow:0 0 0 2px var(--green)}
+.mtz{width:100%;border-collapse:separate;border-spacing:0;margin-top:12px;font-size:12.5px}
+.mtz th{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--mute);font-weight:700;
+  padding:0 8px 9px;text-align:center;white-space:nowrap}
+.mtz th.l,.mtz td.l{text-align:left;padding-left:0}
+.mtz td{padding:13px 10px;text-align:center;border-top:1px solid var(--line);vertical-align:middle}
+.mtz td.l{color:var(--ink);font-weight:600}
+.mtz .cel{display:inline-flex;flex-direction:column;align-items:center;gap:3px;line-height:1.25}
+.mtz .pt{width:11px;height:11px;border-radius:50%;display:block}
+.mtz .cn{font-size:11px;color:var(--ink2)}
+.mtz .cn.off{color:var(--mute)}
+.mtz .cl{font-size:10.5px;line-height:1.45;color:var(--mute);max-width:190px;text-wrap:balance;margin-top:1px}
+.mtz td{min-width:150px}
+.mtz-ley{display:flex;gap:20px;flex-wrap:wrap;margin-top:14px;padding-top:13px;border-top:1px solid var(--line);
+  font-size:12px;color:var(--ink2);align-items:center}
+.mtz-ley span.pt{margin-right:6px;vertical-align:middle}
 .alc-chip{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:3px 8px;border-radius:999px;margin-left:9px;vertical-align:middle;white-space:nowrap}
 .alc-nota{font-size:13px;line-height:1.7;color:var(--ink2);background:rgba(255,255,255,.035);border-left:3px solid var(--line2);border-radius:0 8px 8px 0;padding:11px 15px;margin:10px 0 0}
 .live{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink2)}
@@ -2446,6 +2461,9 @@ function renderArea(host,area){
   mkCards(grid,area.id==="finanzas"?defs.filter(d=>!d.dummy):defs);
   /* gráficos del área */
   (area.charts||[]).forEach(ch=>{ const el=renderChartCard(ch); if(el)host.appendChild(el); });
+  /* La matriz cierra la pestana de Gastos: despues de los graficos, porque responde
+     sobre lo que se acaba de ver, no antes de verlo. */
+  if(area.id==="gastos") host.appendChild(renderMatrizGastos());
   /* Ventas & Comercial: detalle de oportunidades desde la hoja Pipeline_Comercial */
   if(area.id==="ventas") host.appendChild(renderPipelineDetalle());
 }
@@ -2566,6 +2584,97 @@ function alcanceGrafico(ch){
         : "Líneas del P&G oficial de "+pais+", homologadas desde su auxiliar contable."};
   }
   return null;
+}
+
+/* MATRIZ DE COBERTURA DE GASTOS
+   -----------------------------
+   Va al pie de la pestana Gastos y responde de un vistazo la pregunta que ningun
+   grafico contesta solo: para este corte, ¿que aporta cada pais? Se calcula en vivo
+   desde el resumen homologado y desde BD_Indicadores, asi que no se desactualiza
+   cuando entre un pais nuevo o se homologue una cuenta.
+
+   Tres estados, los mismos que el chip de cada grafico:
+     verde  aporta con desglose por concepto contable
+     ambar  aporta, pero con otra taxonomia o solo el total
+     gris   no existe para ese pais -- no es un dato pendiente */
+const MTZ_PAISES = ["Colombia", "Estados Unidos", "Peru", "Costa Rica"];
+const MTZ_ROTULO = {Colombia:"Colombia", "Estados Unidos":"EE.UU.", Peru:"Perú", "Costa Rica":"Costa Rica"};
+const MTZ_FILAS = [
+  {code:"gasto_area",       titulo:"Costos y gastos por área"},
+  {code:"gasto_admin",      titulo:"Zoom · Administrativos"},
+  {code:"gasto_comercial",  titulo:"Zoom · Comercial"},
+  {code:"costo_operacion",  titulo:"Zoom · Operaciones"},
+  {code:"gasto_desarrollo", titulo:"Zoom · Desarrollo"},
+  {code:"costo_proveedor",  titulo:"Zoom · Proveedores"},
+];
+
+function matrizGastos(){
+  const res = S.gastosResumen || [];
+  const casilla = (code, pais) => {
+    /* Se miran las DOS fuentes y gana la que informe mas. Mirar solo la cadena y
+       devolver al encontrar algo dejaba a Colombia en "1 concepto" para el grafico por
+       area: la cadena solo le trae Financieros, pero en BD_Indicadores tiene los cinco
+       rubros de gestion. La celda tiene que decir lo mejor que hay, no lo primero. */
+    const fils = res.filter(r => r.codigo===code && canonPais(r.pais)===canonPais(pais));
+    const conceptos = [...new Set(fils.map(r => r.detalle).filter(Boolean))].sort();
+    const nom = pais==="Estados Unidos" ? "EE.UU." : (pais==="Peru" ? "Perú" : pais);
+    const rubros = byDetalle(code, {pais:nom, escenario:"Real"})
+      .filter(d => d.valor!=null && d.detalle && d.detalle!=="—").map(d => d.detalle).sort();
+
+    if(conceptos.length > 1)
+      return {c:"verde", n:conceptos.length+" conceptos", lista:conceptos,
+              t:"Desglose contable homologado"};
+    if(rubros.length > 1)
+      return {c:"ambar", n:rubros.length+" rubros", lista:rubros,
+              t:"Serie de gestión, no desglose contable"};
+    if(conceptos.length === 1)
+      return {c:"ambar", n:"1 concepto", lista:conceptos, t:"Único concepto homologado"};
+    if(rubros.length === 1)
+      return {c:"ambar", n:"total", lista:rubros, t:"Solo el total, sin desglose"};
+    return {c:"gris", n:"n/a", lista:[], t:"Ese corte no existe en el plan de cuentas de "+MTZ_ROTULO[pais]};
+  };
+  const COL = {verde:"var(--green)", ambar:"var(--amber)", gris:"var(--mute)"};
+  let html = '<table class="mtz"><thead><tr><th class="l">Gráfico</th>'
+    + MTZ_PAISES.map(p => '<th>'+MTZ_ROTULO[p]+'</th>').join('') + '</tr></thead><tbody>';
+  MTZ_FILAS.forEach(f => {
+    html += '<tr><td class="l">'+f.titulo+'</td>';
+    MTZ_PAISES.forEach(p => {
+      const x = casilla(f.code, p);
+      /* los nombres se ven, no se esconden en el tooltip: la pregunta de quien lee la
+         pestana es "que hay dentro de esa barra", y eso son los conceptos */
+      const nombres = (x.lista && x.lista.length)
+        ? '<span class="cl">'+x.lista.join(' · ')+'</span>' : '';
+      html += '<td><span class="cel" title="'+String(x.t).replace(/"/g,"&quot;")+'">'
+            + '<span class="pt" style="background:'+COL[x.c]+'"></span>'
+            + '<span class="cn'+(x.c==="gris"?" off":"")+'">'+x.n+'</span>'
+            + nombres + '</span></td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  html += '<div class="mtz-ley">'
+    + '<span><span class="pt" style="background:var(--green)"></span>Desglose por concepto contable</span>'
+    + '<span><span class="pt" style="background:var(--amber)"></span>Aporta, con otro corte o solo el total</span>'
+    + '<span><span class="pt" style="background:var(--mute)"></span>No existe para ese país</span></div>';
+  return html;
+}
+
+function renderMatrizGastos(){
+  const card = document.createElement("div");
+  card.className = "chart-card"; card.style.marginTop = "14px";
+  card.innerHTML = '<h3>Qué aporta cada país a cada gráfico</h3>'
+    + '<div style="font-size:12.5px;color:var(--ink2);line-height:1.7;margin-top:6px">'
+    + 'Los cuatro países se contabilizan en el mismo PUC, pero no todos usan las mismas cuentas: '
+    + 'Colombia mueve 100 subcuentas de gasto y las filiales entre 10 y 23. Por eso un corte puede '
+    + 'existir para unos y no para otros. Pasa el cursor sobre cada celda para ver qué conceptos trae.'
+    + '</div>' + matrizGastos()
+    + '<div style="font-size:12px;color:var(--mute);line-height:1.65;margin-top:13px;padding-top:11px;border-top:1px solid var(--line)">'
+    + 'La cadena homologa por subcuenta PUC de nivel 6 — Sueldos, Asesoría jurídica, Viáticos — y la equivalencia '
+    + 'vive en <b>EEFF_Homologacion</b>. Hoy hay 145 subcuentas de gasto en los cuatro países: las de las filiales '
+    + 'están homologadas por completo y a Colombia le faltan 70, que por eso entra con totales en vez de detalle. '
+    + 'El listado para completarlas sale con <span class="mono">migracion/catalogo_cuentas_puc.py</span>.'
+    + '</div>';
+  return card;
 }
 
 function renderChartCard(ch){
