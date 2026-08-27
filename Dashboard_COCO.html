@@ -510,6 +510,25 @@ const DERIVE={
   margen_ebitda:o=>{ const e=rawStored("ebitda",o), i=rawStored("ingresos_totales",o); return (e!=null&&i)?e/i*100:null; },
   margen_neto:o=>{ const u=rawStored("utilidad_neta",o), i=rawStored("ingresos_totales",o); return (u!=null&&i)?u/i*100:null; },
   margen_bruto_pct:o=>{ const cp=rawStored("costo_proveedor_ventas_pct",o); return cp!=null?100-cp:null; },
+  /* C-01: la tarjeta leia el campo guardado, que se quedo en junio (27,81%), mientras
+     el donut de composicion de cartera —trescientos pixeles mas abajo, misma pantalla—
+     mostraba julio (41,61%). Dos cifras contradictorias del mismo indicador a la vista
+     al mismo tiempo. Se calcula en vivo desde cartera vencida y total, que si van a
+     julio; si algun mes no tiene ese par, se cae al valor guardado. */
+  indice_morosidad:o=>{ const v=rawStored("cartera_vencida",o), t=rawStored("cartera_total",o);
+    if(v!=null&&t) return v/t*100;
+    return rawStored("indice_morosidad",o); },
+  /* C-09: el NPS no esta guardado como puntaje sino como composicion en tres detalles
+     —Promotores, Pasivos, Detractores— que suman 100 todos los meses. rawStored los
+     sumaba, asi que el Catalogo mostraba 100,0% en abril, en mayo y en marzo por igual:
+     no era un dato, era la suma de una particion. El NPS es Promotores - Detractores,
+     en escala -100 a +100 (los umbrales de STATUS ya estaban en esa escala). */
+  nps:o=>{ const d=byDetalle("nps",o);
+    if(!d.length) return null;
+    const parte=re=>{ const f=d.find(x=>re.test(x.detalle||"")); return f?f.valor:null; };
+    const pro=parte(/promotor/i), det=parte(/detractor/i);
+    if(pro==null&&det==null) return null;
+    return (pro||0)-(det||0); },
   /* Real vs Presupuesto (combinado). En COP, comparable en cualquier periodo sin
      asumir ninguna TRM — el presupuesto ya está fijado en COP con la tasa de plan
      de la versión que aplicaba ese mes (ver segmento del hecho). */
@@ -522,7 +541,7 @@ const DERIVE={
     const ppto=valueOf("gastos_totales",{periodo:per,escenario:"Presupuesto",pais:pais});
     return (real!=null&&ppto)?(real/ppto-1)*100:null; }
 };
-const DERIVED_UNIT={ gastos_totales:"COP/USD", margen_ebitda:"%", margen_neto:"%", margen_bruto_pct:"%" };
+const DERIVED_UNIT={ gastos_totales:"COP/USD", margen_ebitda:"%", margen_neto:"%", margen_bruto_pct:"%", indice_morosidad:"%", nps:"pts" };
 const EXTRA_CATALOG={
   gastos_totales:{area:"Finanzas",nombre:"Gastos operativos totales",unidad:"COP/USD",tipo:"Derivado",formula:"Σ costos y gastos por área",origen:"Derivado"},
   margen_ebitda:{area:"Finanzas",nombre:"Margen EBITDA",unidad:"%",tipo:"Derivado",formula:"ebitda / ingresos_totales",origen:"Derivado"},
@@ -673,7 +692,11 @@ function sumDetalle(code,o){ return rawStored(code,o); }
 function byDetalle(code,o){ o=o||{periodo:F.periodo}; const m={}; for(const f of S.facts){ if(f.codigo!==code)continue; if(!matchFilters(f,o))continue; const k=f.detalle||f.segmento||"—"; m[k]=(m[k]||0)+(f.valor||0); } return Object.keys(m).map(k=>({detalle:k,valor:m[k]})); }
 /* valor lógico (usa derivado si aplica) en escala nativa */
 function valueOf(code,o){ o=o||{periodo:F.periodo}; if(DERIVE[code]) return DERIVE[code](o); return rawStored(code,o); }
-function unitOf(code){ const c=S.catalog[code]; return c?(c.unidad||"").trim():(DERIVED_UNIT[code]||""); }
+/* DERIVED_UNIT manda sobre el Diccionario cuando el codigo es derivado: el NPS
+   figura como "%" en el catalogo, pero el puntaje va de -100 a +100 y no es
+   un porcentaje de nada. */
+function unitOf(code){ if(DERIVE[code]&&DERIVED_UNIT[code]) return DERIVED_UNIT[code];
+  const c=S.catalog[code]; return c?(c.unidad||"").trim():(DERIVED_UNIT[code]||""); }
 function isMoney(code){ return /cop|usd/i.test(unitOf(code)); }
 /* TRM peso-dólar. Prioridad: override manual (F.trm) → base elegida (implícita/mercado) del periodo → último dato → 4170.
    La base 'implicita' usa trm_cop_usd (EEFF); 'mercado' usa trm_promedio_mercado. */
