@@ -1379,11 +1379,38 @@ function render(){
      no le aplican. Los controles se apagan a la vista en esa pestaña (mismo criterio
      que el selector de país en las de alcance fijo) y vuelven al salir. */
   const esBurn=tabId==="burn";
+  const esCatalogo=tabId==="catalogo";
+
+  /* N-05: hasta ahora solo se apagaban moneda y base de TRM en Burn. Los demas
+     controles seguian encendidos y clicables en pestanas donde no hacen nada: en Burn
+     ninguno aplica --el informe viene del Modelo, ya calculado-- y en el Catalogo el
+     selector de pais no filtra. Un control que responde al clic y no cambia nada se
+     lee como que el tablero esta roto, o peor, como que la cifra ya esta filtrada.
+     Se apagan a la vista, con el motivo en el tooltip, y vuelven al salir. */
+  const apagar=(el,off,motivo,tituloNormal)=>{ if(!el)return;
+    el.disabled=!!off; el.style.opacity=off?"0.45":"";
+    el.title=off?motivo:(tituloNormal||""); };
+
   document.querySelectorAll("#f-moneda button").forEach(b=>{ b.disabled=esBurn;
+    b.style.opacity=esBurn?"0.45":"";
     b.title=esBurn?"Burn & Runway usa la tasa de su propio informe: la moneda del tablero no aplica aquí.":""; });
-  const tBase=document.getElementById("f-trmbase");
-  if(tBase){ tBase.disabled=esBurn;
-    tBase.title=esBurn?"No aplica en Burn & Runway (fuente externa con tasa propia).":"Tasa COP/USD usada para convertir: implícita (derivada de los EEFF) o promedio mensual de mercado"; }
+  apagar(document.getElementById("f-trmbase"), esBurn,
+    "No aplica en Burn & Runway (fuente externa con tasa propia).",
+    "Tasa COP/USD usada para convertir: implícita (derivada de los EEFF) o promedio mensual de mercado");
+
+  /* El pais ya se apaga en las pestanas de alcance fijo (bloque de arriba). Aqui se
+     suman Burn --que es siempre consolidado, del Modelo-- y el Catalogo, que lista el
+     diccionario completo sin filtrar por entidad. */
+  if(selPa && !fija){
+    apagar(selPa, esBurn||esCatalogo,
+      esBurn?"Burn & Runway siempre es consolidado: viene del Modelo, ya calculado."
+            :"El Catálogo lista todos los indicadores del modelo; no se filtra por país.");
+  }
+  document.querySelectorAll("#f-presets button").forEach(b=>{
+    b.disabled=esBurn; b.style.opacity=esBurn?"0.45":"";
+    b.title=esBurn?"Burn & Runway trae su propio corte (ver el encabezado de la pestaña).":""; });
+  ["f-start","f-end","f-escenario"].forEach(id=>apagar(document.getElementById(id), esBurn,
+    "Burn & Runway trae su propio corte y escenario: viene del Modelo."));
   /* TRM de respaldo: si ni la base elegida ni la hoja TRM tienen tasa para el periodo
      (ni un último dato), la conversión usa el valor fijo de emergencia 4170. Eso se
      avisa junto al campo con un ⚠️, no se calla. */
