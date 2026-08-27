@@ -242,7 +242,7 @@ footer b{color:var(--ink2)}
     <div class="ctrl"><label>Escenario</label><select id="f-escenario"></select></div>
     <div class="ctrl"><label>País</label><select id="f-pais"></select></div>
     <div class="ctrl"><label>Moneda</label><div class="toggle" id="f-moneda"><button data-m="USD" class="on">USD</button><button data-m="COP">COP</button></div></div>
-    <div class="ctrl"><label>Base TRM</label><select id="f-trmbase" title="Tasa COP/USD usada para convertir: implícita (derivada de los EEFF) o promedio mensual de mercado"><option value="implicita">Implícita</option><option value="mercado">Promedio mensual</option></select><span id="trm-warn" style="display:none;cursor:help;margin-left:4px" title="Sin TRM en la base para este periodo: el tablero está convirtiendo con la tasa de respaldo 4.170. Carga la hoja TRM.">⚠️</span></div>
+    <div class="ctrl"><label>Base TRM</label><select id="f-trmbase" title="Tasa COP/USD usada para convertir"></select><span id="trm-warn" style="display:none;cursor:help;margin-left:4px" title="Sin TRM en la base para este periodo: el tablero está convirtiendo con la tasa de respaldo 4.170. Carga la hoja TRM.">⚠️</span></div>
     <button class="btn primary" id="btn-cloud" title="Lee la última versión de BD_MAESTRA_COCO (Google Sheets)">☁ Actualizar desde la nube</button>
     <button class="btn" id="btn-datos" title="Registro individual o carga masiva con plantilla">✎ Ingresar datos</button>
     <button class="btn" id="btn-load" title="Respaldo: cargar un archivo Excel local">Cargar BD</button>
@@ -421,7 +421,7 @@ const PPTO_VERSIONES=["Original enero","Revisado mayo"];
 const ENTIDADES_CONSOL=["Consolidado","EE.UU.","Perú","Costa Rica"];
 function esPaisConsol(p){ return ENTIDADES_CONSOL.indexOf(p!==undefined?p:F.pais)>=0; }
 /* F.periodo = periodo puntual (fin del rango); F.start = inicio del rango; F.trm = override de TRM */
-const F={ start:null, periodo:null, pais:"__ALL__", escenario:"Real", moneda:"USD", trm:null, trmBase:"implicita" };
+const F={ start:null, periodo:null, pais:"__ALL__", escenario:"Real", moneda:"USD", trm:null, trmBase:"promedio" };
 
 /* ---------- meta / benchmarks para semáforo (en escala nativa de la métrica) ---------- */
 const META={
@@ -570,16 +570,20 @@ function parseWorkbook(wb){
      trm      = base implícita (trm_cop_usd, la de EEFF) con respaldo al mercado si falta
      trmMercado = trm_promedio_mercado (mercado)
      trmImpl  = solo la implícita cruda (para detectar cambios de tasa entre periodos) */
-  const trmName=findSheet(wb,["TRM"]); const trmA=aoaOf(wb,trmName); const trm={}, trmMercado={}, trmImpl={};
+  const trmName=findSheet(wb,["TRM"]); const trmA=aoaOf(wb,trmName); const trm={}, trmMercado={}, trmImpl={}, trmCierre={};
   /* detección estricta: el encabezado real tiene "periodo" EXACTO en la 1ª celda
      (evita capturar una fila de texto que mencione "periodo" y "TRM") */
   let tHdr=-1; for(let r=0;r<Math.min(trmA.length,12);r++){ if(norm((trmA[r]||[])[0])==="periodo"){tHdr=r;break;} }
   if(tHdr>=0){
-    const tm=colMap(trmA[tHdr],{periodo:["periodo"],cop:["trm_cop_usd","trm cop usd","trm"],prom:["trm_promedio_mercado","promedio_mercado","promedio"]});
+    /* trm_fin_de_mes es opcional: mientras la columna no exista, la base "Fin de mes"
+       simplemente no se ofrece. Asi no queda un boton que no puede responder. */
+    const tm=colMap(trmA[tHdr],{periodo:["periodo"],cop:["trm_cop_usd","trm cop usd","trm"],prom:["trm_promedio_mercado","promedio_mercado","promedio"],cierre:["trm_fin_de_mes","fin_de_mes","trm_cierre","cierre"]});
     for(let r=tHdr+1;r<trmA.length;r++){ const row=trmA[r]; if(!row)continue; const p=val(row,tm.periodo); if(!p)continue;
       const cop=numRaw(row[tm.cop]), prom=numRaw(row[tm.prom]);
+      const cie=tm.cierre!=null?numRaw(row[tm.cierre]):null;
       if(cop!=null&&cop>0) trmImpl[p]=cop;
       if(prom!=null&&prom>0) trmMercado[p]=prom;
+      if(cie!=null&&cie>0) trmCierre[p]=cie;
       let t=(cop!=null&&cop>0)?cop:prom; if(t!=null&&t>0)trm[p]=t; }
   }
 
@@ -665,9 +669,16 @@ function byDetalle(code,o){ o=o||{periodo:F.periodo}; const m={}; for(const f of
 function valueOf(code,o){ o=o||{periodo:F.periodo}; if(DERIVE[code]) return DERIVE[code](o); return rawStored(code,o); }
 function unitOf(code){ const c=S.catalog[code]; return c?(c.unidad||"").trim():(DERIVED_UNIT[code]||""); }
 function isMoney(code){ return /cop|usd/i.test(unitOf(code)); }
-/* TRM peso-dólar. Prioridad: override manual (F.trm) → base elegida (implícita/mercado) del periodo → último dato → 4170.
-   La base 'implicita' usa trm_cop_usd (EEFF); 'mercado' usa trm_promedio_mercado. */
-function trmBaseMap(){ return F.trmBase==="mercado"?S.trmMercado:S.trm; }
+/* TRM peso-dólar. Prioridad: base elegida del periodo → último dato → 4170.
+   La base 'promedio' usa trm_promedio_mercado; 'cierre' usa trm_fin_de_mes. */
+/* Dos bases, las que reconoce la norma: promedio del mes para el resultado y cierre
+   para el balance. Se retiro la "implicita": de 37 periodos solo se derivaba de los
+   EEFF en 4, en los otros 33 la columna contenia el promedio de mercado -- lo dice su
+   propia nota de fuente -- y donde diferia era en un mes, por 4,29 pesos. Ademas es
+   circular: una tasa obtenida dividiendo ingresos COP entre ingresos USD es el
+   resultado de la conversion que alguien ya hizo, no una tasa de mercado. */
+function hayCierre(){ return S.trmCierre && Object.keys(S.trmCierre).length>0; }
+function trmBaseMap(){ return (F.trmBase==="cierre"&&hayCierre())?S.trmCierre:(S.trmMercado&&Object.keys(S.trmMercado).length?S.trmMercado:S.trm); }
 function trmSheet(per){ const m=trmBaseMap(); const last=S.periodos[S.periodos.length-1];
   return m[per] || S.trm[per] || m[last] || S.trm[last] || 4170; }
 function trmOf(per){ if(F.trm && !isNaN(F.trm) && F.trm>0) return F.trm; return trmSheet(per); }
@@ -891,7 +902,7 @@ function etiquetaPais(){ return F.pais==="__ALL__"?"Consolidado":F.pais; }
    confusión real con la TRM de julio (3.268,95 vs 3.505,27). */
 function etiquetaTasa(per){
   const manual=F.trm&&!isNaN(F.trm)&&F.trm>0;
-  const base=F.trmBase==="mercado"?"tasa promedio de mercado":"tasa implícita de los EEFF";
+  const base=F.trmBase==="cierre"?"tasa de cierre de mes":"tasa promedio mensual";
   return "TRM "+fNum(trmOf(per))+" · "+(manual?"tasa fijada a mano":base);
 }
 function motivoSinDato(code){
@@ -1376,6 +1387,14 @@ function renderTabInterno(id){
     av.innerHTML=`<span>ℹ️</span><span>Escenario <b>${F.escenario}</b>: solo se muestran los indicadores cargados con ese escenario. Las líneas contables oficiales (EEFF) existen únicamente en escenario <b>Real</b> — por eso varias tarjetas aparecen como "Por medir".</span>`;
     host.appendChild(av);
   }
+  /* La tasa de cierre es la del balance, no la del resultado (NIC 21). El tablero hoy
+     solo muestra estado de resultados, asi que elegirla sirve como sensibilidad pero no
+     como presentacion: se dice, en vez de dejar que pase por buena. */
+  if(F.trmBase==="cierre"){
+    const ac=document.createElement("div"); ac.className="alcance-fijo";
+    ac.innerHTML=`<span>⚠️</span><span>Base <b>Fin de mes</b>: la tasa de cierre corresponde al <b>balance</b>. Para el estado de resultados la convención es <b>promedio del mes</b>. Sirve para ver sensibilidad; no para presentar.</span>`;
+    host.appendChild(ac);
+  }
   if(id==="resumen") return renderResumen(host);
   if(id==="catalogo") return renderCatalogo(host);
   if(id==="burn") return renderBurnRunway(host);
@@ -1835,7 +1854,7 @@ function trmInsightCard(refPer){
   refPer=refPer||F.periodo;
   const card=document.createElement("div"); card.className="chart-card"; card.style.marginTop="14px";
   const dist=trmDistintas(), pts=trmChangePoints();
-  const baseTxt=F.trmBase==="mercado"?"promedio de mercado":"implícita (EEFF)";
+  const baseTxt=F.trmBase==="cierre"?"cierre de mes":"promedio mensual";
   const impl=S.trmImpl[refPer], merc=S.trmMercado[refPer], br=trmBrecha(refPer);
   const aplicada=trmSheet(refPer);
   const ptsTxt=pts.map(p=>`<b class="mono">${fNum(p.valor)}</b> desde ${mesCorto(p.periodo)}`).join(" · ");
@@ -2690,7 +2709,15 @@ function fillFilters(){
      se estaba viendo. La conversion sale ahora solo de la hoja TRM, via Base TRM.
      F.trm permanece en null: trmOf() conserva su guarda como red de seguridad. */
   const trmBaseSel=document.getElementById("f-trmbase");
-  if(trmBaseSel){ trmBaseSel.value=F.trmBase; trmBaseSel.onchange=e=>{ F.trmBase=e.target.value; render(); }; }
+  if(trmBaseSel){
+    /* "Fin de mes" solo aparece cuando la hoja TRM trae esa columna con datos. */
+    const ops=[["promedio","Promedio mensual"]];
+    if(hayCierre()) ops.push(["cierre","Fin de mes"]);
+    trmBaseSel.innerHTML=ops.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join("");
+    if(!hayCierre()&&F.trmBase==="cierre") F.trmBase="promedio";
+    trmBaseSel.value=F.trmBase;
+    trmBaseSel.onchange=e=>{ F.trmBase=e.target.value; render(); };
+  }
   F.trm=null; applyPreset("def");
 }
 
@@ -2703,7 +2730,7 @@ function ingest(data){ ingestWB(XLSX.read(data,{type:"array"})); }
 function ingestWB(wb){
   const p=parseWorkbook(wb);
   if(!p.facts.length) throw new Error("No se encontraron filas en la hoja BD_Indicadores.");
-  S.catalog=p.catalog; S.order=p.order; S.facts=p.facts; S.trm=p.trm; S.trmMercado=p.trmMercado||{}; S.trmImpl=p.trmImpl||{}; S.trmPeru=p.trmPeru||{}; S.churnAOA=p.churnAOA; S.ltvAOA=p.ltvAOA; S.reconAOA=p.reconAOA||[];
+  S.catalog=p.catalog; S.order=p.order; S.facts=p.facts; S.trm=p.trm; S.trmMercado=p.trmMercado||{}; S.trmImpl=p.trmImpl||{}; S.trmCierre=p.trmCierre||{}; S.trmPeru=p.trmPeru||{}; S.churnAOA=p.churnAOA; S.ltvAOA=p.ltvAOA; S.reconAOA=p.reconAOA||[];
   S.pipeline=p.pipeline||[]; S.catalogosAOA=p.catalogosAOA||[]; S.gastosResumen=p.gastosResumen||[];
   S.periodos=Array.from(new Set(p.facts.map(f=>f.periodo))).filter(Boolean).sort();
   S.paises=Array.from(new Set(p.facts.map(f=>f.pais).filter(Boolean))).sort();
