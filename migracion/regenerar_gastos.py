@@ -211,6 +211,31 @@ def main():
         print("  ABORTA: no se escribe nada.")
         return 1
 
+    # --- SEGURO DE MONEDA -------------------------------------------------------
+    # La cadena suma movimiento_mes sin mirar la moneda. Mientras solo hubo filiales
+    # eso ya estaba mal --se sumaban 70.163 soles a 113.311 dolares y el total daba
+    # 183.474-- pero pasaba desapercibido porque las magnitudes se parecen. Con
+    # Colombia dentro deja de disimular: 656 millones de pesos sumados a dolares.
+    # Regla 4 del proyecto: no sumar monedas distintas.
+    monedas = {}
+    for x in puente:
+        m = str(x.get("moneda") or "?")
+        monedas[m] = monedas.get(m, 0) + (x.get("valor_mes") or 0)
+    if len(monedas) > 1:
+        print()
+        print("  ABORTA: el puente mezcla monedas y esta hoja se suma sin convertir.")
+        for m, v in sorted(monedas.items(), key=lambda kv: -abs(kv[1])):
+            print("     %-5s %18s" % (m, "{:,.2f}".format(v).replace(",", ".")))
+        print("     El total que saldria (%s) no significa nada: son monedas distintas"
+              % "{:,.2f}".format(sum(monedas.values())).replace(",", "."))
+        print("     sumadas como si fueran la misma.")
+        print()
+        print("     Para levantar este seguro hay que decidir la conversion: llevar")
+        print("     movimiento_mes a USD con la TRM del pais y del mes (hoja TRM para")
+        print("     Colombia, TRM_Peru para Peru) antes de agregar. Eso CAMBIA las cifras")
+        print("     de la pestana Gastos, asi que es una decision, no un cargue.")
+        return 1
+
     print()
     print("  PRUEBA DE ACEPTACION (contra lo que hay hoy en la base)")
     print("    antes  : %4d filas   %15.2f" % (len(resumen_antes), total_antes))
