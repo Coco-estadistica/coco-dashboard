@@ -56,7 +56,12 @@ select:focus-visible{box-shadow:0 0 0 2px var(--green)}
 .franja .fr-t b{color:var(--ink);font-weight:600}
 .franja .fr-n{font-size:12px;color:var(--ink2)}
 .franja .fr-n.off{color:var(--mute)}
-.franja .fr-l{font-size:11.5px;line-height:1.5;color:var(--mute);margin-top:4px}
+.franja .fr-l{margin-top:6px}
+.fr-i{display:flex;justify-content:space-between;gap:10px;font-size:12px;line-height:1.75;
+  color:var(--ink2);border-bottom:1px dotted rgba(255,255,255,.07)}
+.fr-i:last-child{border-bottom:0}
+.fr-i .fr-c{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fr-i b{color:var(--ink);font-weight:600;white-space:nowrap;font-size:12px}
 @media(max-width:900px){.franja{grid-template-columns:repeat(2,1fr)}}
 .mtz{width:100%;border-collapse:separate;border-spacing:0;margin-top:12px;font-size:13.5px}
 .mtz th{font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--mute);font-weight:700;
@@ -68,7 +73,7 @@ select:focus-visible{box-shadow:0 0 0 2px var(--green)}
 .mtz .pt{width:11px;height:11px;border-radius:50%;display:block}
 .mtz .cn{font-size:12.5px;color:var(--ink2)}
 .mtz .cn.off{color:var(--mute)}
-.mtz .cl{font-size:11.5px;line-height:1.5;color:var(--mute);max-width:200px;text-wrap:balance;margin-top:1px}
+.mtz .cl{font-size:11.5px;line-height:1.5;color:var(--mute);min-width:170px;max-width:210px;text-wrap:balance;margin-top:1px}
 .mtz td{min-width:150px}
 .mtz-ley{display:flex;gap:20px;flex-wrap:wrap;margin-top:14px;padding-top:13px;border-top:1px solid var(--line);
   font-size:12px;color:var(--ink2);align-items:center}
@@ -533,7 +538,20 @@ const DERIVE={
   gastos_totales:o=>{ const det=sumDetalle("gasto_area",o); if(det!=null)return det; return pygGastosTotales(o); },
   margen_ebitda:o=>{ const e=rawStored("ebitda",o), i=rawStored("ingresos_totales",o); return (e!=null&&i)?e/i*100:null; },
   margen_neto:o=>{ const u=rawStored("utilidad_neta",o), i=rawStored("ingresos_totales",o); return (u!=null&&i)?u/i*100:null; },
-  margen_bruto_pct:o=>{ const cp=rawStored("costo_proveedor_ventas_pct",o); return cp!=null?100-cp:null; },
+  margen_bruto_pct:o=>{ const cp=valueOf("costo_proveedor_ventas_pct",o); return cp!=null?100-cp:null; },
+  /* El % de proveedores sobre ventas se venia CARGANDO a mano mes a mes, y por eso el
+     tablero se quedaba sin julio mientras las dos series que lo componen ya estaban.
+     Ahora: manda lo cargado --es la cifra publicada-- y si no hay, se calcula.
+     La formula se validó contra junio y reproduce el dato guardado al centesimo:
+     188.300.000 / 751.453.314 = 25,058 -> 25,06.
+     El calculo NO se hace si el mes trae menos proveedores que el anterior: julio llego
+     con Infobip y B2Chat pero sin AWS ni Otros, y dividir asi daria ~17% --una mejora
+     de margen que no ocurrio--. En ese caso devuelve null y el grafico dice por que. */
+  costo_proveedor_ventas_pct:o=>{
+    const guardado=rawStored("costo_proveedor_ventas_pct",o);
+    if(guardado!=null)return guardado;
+    return proveedorVentasPct(o);
+  },
   /* C-01: la morosidad NO se calcula aqui. La entrega contabilidad y el tablero la
      muestra tal cual: es un indicador con definicion contable propia --que puede no ser
      vencida sobre total-- y derivarla seria sustituir un criterio ajeno por el nuestro.
@@ -716,6 +734,50 @@ function matchFilters(f,o){
   return true;
 }
 /* suma cruda (COP para dinero) de un código para el periodo/filtros dados, agregando segmento/detalle */
+/* proveedores con movimiento en un mes (Colombia, Real) */
+function proveedoresDe(per){
+  const s=new Set();
+  for(const f of S.facts){
+    if(f.codigo!=="costo_proveedor"||f.pais!=="Colombia")continue;
+    if(f.escenario&&f.escenario!=="Real")continue;
+    if(f.periodo!==per||f.valor==null)continue;
+    if(Math.abs(Number(f.valor)||0)<=0)continue;
+    s.add(f.detalle||"—");
+  }
+  return s;
+}
+/* Proveedores que faltan en un mes. La regla no es "estuvo el mes pasado": Infobip
+   factura salteado --no cobro en ago-25, sep-25 ni ene-26-- y esa ausencia es real.
+   Se exige solo a los que facturaron los TRES ultimos meses seguidos: eso deja fuera al
+   intermitente y deja dentro a la infraestructura, que no deja de cobrar. En julio-26
+   eso son AWS y Otros, presentes en los 14 meses anteriores sin excepcion. */
+function proveedoresFaltantes(per){
+  const pers=(S.periodos||[]).filter(x=>proveedoresDe(x).size>0).sort();
+  const i=pers.indexOf(per);
+  const hoy=proveedoresDe(per);
+  if(!hoy.size||i<0)return [];
+  const ventana=pers.slice(Math.max(0,i-3),i);
+  if(ventana.length<3)return [];
+  const sets=ventana.map(proveedoresDe);
+  return [...sets[0]].filter(x=>sets.every(s=>s.has(x))&&!hoy.has(x)).sort();
+}
+/* ingresos operacionales de Colombia en COP: la serie de gestion si existe, y si no,
+   el P&G oficial en USD reconvertido con la TRM del mes (la misma de la que sale). */
+function ingresosColombiaCop(per){
+  const g=rawStored("ingresos_totales",{periodo:per,escenario:"Real",pais:"Colombia"});
+  if(g)return g;
+  const u=rawStored("pyg_ingresos_operacionales",{periodo:per,escenario:"Real",pais:"Colombia",segmento:"Consolidación USD"});
+  const t=trmOf(per);
+  return (u&&t)?u*t:null;
+}
+function proveedorVentasPct(o){
+  const per=o&&o.periodo; if(!per)return null;
+  if(o&&o.escenario&&o.escenario!=="Real")return null;
+  if(proveedoresFaltantes(per).length)return null;      /* mes incompleto: s/d, no una cifra baja */
+  const cp=rawStored("costo_proveedor",{periodo:per,escenario:"Real",pais:"Colombia"});
+  const iv=ingresosColombiaCop(per);
+  return (cp!=null&&iv)?cp/iv*100:null;
+}
 function rawStored(code,o){ o=o||{periodo:F.periodo}; let sum=null; for(const f of S.facts){ if(f.codigo!==code)continue; if(!matchFilters(f,o))continue; if(f.valor==null)continue; sum=(sum||0)+f.valor; } return sum; }
 /* suma por detalle → alias para métricas segmentadas */
 function sumDetalle(code,o){ return rawStored(code,o); }
@@ -2560,10 +2622,22 @@ function alcanceGrafico(ch){
   const pais = consolidado ? "Consolidado" : F.pais;
 
   if(SOLO_COLOMBIA_GASTOS.has(code)){
+    /* si el ultimo mes del rango se quedo sin barra por cargue incompleto, decirlo con
+       nombre y apellido en vez de dejar un hueco que nadie sabe leer */
+    let hueco="";
+    if(code==="costo_proveedor_ventas_pct"){
+      const pers=windowPeriodos()||[];
+      for(let i=pers.length-1;i>=0;i--){
+        const f=proveedoresFaltantes(pers[i]);
+        if(f.length){ hueco=" En "+mesCorto(pers[i])+" no hay barra porque el cargue de proveedores llegó incompleto: falta "+f.join(" y ")+". El porcentaje aparece solo cuando estén los "+(proveedoresDe(pers[i]).size+f.length)+"."; break; }
+      }
+    }
     return {clase:"gris", chip:"Solo Colombia",
-      nota: consolidado
+      nota: hueco ? (consolidado
+        ? "Este corte solo existe en el plan de cuentas de Colombia."+hueco
+        : (pais==="Colombia" ? hueco.trim() : "No aplica a "+pais+": ese corte solo existe en el plan de cuentas de Colombia.")) : (consolidado
         ? "Este corte solo existe en el plan de cuentas de Colombia. Las filiales no lo separan, así que no hay consolidado que mostrar — no es un dato pendiente de cargar."
-        : (pais==="Colombia" ? "" : "No aplica a "+pais+": ese corte solo existe en el plan de cuentas de Colombia.")};
+        : (pais==="Colombia" ? "" : "No aplica a "+pais+": ese corte solo existe en el plan de cuentas de Colombia."))};
   }
 
   if(code==="gasto_area"){
@@ -2625,11 +2699,32 @@ function casillaGasto(code, pais){
        devolver al encontrar algo dejaba a Colombia en "1 concepto" para el grafico por
        area: la cadena solo le trae Financieros, pero en BD_Indicadores tiene los cinco
        rubros de gestion. La celda tiene que decir lo mejor que hay, no lo primero. */
-    const fils = res.filter(r => r.codigo===code && canonPais(r.pais)===canonPais(pais));
-    const conceptos = [...new Set(fils.map(r => r.detalle).filter(Boolean))].sort();
+    /* Los conceptos van con su plata, en la moneda y el rango que el lector tiene
+       puestos, y ordenados de mayor a menor: una lista de nombres dice que existe el
+       corte, pero no cual pesa. Se suma sobre windowPeriodos() y se convierte con
+       bridgeMoneyToDisplay --lo mismo que hace el grafico-- para que la franja y las
+       barras no puedan dar cifras distintas. */
+    const pers = new Set(windowPeriodos() || []);
+    const ordenar = m => Object.keys(m).map(k => ({n:k, v:m[k]}))
+                          .filter(x => x.n && x.n!=="—")
+                          .sort((a,b) => Math.abs(b.v) - Math.abs(a.v));
+
+    const mc = {};
+    res.filter(r => r.codigo===code && canonPais(r.pais)===canonPais(pais) && pers.has(r.periodo))
+       .forEach(r => { const k=r.detalle; if(!k)return;
+         mc[k]=(mc[k]||0)+Math.abs(bridgeMoneyToDisplay(r.valor_mes, r.moneda, r.periodo)); });
+    const conceptos = ordenar(mc);
+
     const nom = pais==="Estados Unidos" ? "EE.UU." : (pais==="Peru" ? "Perú" : pais);
-    const rubros = byDetalle(code, {pais:nom, escenario:"Real"})
-      .filter(d => d.valor!=null && d.detalle && d.detalle!=="—").map(d => d.detalle).sort();
+    const mr = {};
+    S.facts.forEach(f => {
+      if(f.codigo!==code || f.pais!==nom || f.valor==null) return;
+      if(f.escenario && f.escenario!=="Real") return;
+      if(!pers.has(f.periodo)) return;
+      const k=f.detalle||f.segmento; if(!k)return;
+      mr[k]=(mr[k]||0)+Math.abs(bridgeMoneyToDisplay(f.valor, f.moneda||"COP", f.periodo));
+    });
+    const rubros = ordenar(mr);
 
     if(conceptos.length > 1)
       return {c:"verde", n:conceptos.length+" conceptos", lista:conceptos,
@@ -2658,7 +2753,8 @@ function matrizGastos(){
       /* los nombres se ven, no se esconden en el tooltip: la pregunta de quien lee la
          pestana es "que hay dentro de esa barra", y eso son los conceptos */
       const nombres = (x.lista && x.lista.length)
-        ? '<span class="cl">'+x.lista.join(' · ')+'</span>' : '';
+        ? '<span class="cl">'+x.lista.map(i => '<span class="fr-i"><span class="fr-c">'+i.n
+           +'</span><b class="mono">'+fMoney(i.v)+'</b></span>').join('')+'</span>' : '';
       html += '<td><span class="cel" title="'+String(x.t).replace(/"/g,"&quot;")+'">'
             + '<span class="pt" style="background:'+MTZ_COL[x.c]+'"></span>'
             + '<span class="cn'+(x.c==="gris"?" off":"")+'">'+x.n+'</span>'
@@ -2685,7 +2781,10 @@ function franjaGasto(code){
     return '<div class="fr-p" title="'+String(x.t).replace(/"/g,"&quot;")+'">'
          + '<div class="fr-t"><span class="pt" style="background:'+MTZ_COL[x.c]+'"></span>'
          + '<b>'+MTZ_ROTULO[p]+'</b> <span class="fr-n'+(x.c==="gris"?" off":"")+'">'+x.n+'</span></div>'
-         + (x.lista && x.lista.length ? '<div class="fr-l">'+x.lista.join(" · ")+'</div>' : '')
+         + (x.lista && x.lista.length
+              ? '<div class="fr-l">'+x.lista.map(i => '<span class="fr-i"><span class="fr-c">'+i.n
+                 +'</span><b class="mono">'+fMoney(i.v)+'</b></span>').join("")+'</div>'
+              : '')
          + '</div>';
   }).join("");
   return f;
