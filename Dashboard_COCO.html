@@ -511,14 +511,17 @@ const DERIVE={
   margen_ebitda:o=>{ const e=rawStored("ebitda",o), i=rawStored("ingresos_totales",o); return (e!=null&&i)?e/i*100:null; },
   margen_neto:o=>{ const u=rawStored("utilidad_neta",o), i=rawStored("ingresos_totales",o); return (u!=null&&i)?u/i*100:null; },
   margen_bruto_pct:o=>{ const cp=rawStored("costo_proveedor_ventas_pct",o); return cp!=null?100-cp:null; },
-  /* C-01: la tarjeta leia el campo guardado, que se quedo en junio (27,81%), mientras
-     el donut de composicion de cartera —trescientos pixeles mas abajo, misma pantalla—
-     mostraba julio (41,61%). Dos cifras contradictorias del mismo indicador a la vista
-     al mismo tiempo. Se calcula en vivo desde cartera vencida y total, que si van a
-     julio; si algun mes no tiene ese par, se cae al valor guardado. */
-  indice_morosidad:o=>{ const v=rawStored("cartera_vencida",o), t=rawStored("cartera_total",o);
-    if(v!=null&&t) return v/t*100;
-    return rawStored("indice_morosidad",o); },
+  /* C-01: la morosidad NO se calcula aqui. La entrega contabilidad y el tablero la
+     muestra tal cual: es un indicador con definicion contable propia --que puede no ser
+     vencida sobre total-- y derivarla seria sustituir un criterio ajeno por el nuestro.
+
+     Lo que si se resolvio es la contradiccion que reporto la auditoria: la tarjeta
+     mostraba 27,81% (junio) sin decirlo, junto a un donut de julio que daba 41,61%.
+     Al no haber valor de julio, la tarjeta cae al ultimo dato y ahora lo DECLARA en
+     ambar --"ultimo dato: 2026-06"-- via selloFrescura. La discrepancia contra la
+     cartera se sigue reportando en exportar_sqlite.py (control V3) para revisarla en
+     la fuente, que es donde vive.
+     // DECISION CONFIRMADA POR ANDRES -- la morosidad se carga, no se deriva. */
   /* C-09: el NPS no esta guardado como puntaje sino como composicion en tres detalles
      —Promotores, Pasivos, Detractores— que suman 100 todos los meses. rawStored los
      sumaba, asi que el Catalogo mostraba 100,0% en abril, en mayo y en marzo por igual:
@@ -542,7 +545,7 @@ const DERIVE={
     const ppto=valueOf("gastos_totales",{periodo:per,escenario:"Presupuesto",pais:pais});
     return (real!=null&&ppto)?(real/ppto-1)*100:null; }
 };
-const DERIVED_UNIT={ gastos_totales:"COP/USD", margen_ebitda:"%", margen_neto:"%", margen_bruto_pct:"%", indice_morosidad:"%", nps:"pts" };
+const DERIVED_UNIT={ gastos_totales:"COP/USD", margen_ebitda:"%", margen_neto:"%", margen_bruto_pct:"%", nps:"pts" };
 const EXTRA_CATALOG={
   gastos_totales:{area:"Finanzas",nombre:"Gastos operativos totales",unidad:"COP/USD",tipo:"Derivado",formula:"Σ costos y gastos por área",origen:"Derivado"},
   margen_ebitda:{area:"Finanzas",nombre:"Margen EBITDA",unidad:"%",tipo:"Derivado",formula:"ebitda / ingresos_totales",origen:"Derivado"},
@@ -2432,7 +2435,12 @@ function renderArea(host,area){
     const sub=has?(perShown!==per?selloFrescura(perShown,per):(c.tipo||"").toString())
                  :(noAplicaAqui?motivoSinDato(code):"aún sin cargar en la BD");
     const freqTag=(area.id==="marketing"&&c.frec)?(" · "+c.frec):"";
-    return {k:(c.nombre||code)+chipAlcance(code,per),v:has?fmtValue(code,vRawShown,perShown):(noAplicaAqui?"—":"Por medir"),dummy:!has&&!noAplicaAqui,real:has,s:has?s:null,bench,
+    /* sub SI va en la tarjeta. Se venia calculando y descartando: la variable existia,
+       el objeto que se pinta no la incluia. Por eso el sello de frescura funcionaba en
+       las tarjetas de Finanzas --que si lo pasan-- y no en las demas areas, donde el
+       INDICE DE MOROSIDAD mostraba 27,8% de junio sin decir de cuando era, al lado de
+       un donut de julio. */
+    return {k:(c.nombre||code)+chipAlcance(code,per),v:has?fmtValue(code,vRawShown,perShown):(noAplicaAqui?"—":"Por medir"),dummy:!has&&!noAplicaAqui,real:has,s:has?s:null,bench,sub,
       src:(c.fuente?(c.fuente+(c.origen?" · "+c.origen:"")):(c.origen||""))+freqTag};
   });
   mkCards(grid,area.id==="finanzas"?defs.filter(d=>!d.dummy):defs);
