@@ -77,8 +77,9 @@ TOL = 0.01
 # (codepoint 0x3F), no una enye mal decodificada al leer. Es el problema de
 # codificacion heredado que advierte el README seccion 8. Arreglarlo aqui, de
 # paso y sin decirlo, rompería la garantia de que el script no cambia nada.
-NOTA_PUENTE = "Puente para redise?ar vistas de Costos & Gastos; no reemplaza P&G oficial."
-NOTA_RESUMEN = "Agregado desde BD_GASTOS_DASHBOARD_BRIDGE"
+NOTA_PUENTE = ("Puente para redise?ar vistas de Costos & Gastos; no reemplaza P&G oficial. "
+               "Convertido a USD con la tasa promedio mensual del pais.")
+NOTA_RESUMEN = "Agregado desde BD_GASTOS_DASHBOARD_BRIDGE (USD)"
 
 
 def esperado_fuera(codigo):
@@ -87,6 +88,41 @@ def esperado_fuera(codigo):
     c = (codigo or "").upper()
     return (c.startswith("PL-R-") or c.startswith("PL-NO-")
             or c.startswith("PL-T-") or c.endswith("-900"))
+
+
+def leer_tasas(wb):
+    """Tasa por (moneda, periodo) para llevar a USD. COP: hoja TRM, columna de promedio
+    mensual. PEN: hoja TRM_Peru, promedio del BCRP. USD: 1."""
+    tasas = {}
+    ws = wb["TRM"]
+    filas = list(ws.iter_rows(values_only=True))
+    h = next((i for i, f in enumerate(filas[:8])
+              if f and str(f[0] or "").strip().lower() == "periodo"), None)
+    if h is not None:
+        cab = [str(x or "").strip().lower() for x in filas[h]]
+        ip = cab.index("periodo")
+        ic = cab.index("trm_promedio_mercado") if "trm_promedio_mercado" in cab else None
+        for f in filas[h + 1:]:
+            if not f or not f[ip]:
+                continue
+            v = f[ic] if ic is not None else None
+            if isinstance(v, (int, float)) and v > 0:
+                tasas[("COP", str(f[ip]).strip())] = float(v)
+    ws = wb["TRM_Peru"]
+    filas = list(ws.iter_rows(values_only=True))
+    h = next((i for i, f in enumerate(filas[:8])
+              if f and str(f[0] or "").strip().lower() == "periodo"), None)
+    if h is not None:
+        cab = [str(x or "").strip().lower() for x in filas[h]]
+        ip = cab.index("periodo")
+        it = next((cab.index(c) for c in ("tc_pen_usd", "tc") if c in cab), None)
+        for f in filas[h + 1:]:
+            if not f or not f[ip] or it is None:
+                continue
+            v = f[it]
+            if isinstance(v, (int, float)) and v > 0:
+                tasas[("PEN", str(f[ip]).strip())] = float(v)
+    return tasas
 
 
 def leer_hoja(wb, nombre):
@@ -100,6 +136,8 @@ def leer_hoja(wb, nombre):
 
 
 def construir(wb):
+    tasas = leer_tasas(wb)
+    sin_tasa = {}
     _, mapa_filas = leer_hoja(wb, H_MAPA)
     _, detalle = leer_hoja(wb, H_DET)
 
@@ -121,18 +159,31 @@ def construir(wb):
             continue
         if str(m.get("usar_en_grafica") or "").strip().upper() != "SI":
             continue
+        # A USD antes de agregar. Sin esta conversion la hoja sumaba 70.163 soles a
+        # 113.311 dolares y publicaba 183.474 como si fuera una sola moneda: el total
+        # quedaba inflado en unos 49.500 "dolares" que eran soles. Regla 4 del proyecto.
+        mon = str(d.get("moneda") or "USD").strip().upper()
+        per = str(d.get("periodo") or "").strip()
+        if mon == "USD":
+            tasa = 1.0
+        else:
+            tasa = tasas.get((mon, per))
+            if not tasa:
+                sin_tasa[(mon, per)] = sin_tasa.get((mon, per), 0) + 1
+                continue          # no se inventa una tasa: la fila queda fuera y se avisa
+        conv = lambda v: round((v or 0) / tasa, 2)
         puente.append(OrderedDict([
             ("periodo", d.get("periodo")),
             ("pais", d.get("pais")),
             ("entidad", d.get("entidad")),
-            ("moneda", d.get("moneda")),
+            ("moneda", "USD"),
             ("codigo_comun", cod),
             ("rubro_comun", d.get("rubro_comun")),
             ("indicador_dashboard", m.get("indicador_dashboard")),
             ("detalle_dashboard", m.get("detalle_dashboard")),
             ("area_dashboard", m.get("area_dashboard")),
-            ("valor_mes", d.get("movimiento_mes") or 0),
-            ("valor_ytd", d.get("saldo_presentacion_ytd") or 0),
+            ("valor_mes", conv(d.get("movimiento_mes"))),
+            ("valor_ytd", conv(d.get("saldo_presentacion_ytd"))),
             ("fuente", d.get("fuente_archivo")),
             ("calidad_mapeo", m.get("estado_mapeo")),
             ("nota", NOTA_PUENTE),
@@ -166,7 +217,7 @@ def construir(wb):
     resumen = sorted(agr.values(), key=lambda x: (str(x["periodo"]), str(x["pais"]),
                                                   str(x["indicador_dashboard"] or ""),
                                                   str(x["detalle_dashboard"] or "")))
-    return puente, resumen, fuera_esperados, huecos
+    return puente, resumen, fuera_esperados, huecos, sin_tasa
 
 
 def escribir_hoja(wb, nombre, cols, filas):
@@ -195,7 +246,7 @@ def main():
     _, resumen_antes = leer_hoja(wb, H_RESUMEN)
     total_antes = sum(r.get("valor_mes") or 0 for r in resumen_antes)
 
-    puente, resumen, fuera, huecos = construir(wb)
+    puente, resumen, fuera, huecos, sin_tasa = construir(wb)
     s_puente = sum(p["valor_mes"] for p in puente)
     s_resumen = sum(r["valor_mes"] for r in resumen)
 
@@ -217,6 +268,12 @@ def main():
     # 183.474-- pero pasaba desapercibido porque las magnitudes se parecen. Con
     # Colombia dentro deja de disimular: 656 millones de pesos sumados a dolares.
     # Regla 4 del proyecto: no sumar monedas distintas.
+    if sin_tasa:
+        print()
+        print("  SIN TASA DE CONVERSION -- esas filas quedaron FUERA del puente:")
+        for (m, per), n in sorted(sin_tasa.items()):
+            print("     %-5s %-9s %4d filas" % (m, per, n))
+        print("     Cargar la tasa en la hoja TRM / TRM_Peru y volver a correr.")
     monedas = {}
     for x in puente:
         m = str(x.get("moneda") or "?")
@@ -285,10 +342,15 @@ def main():
         print("VISTA PREVIA. Nada se escribio. Usa --probar o --escribir.")
         return 0
 
-    if escribir and not iguales:
+    if escribir and not iguales and "--acepto-cambio" not in sys.argv:
         print()
         print("ABORTA: el resultado no reproduce la base actual. Corre --probar y revisa.")
+        print("Si el cambio es intencional --por ejemplo la conversion a USD-- repite con")
+        print("--acepto-cambio, que deja constancia de que alguien lo miro y lo aprobo.")
         return 1
+    if escribir and not iguales:
+        print()
+        print("  CAMBIO ACEPTADO EXPLICITAMENTE (--acepto-cambio).")
 
     if escribir:
         os.makedirs(RESPALDOS, exist_ok=True)
