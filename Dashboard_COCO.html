@@ -453,7 +453,12 @@ const AREAS=[
   {id:"burn",     label:"Burn & Runway", hint:"Caja, quema y cobertura · del Modelo"},
   {id:"finanzas", label:"Finanzas & P&L", hint:"P&L del periodo",
      codes:["ingresos_totales","margen_bruto_pct","ebitda","margen_ebitda","utilidad_neta","margen_neto","egresos_totales","gastos_totales"],
-     charts:[{type:"factura12",title:"Facturación a 12 meses"},
+     /* N-12: el estado de resultados por pais va de primero. renderPyG/renderPyGConsol y
+        toda la maquinaria de consolStatementCard existian pero ningun area declaraba
+        type:"pyg", asi que eran codigo inalcanzable: la tabla no se pintaba en ninguna
+        pestana. Aqui es donde la busca quien entra a "Finanzas & P&L". */
+     charts:[{type:"pyg",title:"Estado de resultados por país"},
+             {type:"factura12",title:"Facturación a 12 meses"},
              {type:"yoybars",code:"ingresos_totales",title:"Facturación 2025 vs 2026"},
              {type:"recon",title:"Facturación Contable vs Ejecutada"}]},
   {id:"mrr",      label:"Ingresos & MRR", hint:"Recurrencia y movimiento de MRR",
