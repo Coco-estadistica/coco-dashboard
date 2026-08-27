@@ -17,6 +17,10 @@
   --green-b:rgba(0,204,88,.16); --amber-b:rgba(244,183,64,.16); --red-b:rgba(244,104,94,.16);
   --blue-b:rgba(59,130,246,.16); --purple-b:rgba(167,139,250,.16);
   --radius:14px;
+  /* N-01: alto de la barra superior. Es el punto de anclaje de .tabs; se recalcula en
+     vivo (ver ajustarAltoBarra) porque la barra crece si el texto envuelve o si le
+     agregan otro control. Este valor es solo el arranque, antes del primer render. */
+  --topbar-h:141px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -53,7 +57,7 @@ select:focus-visible{box-shadow:0 0 0 2px var(--green)}
 @keyframes pulse{0%{transform:scale(.6);opacity:.6}100%{transform:scale(2.4);opacity:0}}
 
 /* tabs */
-.tabs{position:sticky;top:57px;z-index:35;background:rgba(10,20,32,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs{position:sticky;top:var(--topbar-h);z-index:40;background:rgba(10,20,32,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);overflow-x:auto}
 .tabs-in{display:flex;gap:4px;max-width:1320px;margin:0 auto;padding:0 18px}
 .tab-btn{flex:none;background:none;border:none;color:var(--mute);font-family:inherit;font-size:13px;font-weight:600;padding:12px 14px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:8px}
 .tab-btn .n{font-family:'IBM Plex Mono',monospace;font-size:11px;opacity:.7}
@@ -2601,7 +2605,9 @@ function clearPreset(){ document.querySelectorAll("#f-presets button").forEach(b
 function syncFilterInputs(){ const s=document.getElementById("f-start"),e=document.getElementById("f-end"),t=document.getElementById("f-trm");
   if(s)s.value=F.start; if(e)e.value=F.periodo; if(t&&F.trm==null)t.value=Math.round(trmSheet(F.periodo)); }
 function applyPreset(p){ const end=coreEnd(), idxEnd=S.periodos.indexOf(end);
-  if(p==="all"){ F.start=S.periodos[0]; F.periodo=end; }
+  /* M-35: "Total" debe abarcar TODA la base. Usaba coreEnd(), que es el ultimo mes
+     CON dato real (2026-07), y dejaba fuera los periodos presupuestados hasta 2026-12. */
+  if(p==="all"){ F.start=S.periodos[0]; F.periodo=S.periodos[S.periodos.length-1]; }
   else if(p==="1"){ F.start=end; F.periodo=end; }
   else { const n=(p==="def")?12:parseInt(p,10); F.start=S.periodos[Math.max(0,idxEnd-(n-1))]; F.periodo=end; }
   syncFilterInputs(); markPreset(p); render(); }
@@ -2645,6 +2651,10 @@ function fillFilters(){
   if(trmBaseSel){ trmBaseSel.value=F.trmBase; trmBaseSel.onchange=e=>{ F.trmBase=e.target.value; F.trm=null; trmIn.value=Math.round(trmSheet(F.periodo)); sincronizarBaseTRM(); render(); }; }
   sincronizarBaseTRM();
   F.trm=null; applyPreset("def"); trmIn.value=Math.round(trmSheet(F.periodo));
+  /* N-01: primera medida y reajuste ante cualquier cambio de tamano de la barra. */
+  ajustarAltoBarra();
+  if(window.ResizeObserver){ new ResizeObserver(ajustarAltoBarra).observe(document.querySelector(".topbar")); }
+  else { window.addEventListener("resize",ajustarAltoBarra); }
 }
 
 /* ============================================================
@@ -2729,6 +2739,18 @@ const CARGA_PAISES=["Colombia","Costa Rica","Guatemala","Panamá","Regional","Ot
 
 function cloudCfg(){ try{ return JSON.parse(localStorage.getItem("coco_cloud")||"{}"); }catch(e){ return {}; } }
 function saveCloudCfg(c){ try{ localStorage.setItem("coco_cloud",JSON.stringify(c)); }catch(e){} }
+/* N-01: mantiene --topbar-h igual al alto real de la barra superior.
+   El valor no se escribe a mano en dos sitios: .tabs se ancla a la variable y la
+   variable la fija esta funcion. Asi, si manana le agregan otro control a la barra o
+   el texto envuelve en una pantalla angosta, la fila de pestanas baja con ella en vez
+   de quedar debajo y volverse inalcanzable. */
+function ajustarAltoBarra(){
+  const tb=document.querySelector(".topbar");
+  if(!tb) return;
+  const h=Math.round(tb.getBoundingClientRect().height);
+  if(h>0) document.documentElement.style.setProperty("--topbar-h",h+"px");
+}
+
 function toast(msg,esError){
   let t=document.getElementById("toast");
   if(!t){ t=document.createElement("div"); t.id="toast"; t.className="toast"; document.body.appendChild(t); }
