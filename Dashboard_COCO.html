@@ -50,23 +50,31 @@ select:focus-visible{box-shadow:0 0 0 2px var(--green)}
 #f-presets button{padding:6px 9px;font-size:11px}
 .trm-in{font-family:'IBM Plex Mono',monospace;font-size:12.5px;width:74px;background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:9px;padding:6px 8px;outline:none}
 .trm-in:focus-visible{box-shadow:0 0 0 2px var(--green)}
-.mtz{width:100%;border-collapse:separate;border-spacing:0;margin-top:12px;font-size:12.5px}
-.mtz th{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--mute);font-weight:700;
+.franja{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:11px}
+.franja .fr-p{background:rgba(255,255,255,.035);border-radius:8px;padding:9px 12px}
+.franja .fr-t{font-size:12.5px;color:var(--ink2);display:flex;align-items:center;gap:6px;line-height:1.4}
+.franja .fr-t b{color:var(--ink);font-weight:600}
+.franja .fr-n{font-size:12px;color:var(--ink2)}
+.franja .fr-n.off{color:var(--mute)}
+.franja .fr-l{font-size:11.5px;line-height:1.5;color:var(--mute);margin-top:4px}
+@media(max-width:900px){.franja{grid-template-columns:repeat(2,1fr)}}
+.mtz{width:100%;border-collapse:separate;border-spacing:0;margin-top:12px;font-size:13.5px}
+.mtz th{font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--mute);font-weight:700;
   padding:0 8px 9px;text-align:center;white-space:nowrap}
 .mtz th.l,.mtz td.l{text-align:left;padding-left:0}
 .mtz td{padding:13px 10px;text-align:center;border-top:1px solid var(--line);vertical-align:middle}
 .mtz td.l{color:var(--ink);font-weight:600}
 .mtz .cel{display:inline-flex;flex-direction:column;align-items:center;gap:3px;line-height:1.25}
 .mtz .pt{width:11px;height:11px;border-radius:50%;display:block}
-.mtz .cn{font-size:11px;color:var(--ink2)}
+.mtz .cn{font-size:12.5px;color:var(--ink2)}
 .mtz .cn.off{color:var(--mute)}
-.mtz .cl{font-size:10.5px;line-height:1.45;color:var(--mute);max-width:190px;text-wrap:balance;margin-top:1px}
+.mtz .cl{font-size:11.5px;line-height:1.5;color:var(--mute);max-width:200px;text-wrap:balance;margin-top:1px}
 .mtz td{min-width:150px}
 .mtz-ley{display:flex;gap:20px;flex-wrap:wrap;margin-top:14px;padding-top:13px;border-top:1px solid var(--line);
   font-size:12px;color:var(--ink2);align-items:center}
 .mtz-ley span.pt{margin-right:6px;vertical-align:middle}
 .alc-chip{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:3px 8px;border-radius:999px;margin-left:9px;vertical-align:middle;white-space:nowrap}
-.alc-nota{font-size:13px;line-height:1.7;color:var(--ink2);background:rgba(255,255,255,.035);border-left:3px solid var(--line2);border-radius:0 8px 8px 0;padding:11px 15px;margin:10px 0 0}
+.alc-nota{font-size:13.5px;line-height:1.7;color:var(--ink2);background:rgba(255,255,255,.035);border-left:3px solid var(--line2);border-radius:0 8px 8px 0;padding:11px 15px;margin:10px 0 0}
 .live{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink2)}
 .version-tag{color:var(--green);font-weight:800;white-space:nowrap}
 .pulse{width:8px;height:8px;border-radius:50%;background:var(--green);position:relative}
@@ -2608,9 +2616,11 @@ const MTZ_FILAS = [
   {code:"costo_proveedor",  titulo:"Zoom · Proveedores"},
 ];
 
-function matrizGastos(){
+/* Una casilla de la matriz: que aporta un pais a un corte. La usan la matriz del pie
+   y la franja que va encima de cada grafico, para que digan exactamente lo mismo. */
+function casillaGasto(code, pais){
   const res = S.gastosResumen || [];
-  const casilla = (code, pais) => {
+  {
     /* Se miran las DOS fuentes y gana la que informe mas. Mirar solo la cadena y
        devolver al encontrar algo dejaba a Colombia en "1 concepto" para el grafico por
        area: la cadena solo le trae Financieros, pero en BD_Indicadores tiene los cinco
@@ -2632,8 +2642,13 @@ function matrizGastos(){
     if(rubros.length === 1)
       return {c:"ambar", n:"total", lista:rubros, t:"Solo el total, sin desglose"};
     return {c:"gris", n:"n/a", lista:[], t:"Ese corte no existe en el plan de cuentas de "+MTZ_ROTULO[pais]};
-  };
-  const COL = {verde:"var(--green)", ambar:"var(--amber)", gris:"var(--mute)"};
+  }
+}
+
+const MTZ_COL = {verde:"var(--green)", ambar:"var(--amber)", gris:"var(--mute)"};
+
+function matrizGastos(){
+  const casilla = casillaGasto;
   let html = '<table class="mtz"><thead><tr><th class="l">Gráfico</th>'
     + MTZ_PAISES.map(p => '<th>'+MTZ_ROTULO[p]+'</th>').join('') + '</tr></thead><tbody>';
   MTZ_FILAS.forEach(f => {
@@ -2645,7 +2660,7 @@ function matrizGastos(){
       const nombres = (x.lista && x.lista.length)
         ? '<span class="cl">'+x.lista.join(' · ')+'</span>' : '';
       html += '<td><span class="cel" title="'+String(x.t).replace(/"/g,"&quot;")+'">'
-            + '<span class="pt" style="background:'+COL[x.c]+'"></span>'
+            + '<span class="pt" style="background:'+MTZ_COL[x.c]+'"></span>'
             + '<span class="cn'+(x.c==="gris"?" off":"")+'">'+x.n+'</span>'
             + nombres + '</span></td>';
     });
@@ -2657,6 +2672,23 @@ function matrizGastos(){
     + '<span><span class="pt" style="background:var(--amber)"></span>Aporta, con otro corte o solo el total</span>'
     + '<span><span class="pt" style="background:var(--mute)"></span>No existe para ese país</span></div>';
   return html;
+}
+
+/* La misma fila de la matriz, pero encima del grafico al que corresponde. Quien mira
+   una barra apilada necesita saber ANTES que hay dentro y quien aporta; tenerlo solo en
+   la tabla del pie obliga a bajar y volver. */
+function franjaGasto(code){
+  const f = document.createElement("div");
+  f.className = "franja";
+  f.innerHTML = MTZ_PAISES.map(p => {
+    const x = casillaGasto(code, p);
+    return '<div class="fr-p" title="'+String(x.t).replace(/"/g,"&quot;")+'">'
+         + '<div class="fr-t"><span class="pt" style="background:'+MTZ_COL[x.c]+'"></span>'
+         + '<b>'+MTZ_ROTULO[p]+'</b> <span class="fr-n'+(x.c==="gris"?" off":"")+'">'+x.n+'</span></div>'
+         + (x.lista && x.lista.length ? '<div class="fr-l">'+x.lista.join(" · ")+'</div>' : '')
+         + '</div>';
+  }).join("");
+  return f;
 }
 
 function renderMatrizGastos(){
@@ -2687,6 +2719,8 @@ function renderChartCard(ch){
     const col={verde:["var(--green)","var(--green-b)"],ambar:["var(--amber)","var(--amber-b)"],
                gris:["var(--mute)","rgba(255,255,255,.06)"]}[alc.clase];
   }
+  /* la franja va antes del dibujo: primero se sabe que se esta mirando */
+  if(alc && ch.code && MTZ_FILAS.some(f=>f.code===ch.code)) card.appendChild(franjaGasto(ch.code));
   const body=document.createElement("div"); body.style.marginTop="8px"; card.appendChild(body);
   const M=F.moneda;
   if(ch.type==="bar"){ const s=seriesOf(ch.code); if(!s.values.some(v=>v!=null)){noData(body);return null;} const mny=isMoney(ch.code); barChart(body,s.labels,s.values,{fmt:v=>mny?fAxisMoney(v):fNum(v)}); }
