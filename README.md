@@ -195,31 +195,91 @@ prioridad y el ajuste no duplica nada.
 
 ## 5. Cierre mensual
 
-1. **`Actualizar_Desde_GitHub.bat`** — parte siempre de la última versión.
-2. **Respalda** la base (o corre `Corregir_Base.bat`, que respalda solo).
-3. Revisa la fuente de cada país **en su moneda de origen**.
-4. Carga las cifras en `BD_Indicadores`.
-5. Recalcula el bloque `Consolidado` en USD.
-6. **Corre `Revisar_Base.bat`.** Si dice "todas las capas están alineadas", sigue.
-7. Abre el tablero y revisa las pestañas afectadas.
-8. Confirma que los periodos sin datos aparezcan como **`s/d`** y no como cero.
-   Cada `s/d` es un pendiente de cargue; si sobra alguno, es que el dato ya llegó
-   y no se subió.
-9. **`Subir_A_GitHub.bat`** — el cierre no está terminado hasta que está publicado.
-   El botón te muestra qué va a subir y pide confirmación antes de hacerlo.
+Los pasos, en orden. Ninguno se salta.
+
+### A. Antes de tocar nada
+
+1. **`Actualizar_Desde_GitHub.bat`** — parte siempre de la última versión. Si tienes
+   cambios sin subir, el botón se detiene: primero sube, luego baja.
+2. Ten a la mano los **auxiliares contables del mes de los cuatro países** y, si cambió,
+   el modelo financiero.
+
+### B. Revisa la fuente antes de cargarla
+
+Cada mes, dos comprobaciones sobre los archivos que te llegan. Las dos salieron de
+errores reales:
+
+3. **¿El archivo es del mes que dice?** Abre el balance y mira el **saldo inicial**:
+   tiene que ser el saldo final del mes anterior. En agosto de 2026 el "julio" de Perú
+   era un reexporte de junio, y se detectó justo así — el mismo movimiento quedó
+   contado dos veces, con dos tasas distintas.
+4. **¿Abre como Excel de verdad?** Algunos llegan como texto tabulado con extensión
+   `.xlsx`. Se ven bien en Excel pero ninguna librería los lee.
+
+### C. Carga
+
+5. Carga cada país **en su moneda de origen**: Colombia en COP, Perú en PEN, EE.UU. y
+   Costa Rica en USD. La conversión la hace el tablero, no tú.
+6. Si el mes trae una **tasa de cambio nueva**, cárgala en `TRM` (columna
+   `trm_promedio_mercado`) y en `TRM_Peru` **antes** de cargar las cifras.
+7. Corre el script del cargue que corresponda en `migracion/`. Todos tienen vista previa
+   por defecto y solo escriben con `--escribir`, con respaldo automático.
+
+### D. Después de cargar un país, recompón el consolidado
+
+8. **`python migracion/recalcular_consolidado_mes.py 2026-08`**
+
+   En el bloque `Consolidación USD` el consolidado **no se deriva: tiene fila propia
+   guardada**. Si corriges un país y no recompones, el estado deja de cuadrar con sus
+   propias columnas y nada avisa. Pasó al corregir julio de Perú.
+
+### E. Si tocaste gastos
+
+9. **`python migracion/regenerar_gastos.py --probar`** — corre sobre una copia y compara
+   celda por celda contra lo que hay.
+10. Si el resultado es idéntico, aplica con `--escribir`. Si cambió **y el cambio es
+    intencional**, hace falta `--acepto-cambio`: sin esa bandera el script se niega.
+
+    La cifra de control hoy es **144.965,48 en 135 filas**. Si te da otra cosa, algo
+    cambió y hay que mirarlo antes de escribir.
+
+### F. Verifica
+
+11. **`Revisar_Base.bat`** — corre dos controles:
+    - `conciliar_capas.py`: el bloque **A (Países vs Consolidado) debe estar en OK**.
+      Las diferencias de B y C son archivo histórico, están así **a propósito** desde
+      el 13-ago-2026. **No corras `Corregir_Base.bat` para "arreglarlas"**: eso borra
+      el antes de la homologación.
+    - `exportar_sqlite.py`: las seis validaciones V1–V6. Las que fallen te dicen qué
+      regla del negocio se rompió y dónde.
+12. Abre el tablero y revisa las pestañas afectadas.
+13. Confirma que los periodos sin datos salgan como **`s/d`** y no como cero. Cada `s/d`
+    es un pendiente de cargue; si sobra alguno, el dato llegó y no se subió.
+
+### G. Publica
+
+14. **`Subir_A_GitHub.bat`** — el cierre no está terminado hasta que está publicado.
 
 ### Si además actualizaste el Modelo financiero
 
 - Reemplaza `modelo/Modelo_COCO.xlsx` por la versión nueva.
-- Doble clic en `modelo/Actualizar_Burn_Runway.bat` → refresca la pestaña 03.
+- Doble clic en `modelo/Actualizar_Burn_Runway.bat` → refresca la pestaña 02.
 - **El `corte` ya no se escribe a mano.** `modelo/extraer_burn_runway.py` lo deduce del
-  bloque mensual del propio modelo y aborta si no puede (verificado el 20-ago-2026). Si
-  antes leíste que había que editarlo, ya no aplica.
+  bloque mensual del propio modelo y aborta si no puede.
 
-`Revisar_Base.bat` compara la huella del modelo contra la que quedó sellada en
-`burn_runway.json`. Si reemplazas el modelo y olvidas regenerar, avisa
-**DESACTUALIZADO** en vez de dejar la pestaña mostrando cifras viejas. También avisa
-si aparece un modelo más reciente en `Modelos Financieros` que aún no se ha copiado.
+`Revisar_Base.bat` compara la huella del modelo contra la sellada en `burn_runway.json`.
+Si reemplazas el modelo y olvidas regenerar, avisa **DESACTUALIZADO** en vez de dejar la
+pestaña mostrando cifras viejas.
+
+### Lo que NO hay que hacer
+
+- **No conviertas monedas a mano** antes de cargar. El tablero convierte con la tasa del
+  país y del mes; una conversión previa se convierte dos veces.
+- **No rellenes un faltante con cero.** Un dato que no llegó se marca `s/d`.
+- **No crees la fila `Consolidado` de un mes a mano.** Si no existe, el tablero la arma
+  sumando los cuatro países, y así queda derivada en vez de guardada.
+- **No corras `Corregir_Base.bat`** salvo que alguien decida, a sabiendas, que la capa
+  histórica debe reflejar las cifras vigentes.
 
 ---
 
