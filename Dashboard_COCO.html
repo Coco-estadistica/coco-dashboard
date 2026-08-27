@@ -1422,7 +1422,8 @@ function acumOficialInfo(pais){
   return corte?{seg,corte}:null;
 }
 /* Acumulado oficial: corte publicado + meses posteriores disponibles en el bloque USD. */
-function officialAccumVal(code,pais,periodo){
+/* El acumulado tal como está guardado en la base: bloque oficial + meses posteriores. */
+function acumGuardado(code,pais,periodo){
   const info=acumOficialInfo(pais);
   if(info&&periodo>=info.corte){
     const base=factValConsol(code,info.corte,pais,info.seg);
@@ -1432,6 +1433,58 @@ function officialAccumVal(code,pais,periodo){
   }
   const meses=mesesIntl().filter(m=>m<=periodo);
   return meses.length?factValConsol(code,meses,pais,"Consolidación USD"):null;
+}
+
+/* Colombia se origina en COP y su bloque acumulado viene guardado YA convertido a
+   dólares con UNA sola tasa (3.505,27 para ene–jun). Eso tenía dos consecuencias: el
+   selector de Base TRM no movía el acumulado ni un dólar —era decorativo— y la cifra
+   no correspondía a ninguna de las dos series de la hoja TRM.
+
+   Aquí se reconvierte mes a mes con la tasa del periodo, que es la convención contable
+   para el estado de resultados. Los otros tres países no se tocan: EE.UU. y Costa Rica
+   ya se originan en dólares, y Perú viene convertido con la tasa del BCRP en su fuente.
+
+   Devuelve null si Colombia no tiene la línea mensual en pesos; ahí se usa lo guardado. */
+function colombiaAcumUSD(code,periodo){
+  const anio=String(periodo).slice(0,4);
+  let s=null;
+  for(const m of S.periodos){
+    if(m.slice(0,4)!==anio||m>periodo) continue;
+    const cop=valueOf(code,{periodo:m,pais:"Colombia",segmento:""});
+    if(cop==null) continue;
+    const t=trmOf(m);
+    if(!t||isNaN(t)) continue;
+    s=(s||0)+cop/t;
+  }
+  return s;
+}
+
+function officialAccumVal(code,pais,periodo){
+  /* Los códigos calculados se arman con las cifras que ya pasaron por esta función.
+     Si se delegaran a factValConsol leerían el bloque guardado y no verían la
+     reconversión de Colombia, y el subtotal no cuadraría con sus propias líneas. */
+  if(code==="_utilidad_operativa"){
+    const partes=[["pyg_ingresos_operacionales",1],["pyg_costo_ventas",-1],["pyg_gasto_administracion",-1],
+                  ["pyg_gasto_ventas",-1],["pyg_gasto_proyectos",-1],["pyg_reclasif_honorarios_peru",-1]];
+    let s=null;
+    partes.forEach(par=>{ const v=officialAccumVal(par[0],pais,periodo); if(v!=null) s=(s||0)+par[1]*v; });
+    return s;
+  }
+  if(code==="_utilidad_bruta_h1"){
+    const ing=officialAccumVal("pyg_ingresos_operacionales",pais,periodo);
+    const costo=officialAccumVal("pyg_costo_ventas",pais,periodo);
+    return ing!=null?ing-(costo||0):null;
+  }
+  const col=colombiaAcumUSD(code,periodo);
+  if(pais==="Colombia") return col!=null?col:acumGuardado(code,pais,periodo);
+  const guardado=acumGuardado(code,pais,periodo);
+  /* El consolidado tiene fila propia en el bloque oficial (no es la suma de países):
+     se le aplica la diferencia de Colombia para no perder las cifras de los otros tres. */
+  if(pais==="Consolidado"&&col!=null&&guardado!=null){
+    const colGuardado=acumGuardado(code,"Colombia",periodo);
+    return guardado-(colGuardado||0)+col;
+  }
+  return guardado;
 }
 /* Un renglón vacío puede ser dos cosas MUY distintas:
      - "s/d": la cuenta existe para ese país pero el mes no se cargó  -> hay que perseguirlo.
