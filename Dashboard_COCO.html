@@ -2605,7 +2605,9 @@ function clearPreset(){ document.querySelectorAll("#f-presets button").forEach(b
 function syncFilterInputs(){ const s=document.getElementById("f-start"),e=document.getElementById("f-end"),t=document.getElementById("f-trm");
   if(s)s.value=F.start; if(e)e.value=F.periodo; if(t&&F.trm==null)t.value=Math.round(trmSheet(F.periodo)); }
 function applyPreset(p){ const end=coreEnd(), idxEnd=S.periodos.indexOf(end);
-  if(p==="all"){ F.start=S.periodos[0]; F.periodo=end; }
+  /* M-35: "Total" debe abarcar TODA la base. Usaba coreEnd(), que es el ultimo mes
+     CON dato real (2026-07), y dejaba fuera los periodos presupuestados hasta 2026-12. */
+  if(p==="all"){ F.start=S.periodos[0]; F.periodo=S.periodos[S.periodos.length-1]; }
   else if(p==="1"){ F.start=end; F.periodo=end; }
   else { const n=(p==="def")?12:parseInt(p,10); F.start=S.periodos[Math.max(0,idxEnd-(n-1))]; F.periodo=end; }
   syncFilterInputs(); markPreset(p); render(); }
