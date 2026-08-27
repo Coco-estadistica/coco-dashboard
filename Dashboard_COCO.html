@@ -2533,7 +2533,7 @@ function renderArea(host,area){
   (area.charts||[]).forEach(ch=>{ const el=renderChartCard(ch); if(el)host.appendChild(el); });
   /* La matriz cierra la pestana de Gastos: despues de los graficos, porque responde
      sobre lo que se acaba de ver, no antes de verlo. */
-  if(area.id==="gastos") host.appendChild(renderMatrizGastos());
+  if(area.id==="gastos" && F.pais==="__ALL__") host.appendChild(renderMatrizGastos());
   /* Ventas & Comercial: detalle de oportunidades desde la hoja Pipeline_Comercial */
   if(area.id==="ventas") host.appendChild(renderPipelineDetalle());
 }
@@ -2818,8 +2818,11 @@ function renderChartCard(ch){
     const col={verde:["var(--green)","var(--green-b)"],ambar:["var(--amber)","var(--amber-b)"],
                gris:["var(--mute)","rgba(255,255,255,.06)"]}[alc.clase];
   }
-  /* la franja va antes del dibujo: primero se sabe que se esta mirando */
-  if(alc && ch.code && MTZ_FILAS.some(f=>f.code===ch.code)) card.appendChild(franjaGasto(ch.code));
+  /* La franja va antes del dibujo: primero se sabe que se esta mirando. Solo en la
+     vista consolidada: si el lector ya eligio un pais, "que aporta cada pais" es una
+     pregunta que no se esta haciendo, y la franja le roba el espacio al grafico. */
+  if(alc && ch.code && F.pais==="__ALL__" && MTZ_FILAS.some(f=>f.code===ch.code))
+    card.appendChild(franjaGasto(ch.code));
   const body=document.createElement("div"); body.style.marginTop="8px"; card.appendChild(body);
   const M=F.moneda;
   if(ch.type==="bar"){ const s=seriesOf(ch.code); if(!s.values.some(v=>v!=null)){noData(body);return null;} const mny=isMoney(ch.code); barChart(body,s.labels,s.values,{fmt:v=>mny?fAxisMoney(v):fNum(v)}); }
