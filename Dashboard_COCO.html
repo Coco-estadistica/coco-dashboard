@@ -242,8 +242,7 @@ footer b{color:var(--ink2)}
     <div class="ctrl"><label>Escenario</label><select id="f-escenario"></select></div>
     <div class="ctrl"><label>País</label><select id="f-pais"></select></div>
     <div class="ctrl"><label>Moneda</label><div class="toggle" id="f-moneda"><button data-m="USD" class="on">USD</button><button data-m="COP">COP</button></div></div>
-    <div class="ctrl"><label>Base TRM</label><select id="f-trmbase" title="Tasa COP/USD usada para convertir: implícita (EEFF) o promedio de mercado"><option value="implicita">Implícita</option><option value="mercado">Mercado</option></select></div>
-    <div class="ctrl"><label>TRM</label><input id="f-trm" class="trm-in" type="number" min="0" step="1" title="TRM COP/USD (editable). Default = base elegida para el periodo."><span id="trm-warn" style="display:none;cursor:help;margin-left:4px" title="Sin TRM en la base para este periodo: el tablero está convirtiendo con la tasa de respaldo 4.170. Carga la hoja TRM o escribe una tasa manual.">⚠️</span></div>
+    <div class="ctrl"><label>Base TRM</label><select id="f-trmbase" title="Tasa COP/USD usada para convertir: implícita (derivada de los EEFF) o promedio mensual de mercado"><option value="implicita">Implícita</option><option value="mercado">Promedio mensual</option></select><span id="trm-warn" style="display:none;cursor:help;margin-left:4px" title="Sin TRM en la base para este periodo: el tablero está convirtiendo con la tasa de respaldo 4.170. Carga la hoja TRM.">⚠️</span></div>
     <button class="btn primary" id="btn-cloud" title="Lee la última versión de BD_MAESTRA_COCO (Google Sheets)">☁ Actualizar desde la nube</button>
     <button class="btn" id="btn-datos" title="Registro individual o carga masiva con plantilla">✎ Ingresar datos</button>
     <button class="btn" id="btn-load" title="Respaldo: cargar un archivo Excel local">Cargar BD</button>
@@ -1319,10 +1318,9 @@ function render(){
   const esBurn=tabId==="burn";
   document.querySelectorAll("#f-moneda button").forEach(b=>{ b.disabled=esBurn;
     b.title=esBurn?"Burn & Runway usa la tasa de su propio informe: la moneda del tablero no aplica aquí.":""; });
-  const tIn=document.getElementById("f-trm"), tBase=document.getElementById("f-trmbase");
-  if(tIn){ tIn.disabled=esBurn;
-    tIn.title=esBurn?"No aplica en Burn & Runway (fuente externa con tasa propia).":"TRM COP/USD (editable). Default = base elegida para el periodo."; }
-  if(tBase){ tBase.disabled=esBurn||!!F.trm; }
+  const tBase=document.getElementById("f-trmbase");
+  if(tBase){ tBase.disabled=esBurn;
+    tBase.title=esBurn?"No aplica en Burn & Runway (fuente externa con tasa propia).":"Tasa COP/USD usada para convertir: implícita (derivada de los EEFF) o promedio mensual de mercado"; }
   /* TRM de respaldo: si ni la base elegida ni la hoja TRM tienen tasa para el periodo
      (ni un último dato), la conversión usa el valor fijo de emergencia 4170. Eso se
      avisa junto al campo con un ⚠️, no se calla. */
@@ -2598,8 +2596,8 @@ function coreEnd(){
 }
 function markPreset(p){ document.querySelectorAll("#f-presets button").forEach(b=>b.classList.toggle("on",b.dataset.p===p)); }
 function clearPreset(){ document.querySelectorAll("#f-presets button").forEach(b=>b.classList.remove("on")); }
-function syncFilterInputs(){ const s=document.getElementById("f-start"),e=document.getElementById("f-end"),t=document.getElementById("f-trm");
-  if(s)s.value=F.start; if(e)e.value=F.periodo; if(t&&F.trm==null)t.value=Math.round(trmSheet(F.periodo)); }
+function syncFilterInputs(){ const s=document.getElementById("f-start"),e=document.getElementById("f-end");
+  if(s)s.value=F.start; if(e)e.value=F.periodo; }
 function applyPreset(p){ const end=coreEnd(), idxEnd=S.periodos.indexOf(end);
   if(p==="all"){ F.start=S.periodos[0]; F.periodo=end; }
   else if(p==="1"){ F.start=end; F.periodo=end; }
@@ -2634,17 +2632,13 @@ function fillFilters(){
   const selPa=document.getElementById("f-pais"); selPa.innerHTML=paisesFiltro.map(x=>`<option value="${x}">${etiqueta(x)}</option>`).join("");
   F.pais="__ALL__"; selPa.value="__ALL__"; selPa.onchange=e=>{F.pais=e.target.value;render();};
   document.querySelectorAll("#f-moneda button").forEach(b=>b.onclick=()=>{ F.moneda=b.dataset.m; document.querySelectorAll("#f-moneda button").forEach(x=>x.classList.toggle("on",x===b)); render(); });
-  const trmIn=document.getElementById("f-trm");
+  /* La caja de TRM manual se retiro: dejaba escribir cualquier tasa sobre cifras
+     contables ya publicadas, sin que quedara rastro de con que se convirtio lo que
+     se estaba viendo. La conversion sale ahora solo de la hoja TRM, via Base TRM.
+     F.trm permanece en null: trmOf() conserva su guarda como red de seguridad. */
   const trmBaseSel=document.getElementById("f-trmbase");
-  /* Una TRM manual manda sobre la base (Implícita/Mercado). Ese dominio se muestra:
-     el selector de base se apaga mientras haya tasa manual, en vez de quedar ignorado
-     en silencio. Borrar la caja TRM lo reactiva. */
-  const sincronizarBaseTRM=()=>{ if(trmBaseSel){ trmBaseSel.disabled=!!F.trm;
-    trmBaseSel.title=F.trm?"Escribiste una TRM manual: esa tasa manda. Borra la caja TRM para volver a usar la base.":"Tasa COP/USD usada para convertir: implícita (EEFF) o promedio de mercado"; } };
-  trmIn.onchange=()=>{ const v=parseFloat(trmIn.value); F.trm=(v>0)?v:null; sincronizarBaseTRM(); render(); };
-  if(trmBaseSel){ trmBaseSel.value=F.trmBase; trmBaseSel.onchange=e=>{ F.trmBase=e.target.value; F.trm=null; trmIn.value=Math.round(trmSheet(F.periodo)); sincronizarBaseTRM(); render(); }; }
-  sincronizarBaseTRM();
-  F.trm=null; applyPreset("def"); trmIn.value=Math.round(trmSheet(F.periodo));
+  if(trmBaseSel){ trmBaseSel.value=F.trmBase; trmBaseSel.onchange=e=>{ F.trmBase=e.target.value; render(); }; }
+  F.trm=null; applyPreset("def");
 }
 
 /* ============================================================
