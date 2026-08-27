@@ -2254,6 +2254,12 @@ function renderResumen(host){
   /* Los indicadores financieros ya vienen convertidos mes a mes y conciliados con
      el P&G oficial cuando está disponible. */
   const ytdFin=code=>{ let s=null; ytdMonths.forEach(p=>{ const v=financeDisplayValue(code,p); if(v!=null)s=(s||0)+v; }); return s; };
+  /* I-22: la tarjeta de ingresos acumulados decia "7 meses" siempre, porque contaba los
+     periodos del año en la base, no los que aportaron algo. Con País = Costa Rica, que
+     solo tiene julio, seguia diciendo 7. Aqui se cuentan los meses con dato para la
+     entidad seleccionada, que es lo que el lector entiende al leer "N meses". */
+  const mesesConDato=code=>ytdMonths.filter(p=>financeDisplayValue(code,p)!=null).length;
+  const etiquetaMeses=code=>{ const n=mesesConDato(code); return n+(n===1?" mes":" meses"); };
   const revMes=financeDisplayValue("ingresos_totales",per), ebMes=financeDisplayValue("ebitda",per);
   const mEbitda=financeDisplayValue("margen_ebitda",per), uNeta=financeDisplayValue("utilidad_neta",per);
   const revYTD=officialFinanceAccumDisplay("ingresos_totales",per)??ytdFin("ingresos_totales");
@@ -2284,7 +2290,7 @@ function renderResumen(host){
   const mnyRawU=(v,p)=>v==null?"—":conMon(fMoney(toDisplay(v,p||per)));
   const hero=[
     {k:"Ingresos mes",code:"ingresos_totales",v:mnyFinU(revMes),meta:revMes!=null?per:motivoSinDato("ingresos_totales"),real:revMes!=null},
-    {k:"Ingresos "+year,code:"ingresos_totales",v:mnyFinU(revYTD),meta:revYTD!=null?ytdMonths.length+" meses":motivoSinDato("ingresos_totales")},
+    {k:"Ingresos "+year,code:"ingresos_totales",v:mnyFinU(revYTD),meta:revYTD!=null?etiquetaMeses("ingresos_totales"):motivoSinDato("ingresos_totales")},
     {k:"EBITDA mes",code:"ebitda",v:mnyFinU(ebMes),meta:ebMes!=null?(mEbitda!=null?"Margen "+fPctN(mEbitda,0):"—"):motivoSinDato("ebitda"),s:st(mEbitda)},
     {k:"Utilidad antes de renta "+year,code:"utilidad_neta",v:mnyFinU(unYTD),meta:unYTD!=null?"acumulado":motivoSinDato("utilidad_neta"),s:unYTD!=null?(unYTD>=0?"green":"red"):null},
     {k:"MRR / ARR",code:"mrr_final",v:mnyRawU(mrr,mrrPer),meta:mrr!=null?"ARR "+mnyRaw(mrr*12,mrrPer)+" "+F.moneda:motivoSinDato("mrr_final")},
@@ -2450,6 +2456,18 @@ function renderPipelineDetalle(){
 
 function noData(body,msg){ body.dataset.empty="1"; body.innerHTML='<div style="color:var(--mute);font-size:12px;padding:24px;text-align:center">'+(msg||"Sin datos para los filtros actuales")+'</div>'; }
 /* lee la hoja Analisis_Reconciliacion → [{concepto,contCOP,ejeCOP,contUSD,ejeUSD}] */
+/* I-27: la hoja trae su periodo en el titulo de la primera fila
+   ("Facturación Contable vs Ejecutada — mayo 2026 (S2)") y el tablero lo ignoraba: la
+   tarjeta salia sin fecha, en una pestana cortada a julio, con cifras de mayo. Nadie
+   podia saber a que mes correspondian los 223.988 de ingresos que muestra. */
+function reconPeriodo(){ const A=S.reconAOA; if(!A||!A.length)return "";
+  for(let r=0;r<Math.min(A.length,4);r++){
+    const t=String(((A[r]||[])[0])||"");
+    const m=/[—-]\s*([A-Za-zÁÉÍÓÚáéíóúñ]+\s+\d{4}[^)]*\)?)\s*$/.exec(t.trim());
+    if(m) return m[1].trim();
+  }
+  return ""; }
+
 function reconData(){ const A=S.reconAOA; if(!A||!A.length)return null;
   let hr=-1; for(let r=0;r<Math.min(A.length,6);r++){ const row=(A[r]||[]).map(norm); if(row.some(c=>c.includes("concepto"))){hr=r;break;} }
   if(hr<0)return null; const rows=[];
@@ -2539,7 +2557,8 @@ function renderMRRBridge(card,body,h,ch){
 /* Facturación Contable vs Ejecutada (hoja Analisis_Reconciliacion; USD embebido) */
 function renderRecon(card,body,h){
   const rows=reconData(); if(!rows||!rows.length){ noData(body,"Hoja Analisis_Reconciliacion no encontrada"); return; }
-  const useUSD=F.moneda==="USD"; h.textContent="Facturación Contable vs Ejecutada ("+(useUSD?"USD":"COP")+")";
+  const useUSD=F.moneda==="USD"; const perRec=reconPeriodo();
+  h.textContent="Facturación Contable vs Ejecutada ("+(useUSD?"USD":"COP")+")"+(perRec?" · "+perRec:"");
   const get=(r,k)=>useUSD?(k==="c"?r.contUSD:r.ejeUSD):(k==="c"?r.contCOP:r.ejeCOP);
   /* tabla */
   let t=`<table class="cat-table" style="margin-bottom:14px"><thead><tr><th>Concepto</th><th style="text-align:right;color:var(--green)">Contable</th><th style="text-align:right;color:var(--blue)">Ejecutada</th><th style="text-align:right">Diferencia</th></tr></thead><tbody>`;
@@ -2683,8 +2702,13 @@ function renderChurn(card,body,h){
 }
 
 function renderCatalogo(host){
+  /* I-26: el encabezado decia "108 indicadores" y la tabla pintaba 103. S.order trae
+     todo el diccionario, pero la tabla salta los del area "control" y los que no tienen
+     ficha en el catalogo. Se cuenta lo que se va a pintar, no lo que hay en la lista. */
+  const nPintados=S.order.filter(code=>{ const c=S.catalog[code];
+    return !!c && norm(c.area)!=="control"; }).length;
   const wrap=document.createElement("div");
-  const eb=document.createElement("div"); eb.className="eyebrow"; eb.innerHTML=`<h2>Catálogo de variables</h2><span class="hint">${S.order.length} indicadores · último valor disponible hasta ${F.periodo} (${F.moneda}) · <span style="color:var(--amber)">en ámbar</span>, los que no son de ese mes</span>`;
+  const eb=document.createElement("div"); eb.className="eyebrow"; eb.innerHTML=`<h2>Catálogo de variables</h2><span class="hint">${nPintados} indicadores · último valor disponible hasta ${F.periodo} (${F.moneda}) · <span style="color:var(--amber)">en ámbar</span>, los que no son de ese mes</span>`;
   host.appendChild(eb);
   const box=document.createElement("div"); box.className="cat-wrap"; host.appendChild(box);
   let rows="";
