@@ -937,6 +937,26 @@ function etiquetaTasa(per){
   const base=F.trmBase==="cierre"?"tasa de cierre de mes":"tasa promedio mensual";
   return "TRM "+fNum(trmOf(per))+" · "+(manual?"tasa fijada a mano":base);
 }
+/* C-08 / I-19: un dato de otro mes se anunciaba en letra chica y del mismo color que
+   el resto ("ultimo dato: 2025-12"), asi que MARGEN BRUTO de diciembre pasaba
+   desapercibido entre cinco tarjetas de julio. Y en el Catalogo ni eso: el encabezado
+   decia "valor en 2026-07" para todas las filas, incluidas cinco que eran de junio.
+
+   Aqui se centraliza el sello: si la cifra no es del periodo pedido, se dice, y se dice
+   en ambar. La politica del proyecto es un mes de rezago; mas viejo que eso, ademas, se
+   nombra el desfase en meses para que se note cuanto. */
+function mesesEntre(a,b){
+  const pa=String(a).split("-"), pb=String(b).split("-");
+  if(pa.length<2||pb.length<2) return 0;
+  return (parseInt(pb[0],10)-parseInt(pa[0],10))*12 + (parseInt(pb[1],10)-parseInt(pa[1],10));
+}
+function selloFrescura(perDato, perPedido, breve){
+  if(!perDato||!perPedido||perDato===perPedido) return "";
+  const n=mesesEntre(perDato,perPedido);
+  const txt=(breve?"":"último dato: ")+perDato+(n>1?" · "+n+" meses atrás":"");
+  return '<span style="color:var(--amber)">'+txt+'</span>';
+}
+
 function motivoSinDato(code){
   if(code&&esSoloColombia(code)&&esPaisConsol(F.pais))
     return "No disponible en la base: solo se captura para Colombia";
@@ -2415,7 +2435,7 @@ function renderArea(host,area){
     const has=shown!=null, s=statusFor(code,shown), official=officialFinanceDisplay(code,perShown)!=null;
     const meta=META[code], bench=(has&&meta)?benchBarNative(shown,meta):"";
     return {k:(c.nombre||code),v:has?fmtFinanceDisplay(code,shown):"Por medir",dummy:!has,real:has,s:has?s:null,bench,
-      sub:has?(perShown!==per?("último dato: "+perShown):(official?"P&G oficial · "+mesCorto(perShown):(c.tipo||"").toString())):"aún sin cargar en la BD",
+      sub:has?(perShown!==per?selloFrescura(perShown,per):(official?"P&G oficial · "+mesCorto(perShown):(c.tipo||"").toString())):"aún sin cargar en la BD",
       src:official?"BD_PYG_OFICIAL":(c.fuente?(c.fuente+(c.origen?" · "+c.origen:"")):(c.origen||""))};
   }):(area.codes||[]).map(code=>{ const c=S.catalog[code]||{}; const vRaw=valueOf(code,{periodo:per});
     let vRawShown=vRaw, perShown=per;
@@ -2427,7 +2447,7 @@ function renderArea(host,area){
        códigos que solo tiene Colombia cuando se mira una filial. Decir "Por medir" ahí
        manda a perseguir un dato que nadie va a entregar. */
     const noAplicaAqui=esSoloColombia(code)&&esPaisConsol(F.pais);
-    const sub=has?(perShown!==per?("último dato: "+perShown):(c.tipo||"").toString())
+    const sub=has?(perShown!==per?selloFrescura(perShown,per):(c.tipo||"").toString())
                  :(noAplicaAqui?motivoSinDato(code):"aún sin cargar en la BD");
     const freqTag=(area.id==="marketing"&&c.frec)?(" · "+c.frec):"";
     return {k:(c.nombre||code)+chipAlcance(code,per),v:has?fmtValue(code,vRawShown,perShown):(noAplicaAqui?"—":"Por medir"),dummy:!has&&!noAplicaAqui,real:has,s:has?s:null,bench,
@@ -2699,7 +2719,7 @@ function renderChurn(card,body,h){
 
 function renderCatalogo(host){
   const wrap=document.createElement("div");
-  const eb=document.createElement("div"); eb.className="eyebrow"; eb.innerHTML=`<h2>Catálogo de variables</h2><span class="hint">${S.order.length} indicadores · valor en ${F.periodo} (${F.moneda})</span>`;
+  const eb=document.createElement("div"); eb.className="eyebrow"; eb.innerHTML=`<h2>Catálogo de variables</h2><span class="hint">${S.order.length} indicadores · último valor disponible hasta ${F.periodo} (${F.moneda}) · <span style="color:var(--amber)">en ámbar</span>, los que no son de ese mes</span>`;
   host.appendChild(eb);
   const box=document.createElement("div"); box.className="cat-wrap"; host.appendChild(box);
   let rows="";
@@ -2707,10 +2727,13 @@ function renderCatalogo(host){
     const vRaw=valueOf(code,{periodo:F.periodo}); let shown=vRaw,per=F.periodo;
     if(vRaw==null){ const lp=lastPeriodoWith(code); if(lp){shown=valueOf(code,{periodo:lp});per=lp;} }
     const vtxt=shown!=null?fmtValue(code,shown,per):'<span style="color:var(--mute)">Por medir</span>';
+    /* C-08: cada fila declara de que mes es su cifra. */
+    const ptxt=shown==null?'<span style="color:var(--mute)">—</span>'
+              :(per===F.periodo?'<span style="color:var(--mute)">'+per+'</span>':selloFrescura(per,F.periodo,true));
     rows+=`<tr><td><span class="area-chip">${c.area||"—"}</span></td><td class="code">${code}</td><td style="color:var(--ink)">${c.nombre||""}</td>
-      <td class="mono" style="text-align:right;color:var(--ink)">${vtxt}</td><td style="font-size:11px">${c.unidad||""}</td>
+      <td class="mono" style="text-align:right;color:var(--ink)">${vtxt}</td><td class="mono" style="font-size:11px;white-space:nowrap">${ptxt}</td><td style="font-size:11px">${c.unidad||""}</td>
       <td style="font-size:11px;color:var(--mute)">${c.formula||""}</td><td style="font-size:11px">${c.origen||""}</td></tr>`; });
-  box.innerHTML=`<table class="cat-table"><thead><tr><th>Área</th><th>Código</th><th>Nombre</th><th style="text-align:right">Valor</th><th>Unidad</th><th>Fórmula / regla</th><th>Origen</th></tr></thead><tbody>${rows}</tbody></table>`;
+  box.innerHTML=`<table class="cat-table"><thead><tr><th>Área</th><th>Código</th><th>Nombre</th><th style="text-align:right">Valor</th><th>Periodo</th><th>Unidad</th><th>Fórmula / regla</th><th>Origen</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 /* ============================================================
