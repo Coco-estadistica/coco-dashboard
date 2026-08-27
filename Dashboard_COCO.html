@@ -2151,6 +2151,37 @@ function renderBurnRunway(host){
   }
 
   /* ---- Evolución mensual del burn ---- */
+  /* I-15 / I-16: varias notas de la tabla mensual contradicen las cifras que tienen al
+     lado. "Enero concentra el mayor FCF burn del periodo" esta sobre una fila con burn 0
+     y FCF positivo de 211,4 -- el mayor burn es febrero, con 311,0. Y las filas de
+     agregado traen el rango equivocado: "YTD Ene-Jul" rotulada "Acumulado Ene-Jun", y
+     "Promedio 3M May-Jul" rotulada "Promedio 3M (Abr-Jun)".
+
+     Esas notas son la columna J del Modelo, no las escribe el tablero. Reescribirlas
+     aqui seria poner en boca del modelo algo que no dice. Se marcan: la nota se sigue
+     mostrando, con un aviso de que no concuerda con su fila, y se lista al pie para que
+     alguien lo corrija en el Modelo, que es donde vive. */
+  const MESES3=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  function revisarLectura(fila, todas){
+    const txt=String(fila.lectura||""); if(!txt) return null;
+    const burns=todas.filter(x=>esNum(x.burn)).map(x=>x.burn);
+    const maxBurn=burns.length?Math.max.apply(null,burns):null;
+    /* afirma ser el mayor burn del periodo y no lo es */
+    if(/mayor\s+(fcf\s+)?burn/i.test(txt) && maxBurn!=null && esNum(fila.burn) && fila.burn < maxBurn){
+      const lider=todas.find(x=>x.burn===maxBurn);
+      return "dice ser el mayor burn del periodo, pero el mayor es "+String(lider&&lider.mes||"otro mes")+
+             " ("+fNum(maxBurn)+" contra "+fNum(fila.burn)+")";
+    }
+    /* el rango que menciona la nota no es el del rotulo de la fila */
+    const enRot=(String(fila.mes||"").toLowerCase().match(/[a-z]{3}/g)||[]).filter(m=>MESES3.indexOf(m)>=0);
+    const enNota=(txt.toLowerCase().match(/[a-z]{3}/g)||[]).filter(m=>MESES3.indexOf(m)>=0);
+    if(enRot.length>=2 && enNota.length>=2 && (enRot[0]!==enNota[0] || enRot[1]!==enNota[1])){
+      return "la nota habla de "+enNota[0]+"–"+enNota[1]+" y la fila es "+enRot[0]+"–"+enRot[1];
+    }
+    return null;
+  }
+  (d.mensual||[]).forEach(x=>{ x._alerta=revisarLectura(x, (d.mensual||[]).filter(y=>!/YTD|Promedio/i.test(String(y.mes)))); });
+
   const mensuales=d.mensual.filter(x=>!/YTD|Promedio/i.test(String(x.mes)));
   const cB=document.createElement("div"); cB.className="chart-card"; cB.style.marginTop="14px";
   cB.innerHTML=`<h3>FCF burn por mes (COP MM)</h3>`;
@@ -2171,7 +2202,7 @@ function renderBurnRunway(host){
         <td>${x.mes}</td><td class="r mono"${rojo(x.cfo)}>${MM1(x.cfo)}</td><td class="r mono"${rojo(x.capex)}>${MM1(x.capex)}</td>
         <td class="r mono"${rojo(x.intl)}>${x.intl==null?"—":MM1(x.intl)}</td><td class="r mono"${rojo(x.fcf)}>${MM1(x.fcf)}</td>
         <td class="r mono" style="color:var(--amber)">${MM1(x.burn)}</td><td class="r mono"${rojo(x.cambio)}>${MM1(x.cambio)}</td>
-        <td style="font-size:11px;color:var(--mute);max-width:280px">${x.lectura||""}</td></tr>`;}).join("")}</tbody></table></div>`;
+        <td style="font-size:11px;color:var(--mute);max-width:280px">${x.lectura||""}${x._alerta?`<span title="${x._alerta}" style="color:var(--amber);cursor:help"> \u26a0</span>`:""}</td></tr>`;}).join("")}</tbody></table></div>`;
   host.appendChild(tB);
 
   /* ---- Proyección jul–dic ---- */
