@@ -26,7 +26,13 @@ from datetime import datetime
 import openpyxl
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
+# Las dos capas viven en libros distintos desde que la base se separo el 13-ago-2026:
+# BD_Indicadores (la que manda) en la base maestra, y Subsidiarias_PyG en el libro de
+# trazabilidad. Antes estaban en el mismo archivo y este script abria uno solo; desde
+# la separacion moria con KeyError y Corregir_Base.bat dejo de funcionar sin que nadie
+# lo notara, porque el .bat no distingue el error de una corrida limpia.
 BASE = os.path.join(AQUI, "BD_MAESTRA_COCO.xlsx")
+TRAZA = os.path.join(AQUI, "BD_TRAZABILIDAD_COCO.xlsx")
 SEG = "Consolidación USD"
 TOL = 1.0
 
@@ -58,7 +64,12 @@ def main():
         vigente[clave] = fila[ib["valor"]]
 
     # --- recorrer Subsidiarias_PyG ---
-    wss = wb["Subsidiarias_PyG"]
+    # Subsidiarias_PyG vive en el libro de trazabilidad, no en la base maestra.
+    wbt = openpyxl.load_workbook(TRAZA, data_only=False)
+    if "Subsidiarias_PyG" not in wbt.sheetnames:
+        print("No encuentro Subsidiarias_PyG en %s" % os.path.basename(TRAZA))
+        return
+    wss = wbt["Subsidiarias_PyG"]
     hs = encabezado(wss)
     Hs = [str(c.value).strip() if c.value else "" for c in wss[hs]]
     isub = {c: Hs.index(c) for c in Hs if c}
@@ -107,9 +118,11 @@ def main():
 
     os.makedirs(os.path.join(AQUI, "respaldos"), exist_ok=True)
     sello = datetime.now().strftime("%Y%m%d_%H%M%S")
-    copia = os.path.join(AQUI, "respaldos", f"BD_MAESTRA_COCO_antes_sync_subsidiarias_{sello}.xlsx")
-    shutil.copy2(BASE, copia)
-    wb.save(BASE)
+    # Se respalda y se escribe el libro de TRAZABILIDAD: la base maestra no se toca,
+    # porque BD_Indicadores es la fuente y aqui solo se alinea la capa de archivo.
+    copia = os.path.join(AQUI, "respaldos", f"BD_TRAZABILIDAD_COCO_antes_sync_subsidiarias_{sello}.xlsx")
+    shutil.copy2(TRAZA, copia)
+    wbt.save(TRAZA)
     print(f"\n  Respaldo: {os.path.basename(copia)}")
     print(f"  Aplicados {len(cambios)} cambio(s). Vuelve a correr conciliar_capas.py para confirmar.\n")
 
