@@ -1407,7 +1407,7 @@ const BRIDGE_STEPS=[
   {code:"_utilidad_operativa",           label:"Resultado de\nla operación",    tipo:"subtotal"},
   {code:"pyg_ingresos_no_operacionales", label:"Ingresos no\noperacionales",    tipo:"pos"},
   {code:"pyg_gastos_financieros",        label:"Gastos\nfinancieros",           tipo:"neg"},
-  {code:"pyg_utilidad_neta",             label:"Utilidad\nneta",                tipo:"total"}
+  {code:"pyg_utilidad_neta",             label:"Utilidad antes\nde renta",                tipo:"total"}
 ];
 
 /* El corte del acumulado oficial NO es una fecha quemada: se detecta como el último
@@ -1584,7 +1584,7 @@ function renderPyG(host,embedH){
       {k:"Ingresos operacionales",v:conMon(mny(ing0)),s:null,real:true},
       {k:"Utilidad bruta",v:conMon(mny(bruta)),meta:ing0?fPctN(bruta/ing0*100,1)+" margen":"",s:bruta>=0?"green":"red",real:true},
       {k:"Utilidad operativa (EBITDA)",v:conMon(mny(oper)),meta:ing0?fPctN(oper/ing0*100,1)+" margen":"",s:oper>=0?"green":"red",real:true},
-      {k:"Utilidad neta",v:conMon(mny(neta0)),meta:ing0?fPctN(neta0/ing0*100,1)+" margen":"",s:neta0>=0?"green":"red",real:true}
+      {k:"Utilidad antes de renta",v:conMon(mny(neta0)),meta:ing0?fPctN(neta0/ing0*100,1)+" margen":"",s:neta0>=0?"green":"red",real:true}
     ]);
   }
   const ing=pygVal("pyg_ingresos_operacionales",per);
@@ -1657,14 +1657,14 @@ function renderPyGConsol(host,embedH){
     mkCards(grid,[
       {k:"Ingresos ("+ent+") · mes",v:periodoPendiente?"Dato no recibido":(ing==null?"—":fConU(ing,per)),meta:mesCorto(per),real:true},
       {k:"EBITDA · mes",v:periodoPendiente?"Dato no recibido":(ebitda==null?"—":conMon(ebitda<0?"("+fCon(-ebitda,per)+")":fCon(ebitda,per),F.moneda)),meta:(ebitda!=null&&ing)?fPctN(ebitda/ing*100,1)+" margen":"",s:ebitda>=0?"green":"red",real:true},
-      {k:"Utilidad neta · mes",v:periodoPendiente?"Dato no recibido":(neta==null?"—":conMon(neta<0?"("+fCon(-neta,per)+")":fCon(neta,per),F.moneda)),meta:(neta!=null&&ing)?fPctN(neta/ing*100,1)+" margen":"",s:neta>=0?"green":"red",real:true},
+      {k:"Utilidad antes de renta · mes",v:periodoPendiente?"Dato no recibido":(neta==null?"—":conMon(neta<0?"("+fCon(-neta,per)+")":fCon(neta,per),F.moneda)),meta:(neta!=null&&ing)?fPctN(neta/ing*100,1)+" margen":"",s:neta>=0?"green":"red",real:true},
       {k:"Ingresos acumulados",v:fDispU(ingYTDd),meta:rango+notaAc,real:true}
     ]);
     const grid2=document.createElement("div"); grid2.className="grid g3"; grid2.style.marginTop="13px"; host.appendChild(grid2);
     mkCards(grid2,[
       {k:"EBITDA acumulado",v:fDispU(ebitYTDd),meta:rango+notaAc+(ingYTD?" · margen "+fPctN(ebitdaYTD/ingYTD*100,1):""),s:ebitdaYTD>=0?"green":"red",real:true},
-      {k:"Utilidad neta acumulada",v:fDispU(netaYTDd),meta:rango+notaAc,s:netaYTD>=0?"green":"red",real:true},
-      {k:"Margen neto acumulado",v:ingYTD?fPctN(netaYTD/ingYTD*100,1):"—",s:netaYTD>=0?"green":"red",real:true}
+      {k:"Utilidad antes de renta acumulada",v:fDispU(netaYTDd),meta:rango+notaAc,s:netaYTD>=0?"green":"red",real:true},
+      {k:"Margen antes de renta acumulado",v:ingYTD?fPctN(netaYTD/ingYTD*100,1):"—",s:netaYTD>=0?"green":"red",real:true}
     ]);
   }
 
@@ -1711,7 +1711,7 @@ const CONSOL_CUENTAS=[
   {code:"pyg_gasto_proyectos",          cta:"75",     label:"Operación"},
   {code:"_utilidad_operativa",          cta:"",       label:"Utilidad Operativa (EBITDA)", subtotal:true, calc:true},
   {code:"pyg_gastos_financieros",       cta:"530505", label:"Gastos financieros"},
-  {code:"pyg_utilidad_neta",            cta:"360501", label:"Utilidad", total:true}
+  {code:"pyg_utilidad_neta",            cta:"360501", label:"Utilidad antes de renta", total:true}
 ];
 const CONSOL_PAISES=["EE.UU.","Perú","Costa Rica","Colombia"]; /* Consolidado = suma de estos 4 */
 /* cuentas del P&G Consolidado OFICIAL (Acumulado H1, con ingreso bruto/devoluciones y utilidad bruta) */
@@ -1728,7 +1728,7 @@ const CONSOL_CUENTAS_H1=[
   {code:"_utilidad_operativa",           cta:"",       label:"Resultado de la operación", subtotal:true, calc:true},
   {code:"pyg_ingresos_no_operacionales", cta:"420505", label:"Ingresos no operacionales"},
   {code:"pyg_gastos_financieros",        cta:"530505", label:"Gastos financieros"},
-  {code:"pyg_utilidad_neta",             cta:"360501", label:"Utilidad / (Pérdida) neta", total:true}
+  {code:"pyg_utilidad_neta",             cta:"360501", label:"Utilidad antes de renta", total:true}
 ];
 /* factor de conversión a USD por país/mes (para la fila de tasas del estado consolidado) */
 function factorPaisUSD(pais,per){
@@ -1849,7 +1849,7 @@ function consolStatementCard(perOrMeses,resaltar,soloCodes,titulo,segmentoBloque
         return `<td class="r mono" style="${hl}${sel?';background:var(--panel2)':''}">${pendiente(p)?"Dato no recibido":(v==null?"—":(neg?"("+fCon(-v,per)+")":fCon(v,per)))}</td>`; }).join("")+`</tr>`; });
   html+=`</tbody></table></div>`;
   const crIng=factVal("pyg_ingresos_operacionales",per,"Costa Rica",segmentoBloque);
-  let avisos=`<div style="font-size:11px;color:var(--mute);margin-top:8px">Cada país se convierte a USD con su factor mensual (Perú: BCRP; Colombia: COP/USD implícito). Los rubros se muestran con su signo — valores en rojo/paréntesis son negativos (créditos o gasto neto). La Utilidad Operativa (EBITDA) es calculada: Ingresos − Costo del servicio − Administración − Ventas − Operación. La Utilidad neta de cada país es la cifra oficial de su contabilidad. PROINNOVATE (Perú) no entra al consolidado.</div>`;
+  let avisos=`<div style="font-size:11px;color:var(--mute);margin-top:8px">Cada país se convierte a USD con su factor mensual (Perú: BCRP; Colombia: COP/USD implícito). Los rubros se muestran con su signo — valores en rojo/paréntesis son negativos (créditos o gasto neto). La Utilidad Operativa (EBITDA) es calculada: Ingresos − Costo del servicio − Administración − Ventas − Operación. La utilidad de cada país es la cifra oficial de su contabilidad y va ANTES de impuesto de renta: ninguna filial la tiene provisionada en el periodo. PROINNOVATE (Perú) no entra al consolidado.</div>`;
   if(!acumulado&&segmentoBloque!=="__ACUM_OFICIAL__"&&datoNoRecibidoPaisPeriodo("Perú",per)&&cols.includes("Perú")){ avisos+=`<div style="font-size:11.5px;color:var(--amber);background:var(--amber-b);border:1px solid rgba(244,183,64,.35);border-radius:8px;padding:8px 11px;margin-top:8px"><b>Perú · ${mesCorto(per)}:</b> dato no recibido. El consolidado del mes no incorpora actividad ordinaria de Perú y debe considerarse provisional.</div>`; }
   /* El aviso de ingresos atípicos de Costa Rica se decide con los datos, no con una
      fecha fija: dispara cuando el mes supera 3x la mediana de los demás meses de CR
@@ -2136,7 +2136,7 @@ function renderResumen(host){
     <div class="summary">
       <div><div class="eb">Lectura ejecutiva · ${etiquetaPais()} · ${per} · escenario ${F.escenario} · ${F.moneda}</div>
         <p id="sum-text">El periodo <b>${per}</b> cerró con ingresos de <b>${mnyFin(revMes)}</b> y EBITDA de <b>${mnyFin(ebMes)}</b>
-        (margen ${mEbitda!=null?fPctN(mEbitda,1):"—"}). En el acumulado ${year} los ingresos suman <b>${mnyFin(revYTD)}</b> y la utilidad neta <b>${mnyFin(unYTD)}</b>.
+        (margen ${mEbitda!=null?fPctN(mEbitda,1):"—"}). En el acumulado ${year} los ingresos suman <b>${mnyFin(revYTD)}</b> y la utilidad antes de renta <b>${mnyFin(unYTD)}</b>.
         ${carTot!=null?`La cartera total va en <b>${mnyRaw(carTot,carPer)}</b>${dso!=null?` con un DSO de <b>${fNum(dso)} días</b>`:""}${esSoloColombia("cartera_total")&&F.pais==="__ALL__"?" (solo Colombia)":""}. `:""}Cifras de <b>${etiquetaPais()}</b> en <b>${F.moneda}</b> · ${etiquetaTasa(per)}.</p>
       </div>
       <div class="verdict"><div class="lbl">Fuente</div><div class="val" style="font-size:13px;color:var(--ink2)">${S.fileName||"BD_Indicadores"}</div></div>
@@ -2153,7 +2153,7 @@ function renderResumen(host){
     {k:"Ingresos mes",code:"ingresos_totales",v:mnyFinU(revMes),meta:revMes!=null?per:motivoSinDato("ingresos_totales"),real:revMes!=null},
     {k:"Ingresos "+year,code:"ingresos_totales",v:mnyFinU(revYTD),meta:revYTD!=null?ytdMonths.length+" meses":motivoSinDato("ingresos_totales")},
     {k:"EBITDA mes",code:"ebitda",v:mnyFinU(ebMes),meta:ebMes!=null?(mEbitda!=null?"Margen "+fPctN(mEbitda,0):"—"):motivoSinDato("ebitda"),s:st(mEbitda)},
-    {k:"Utilidad neta "+year,code:"utilidad_neta",v:mnyFinU(unYTD),meta:unYTD!=null?"acumulado":motivoSinDato("utilidad_neta"),s:unYTD!=null?(unYTD>=0?"green":"red"):null},
+    {k:"Utilidad antes de renta "+year,code:"utilidad_neta",v:mnyFinU(unYTD),meta:unYTD!=null?"acumulado":motivoSinDato("utilidad_neta"),s:unYTD!=null?(unYTD>=0?"green":"red"):null},
     {k:"MRR / ARR",code:"mrr_final",v:mnyRawU(mrr,mrrPer),meta:mrr!=null?"ARR "+mnyRaw(mrr*12,mrrPer)+" "+F.moneda:motivoSinDato("mrr_final")},
     {k:"Cartera / DSO",code:"cartera_total",v:mnyRawU(carTot,carPer),meta:carTot!=null?(dso!=null?"DSO "+fNum(dso)+"d":"cartera total"):motivoSinDato("cartera_total"),s:dso!=null?statusFor("dso",dso):null}
   ];
