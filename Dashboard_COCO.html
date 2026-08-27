@@ -1349,23 +1349,12 @@ function stackBar(host,parts){
 /* ============================================================
    RENDER
    ============================================================ */
-function render(){
-  if(!S.periodos.length) return;
-  /* buildTabs() reescribe el nav completo y por diseño marca la primera pestaña como
-     activa (i===0). Como render() se llama en CADA cambio de filtro (país, moneda,
-     fecha, escenario, TRM), sin este resguardo cualquier filtro devolvía en silencio
-     a Resumen así se estuviera viendo otra pestaña. Se guarda cuál estaba activa antes
-     de reconstruir y se restaura después. */
-  const idPrevio=(document.querySelector(".tab-btn.active")||{}).dataset?.go;
-  buildTabs();
-  if(idPrevio){ const nav=document.getElementById("tabnav");
-    nav.querySelectorAll(".tab-btn").forEach(b=>b.classList.toggle("active",b.dataset.go===idPrevio)); }
-  const active=document.querySelector(".tab-btn.active");
-  const tabId=active?active.dataset.go:"resumen";
-  /* Un control que no aplica se apaga a la vista; no se ignora en silencio. En las
-     pestañas de alcance fijo el selector muestra el alcance de la pestaña y queda
-     deshabilitado. Al cambiar de pestaña vuelve a mostrar la elección del lector, que
-     nunca se tocó. */
+/* N-05 (causa real): esto vivia dentro de render(), pero el clic de pestana llama a
+   renderTab() directamente -- ver buildTabs() -- asi que al cambiar de pestana no
+   corria NUNCA. Por eso los controles seguian encendidos en Burn aunque el codigo
+   para apagarlos existiera desde antes: solo se aplicaba al mover un filtro, que
+   es cuando render() si corre. Ahora es una funcion y la llaman los dos caminos. */
+function sincronizarControles(tabId){
   const fija=AREAS.find(a=>a.id===tabId&&a.alcanceFijo!==undefined);
   const selPa=document.getElementById("f-pais");
   if(selPa){
@@ -1414,6 +1403,26 @@ function render(){
   /* TRM de respaldo: si ni la base elegida ni la hoja TRM tienen tasa para el periodo
      (ni un último dato), la conversión usa el valor fijo de emergencia 4170. Eso se
      avisa junto al campo con un ⚠️, no se calla. */
+}
+
+function render(){
+  if(!S.periodos.length) return;
+  /* buildTabs() reescribe el nav completo y por diseño marca la primera pestaña como
+     activa (i===0). Como render() se llama en CADA cambio de filtro (país, moneda,
+     fecha, escenario, TRM), sin este resguardo cualquier filtro devolvía en silencio
+     a Resumen así se estuviera viendo otra pestaña. Se guarda cuál estaba activa antes
+     de reconstruir y se restaura después. */
+  const idPrevio=(document.querySelector(".tab-btn.active")||{}).dataset?.go;
+  buildTabs();
+  if(idPrevio){ const nav=document.getElementById("tabnav");
+    nav.querySelectorAll(".tab-btn").forEach(b=>b.classList.toggle("active",b.dataset.go===idPrevio)); }
+  const active=document.querySelector(".tab-btn.active");
+  const tabId=active?active.dataset.go:"resumen";
+  /* Un control que no aplica se apaga a la vista; no se ignora en silencio. En las
+     pestañas de alcance fijo el selector muestra el alcance de la pestaña y queda
+     deshabilitado. Al cambiar de pestaña vuelve a mostrar la elección del lector, que
+     nunca se tocó. */
+  sincronizarControles(tabId);
   const warnT=document.getElementById("trm-warn");
   if(warnT){
     const hayDatos=S.periodos&&S.periodos.length, m=hayDatos?trmBaseMap():{}, last=hayDatos?S.periodos[S.periodos.length-1]:null;
@@ -1440,7 +1449,7 @@ function actualizarLeyendaSD(){
 /* Envoltura: la leyenda debe recalcularse en TODOS los caminos. renderTabInterno tiene
    varios return tempranos y además se le llama directo desde el clic de las pestañas,
    así que el ajuste no puede ir dentro de render() ni al final del cuerpo. */
-function renderTab(id){ renderTabInterno(id); actualizarLeyendaSD(); }
+function renderTab(id){ sincronizarControles(id); renderTabInterno(id); actualizarLeyendaSD(); }
 
 /* Ejecuta el pintado de una pestaña de alcance fijo con SU país, y devuelve el filtro
    como estaba. El render es síncrono, así que el try/finally cubre incluso un error a
