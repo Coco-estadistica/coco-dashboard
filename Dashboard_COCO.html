@@ -457,7 +457,12 @@ const AREAS=[
   {id:"burn",     label:"Burn & Runway", hint:"Caja, quema y cobertura · del Modelo"},
   {id:"finanzas", label:"Finanzas & P&L", hint:"P&L del periodo",
      codes:["ingresos_totales","margen_bruto_pct","ebitda","margen_ebitda","utilidad_neta","margen_neto","egresos_totales","gastos_totales"],
-     charts:[{type:"factura12",title:"Facturación a 12 meses"},
+     /* N-12: el estado de resultados por pais va de primero. renderPyG/renderPyGConsol y
+        toda la maquinaria de consolStatementCard existian pero ningun area declaraba
+        type:"pyg", asi que eran codigo inalcanzable: la tabla no se pintaba en ninguna
+        pestana. Aqui es donde la busca quien entra a "Finanzas & P&L". */
+     charts:[{type:"pyg",title:"Estado de resultados por país"},
+             {type:"factura12",title:"Facturación a 12 meses"},
              {type:"yoybars",code:"ingresos_totales",title:"Facturación 2025 vs 2026"},
              {type:"recon",title:"Facturación Contable vs Ejecutada"}]},
   {id:"mrr",      label:"Ingresos & MRR", hint:"Recurrencia y movimiento de MRR",
@@ -1674,7 +1679,12 @@ function renderPyGConsol(host,embedH){
 
   /* estado de resultados por país: mes seleccionado y ACUMULADO */
   host.appendChild(consolStatementCard(per, ent==="Consolidado"?null:ent, null, "Estado de Resultados · mes",undefined,undefined,ent==="Consolidado"?null:[ent]));
-  host.appendChild(usaAcumOficial?consolStatementCardAcumulado(per,[ent]):consolStatementCard(mesesHasta,ent,null,"Estado de Resultados · acumulado",undefined,undefined,[ent]));
+  /* N-12: en Consolidado, la tabla acumulada abre una columna por pais (soloPaises=null),
+     igual que la tarjeta mensual de la linea anterior. Antes pasaba [ent], y con ent="Consolidado"
+     eso colapsaba la tabla a una sola columna de totales: la lectura del grupo es comparar
+     EE.UU., Peru, Costa Rica y Colombia entre si, no ver el total que ya esta en los KPIs. */
+  const soloEnt=ent==="Consolidado"?null:[ent];
+  host.appendChild(usaAcumOficial?consolStatementCardAcumulado(per,soloEnt):consolStatementCard(mesesHasta,ent==="Consolidado"?null:ent,null,"Estado de Resultados · acumulado",undefined,undefined,soloEnt));
   if(ent==="Perú")host.appendChild(peruSpecialProjectCard(per));
 }
 
