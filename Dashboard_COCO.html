@@ -51,7 +51,14 @@ select:focus-visible{box-shadow:0 0 0 2px var(--green)}
 .trm-in{font-family:'IBM Plex Mono',monospace;font-size:12.5px;width:74px;background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:9px;padding:6px 8px;outline:none}
 .trm-in:focus-visible{box-shadow:0 0 0 2px var(--green)}
 .franja{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:11px}
-.franja .fr-p{background:rgba(255,255,255,.035);border-radius:8px;padding:9px 12px}
+/* Los cuatro paises son columnas de una rejilla, asi que ya salen a la misma altura.
+   Lo que faltaba era que el Total se apoyara en el fondo de su bloque en vez de venir
+   pegado al ultimo concepto: con 5 lineas en Colombia y 2 en Costa Rica, los totales
+   quedaban a cuatro alturas distintas y no se podian comparar de un vistazo. */
+.franja .fr-p{background:rgba(255,255,255,.035);border-radius:8px;padding:9px 12px;
+  display:flex;flex-direction:column}
+.franja .fr-l{display:flex;flex-direction:column;flex:1 1 auto}
+.franja .fr-l .fr-tot{margin-top:auto}
 .franja .fr-t{font-size:12.5px;color:var(--ink2);display:flex;align-items:center;gap:6px;line-height:1.4}
 .franja .fr-t b{color:var(--ink);font-weight:600}
 .franja .fr-n{font-size:12px;color:var(--ink2)}
@@ -76,9 +83,15 @@ select:focus-visible{box-shadow:0 0 0 2px var(--green)}
 /* arriba, no al medio: con vertical-align:middle una casilla de 1 concepto quedaba
    centrada frente a una de 7 y los punticos salian a alturas distintas. Alineados
    arriba, los cuatro paises de una fila arrancan en la misma linea. */
-.mtz td{padding:13px 10px;text-align:center;border-top:1px solid var(--line);vertical-align:top}
+/* El height:1px no encoge nada: la celda sigue estirandose al alto de la fila. Es el
+   truco de siempre para que el height:100% del hijo tenga contra que resolver -- sin el,
+   un porcentaje dentro de un <td> no resuelve y el Total no se puede apoyar en el fondo. */
+.mtz td{padding:13px 10px;text-align:center;border-top:1px solid var(--line);vertical-align:top;height:1px}
+.mtz td.l{height:auto}
 .mtz td.l{color:var(--ink);font-weight:600;padding-top:11px}
-.mtz .cel{display:inline-flex;flex-direction:column;align-items:center;gap:4px;line-height:1.25;width:100%}
+.mtz .cel{display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.25;width:100%;height:100%}
+.mtz .cl{display:flex;flex-direction:column;flex:1 1 auto;width:100%}
+.mtz .cl .fr-tot{margin-top:auto}
 .mtz .pt{width:11px;height:11px;border-radius:50%;display:block}
 .mtz .cn{font-size:12.5px;color:var(--ink2)}
 .mtz .cn.off{color:var(--mute)}
