@@ -3085,21 +3085,25 @@ function renderFactura12(card,body,h){
    Estas dos funciones leen un pais concreto sin importar el filtro de la barra, que es
    lo que ninguna de las existentes hacia. */
 function ingresoPaisDisplay(per, pais){
+  /* El escenario sale de F, no clavado en "Real". Lo tenia clavado y por eso el grafico
+     seguia pintando el crecimiento ejecutado con ESCENARIO=Presupuesto puesto: el mismo
+     defecto que ya se corrigio en factVal, reintroducido en una funcion nueva. */
+  const esc=F.escenario;
   const ofi=rawStored("pyg_ingresos_operacionales",
-                      {periodo:per, pais:pais, segmento:CONSOL_SEG, escenario:"Real"});
+                      {periodo:per, pais:pais, segmento:CONSOL_SEG, escenario:esc});
   if(ofi!=null) return usdToDisplay(ofi, per);
   /* antes de que existiera el P&G oficial, Colombia vivia en la serie de gestion */
   if(pais!=="Colombia") return null;
-  const leg=rawStored("ingresos_totales", {periodo:per, pais:"Colombia", escenario:"Real"});
+  const leg=rawStored("ingresos_totales", {periodo:per, pais:"Colombia", escenario:esc});
   return leg==null?null:toDisplay(leg, per);
 }
 /* lo que aportan las filiales: el consolidado del mes menos Colombia */
 function ingresoInternacionalDisplay(per){
-  let tot=factVal("pyg_ingresos_operacionales", per, "Consolidado", CONSOL_SEG, "Real");
+  let tot=factVal("pyg_ingresos_operacionales", per, "Consolidado", CONSOL_SEG, F.escenario);
   if(tot==null) tot=sumaPaisesConsol("pyg_ingresos_operacionales", per);
   if(tot==null) return null;
   const col=rawStored("pyg_ingresos_operacionales",
-                      {periodo:per, pais:"Colombia", segmento:CONSOL_SEG, escenario:"Real"});
+                      {periodo:per, pais:"Colombia", segmento:CONSOL_SEG, escenario:F.escenario});
   if(col==null) return null;
   const d=tot-col;
   return d<=0?null:usdToDisplay(d, per);
