@@ -13,6 +13,23 @@ a la tabla tbl_BD_Indicadores del libro maestro, como filas escenario='Presupues
 
 Valores tomados literalmente de la tabla entregada (fuente: Finanzas COCO), en COP.
 """
+
+# ---------------------------------------------------------------------------
+# SEGURO. Este script ya se ejecuto y no forma parte del cierre mensual. Escribe
+# sobre BD_MAESTRA_COCO.xlsx SIN pedir --escribir, asi que un doble clic bastaba
+# para volver a aplicar un cambio que ya esta aplicado. Ver _ejecutados/LEEME.md.
+import sys as _sys
+if "--si-se-lo-que-hago" not in _sys.argv:
+    print(__doc__ or "")
+    print("=" * 74)
+    print("  DETENIDO. Este script ya se ejecuto: correrlo otra vez duplica su efecto.")
+    print("  Lo que hace hoy lo hace cargar_mes.py, con controles.")
+    print("  Si de verdad hace falta: copia la base primero y agrega")
+    print("  --si-se-lo-que-hago")
+    print("=" * 74)
+    raise SystemExit(1)
+# ---------------------------------------------------------------------------
+
 import openpyxl
 
 RUTA = r"C:\Users\andre\OneDrive - CFOcus\01_CFOCUS_CLIENTES\COCO\1.0 Coco Digital\COCO_Dashboard_Cloud\migracion\BD_COCO_2026.xlsx"
