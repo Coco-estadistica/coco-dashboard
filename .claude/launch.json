@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "coco-dashboard",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [".claude/serve_preview.py"],
+      "port": 8740,
+      "autoPort": true
+    }
+  ]
+}
