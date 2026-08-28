@@ -92,6 +92,10 @@ select:focus-visible{box-shadow:0 0 0 2px var(--green)}
 /* tabs */
 .tabs{position:sticky;top:var(--topbar-h);z-index:40;background:rgba(10,20,32,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);overflow-x:auto}
 .tabs-in{display:flex;gap:4px;max-width:1320px;margin:0 auto;padding:0 18px}
+.tab-btn:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--green);border-radius:4px}
+.salto{position:absolute;left:-9999px;top:0;z-index:60;background:var(--green);color:#04121f;
+  font-weight:700;font-size:13px;padding:10px 16px;border-radius:0 0 6px 0;text-decoration:none}
+.salto:focus{left:0}
 .tab-btn{flex:none;background:none;border:none;color:var(--mute);font-family:inherit;font-size:13px;font-weight:600;padding:12px 14px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:8px}
 .tab-btn .n{font-family:'IBM Plex Mono',monospace;font-size:11px;opacity:.7}
 .tab-btn:hover{color:var(--ink2)}
@@ -1594,7 +1598,7 @@ function actualizarLeyendaSD(){
 /* Envoltura: la leyenda debe recalcularse en TODOS los caminos. renderTabInterno tiene
    varios return tempranos y además se le llama directo desde el clic de las pestañas,
    así que el ajuste no puede ir dentro de render() ni al final del cuerpo. */
-function renderTab(id){ sincronizarControles(id); renderTabInterno(id); actualizarLeyendaSD(); }
+function renderTab(id){ sincronizarControles(id); renderTabInterno(id); actualizarLeyendaSD(); urlEscribir(false); }
 
 /* Ejecuta el pintado de una pestaña de alcance fijo con SU país, y devuelve el filtro
    como estaba. El render es síncrono, así que el try/finally cubre incluso un error a
@@ -3058,6 +3062,15 @@ function renderRecon(card,body,h){
   const rows=reconData(); if(!rows||!rows.length){ noData(body,"Hoja Analisis_Reconciliacion no encontrada"); return; }
   const useUSD=F.moneda==="USD"; const perRec=reconPeriodo();
   h.textContent="Facturación Contable vs Ejecutada ("+(useUSD?"USD":"COP")+")"+(perRec?" · "+perRec:"");
+  /* SA-03: el titulo si declara su periodo, pero el bloque es una lamina fija --la hoja
+     Analisis_Reconciliacion trae cinco filas sin pais ni escenario-- metida entre
+     bloques que si reaccionan a los filtros. Quien mueva el pais y no lea el mes creera
+     que esto le corresponde. Se dice, en vez de dejarlo adivinar. */
+  const fijo=document.createElement("div");
+  fijo.style.cssText="font-size:12px;color:var(--mute);line-height:1.65;margin-bottom:12px";
+  fijo.textContent="Conciliación puntual de "+(perRec||"un cierre")+". No responde a los filtros de "
+    +"país, escenario ni rango: viene de la hoja Analisis_Reconciliacion, que trae un solo corte.";
+  body.appendChild(fijo);
   const get=(r,k)=>useUSD?(k==="c"?r.contUSD:r.ejeUSD):(k==="c"?r.contCOP:r.ejeCOP);
   /* tabla */
   let t=`<table class="cat-table" style="margin-bottom:14px"><thead><tr><th>Concepto</th><th style="text-align:right;color:var(--green)">Contable</th><th style="text-align:right;color:var(--blue)">Ejecutada</th><th style="text-align:right">Diferencia</th></tr></thead><tbody>`;
@@ -3353,12 +3366,127 @@ function renderCatalogo(host){
    volver a encenderlas, quita el id de esta lista y listo. */
 const PESTANAS_APAGADAS=["ventas","marketing","cs"];
 function areasVisibles(){ return AREAS.filter(a=>!PESTANAS_APAGADAS.includes(a.id)); }
+/* ============================================================================
+   SA-06 · EL ESTADO VIVE EN LA URL
+   ----------------------------------------------------------------------------
+   La vista que arma el lector --pestana, pais, rango, moneda-- existia solo en
+   memoria: la direccion nunca cambiaba. Tres consecuencias, y las tres se resuelven
+   con lo mismo: no se podia enviar una vista concreta, recargar devolvia todo al
+   inicio, y Atras sacaba del tablero en vez de volver a la pestana anterior.
+
+   Se escribe con pushState al cambiar de pestana --eso SI es un paso del historial--
+   y con replaceState al mover un filtro, para no llenar el historial de estados
+   intermedios mientras alguien tantea. La lectura es tolerante: un hash incompleto o
+   corrupto cae a los valores por defecto en vez de romper el arranque.
+   ============================================================================ */
+const HASH_CAMPOS=["pais","escenario","moneda","start","periodo","trmBase"];
+
+function estadoAHash(){
+  const b=document.querySelector(".tab-btn.active");
+  const p=new URLSearchParams();
+  if(b&&b.dataset.go) p.set("tab",b.dataset.go);
+  HASH_CAMPOS.forEach(k=>{ if(F[k]!=null&&F[k]!=="") p.set(k,F[k]); });
+  return "#"+p.toString();
+}
+function urlEscribir(nuevoPaso){
+  try{
+    const h=estadoAHash();
+    if(h===location.hash) return;
+    history[nuevoPaso?"pushState":"replaceState"](null,"",h);
+  }catch(e){}
+}
+/* Devuelve la pestana pedida, o null. Aplica lo que reconozca y descarta el resto:
+   mas vale una vista parcialmente restaurada que un arranque roto. */
+function hashAEstado(){
+  let p;
+  try{ p=new URLSearchParams((location.hash||"").replace(/^#/,"")); }catch(e){ return null; }
+  if(![...p.keys()].length) return null;
+  const validos={
+    pais:v=>v==="__ALL__"||S.facts.some(f=>f.pais===v),
+    escenario:v=>["Real","Presupuesto","__ALL__"].includes(v),
+    moneda:v=>["USD","COP"].includes(v),
+    start:v=>S.periodos.includes(v),
+    periodo:v=>S.periodos.includes(v),
+    trmBase:v=>["promedio","cierre"].includes(v)
+  };
+  HASH_CAMPOS.forEach(k=>{ const v=p.get(k); if(v!=null&&validos[k]&&validos[k](v)) F[k]=v; });
+  if(F.start&&F.periodo&&F.start>F.periodo) F.start=F.periodo;
+  const tab=p.get("tab");
+  return (tab&&areasVisibles().some(a=>a.id===tab))?tab:null;
+}
+/* Restaura la vista al usar Atras/Adelante. Sin esto, el historial que crea pushState
+   cambiaria la direccion sin cambiar la pantalla, que es peor que no tener historial. */
+function urlRestaurar(){
+  const tab=hashAEstado();
+  syncFilterInputs(); clearPreset();
+  const nav=document.getElementById("tabnav");
+  if(tab&&nav){
+    nav.querySelectorAll(".tab-btn").forEach(x=>{
+      const on=x.dataset.go===tab;
+      x.classList.toggle("active",on); x.setAttribute("aria-selected",on?"true":"false");
+      x.tabIndex=on?0:-1;
+    });
+  }
+  render();
+}
+window.addEventListener("popstate",urlRestaurar);
+
+/* ============================================================================
+   SA-07 · TECLADO Y LECTORES DE PANTALLA
+   ----------------------------------------------------------------------------
+   Las siete pestanas eran botones sueltos: sin role, sin aria-selected, sin anillo
+   de foco, y habia que pasar por 16 controles con Tab antes de llegar a la primera.
+   Cual estaba activa vivia solo en el color.
+
+   Se aplica el patron tablist con tabindex rotatorio: solo la pestana activa esta en
+   el recorrido de Tab y las flechas mueven entre ellas. Eso baja de siete paradas a
+   una. Para el orden --las pestanas van despues de los filtros en el DOM y moverlas
+   cambiaria la maquetacion-- se agrega un enlace de salto, que es la solucion
+   estandar y no toca el layout.
+   ============================================================================ */
+function activarPestana(b,nav,foco){
+  nav.querySelectorAll(".tab-btn").forEach(x=>{
+    const on=x===b;
+    x.classList.toggle("active",on); x.setAttribute("aria-selected",on?"true":"false");
+    x.tabIndex=on?0:-1;
+  });
+  if(foco) b.focus();
+  /* El pushState va ANTES del render. renderTab termina llamando a urlEscribir(false),
+     que hace replaceState; si se dejaba de primero, el hash ya coincidia cuando llegaba
+     el push y este se saltaba por identico. El historial no crecia y Atras seguia
+     sacando del tablero: el sintoma exacto que se venia a corregir. */
+  urlEscribir(true);
+  renderTab(b.dataset.go);
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
 function buildTabs(){
   const nav=document.getElementById("tabnav");
-  nav.innerHTML=areasVisibles().map((a,i)=>`<button class="tab-btn ${i===0?'active':''}" data-go="${a.id}"><span class="n">${String(i+1).padStart(2,'0')}</span>${a.label}</button>`).join("");
-  nav.querySelectorAll(".tab-btn").forEach(b=>b.addEventListener("click",()=>{
-    nav.querySelectorAll(".tab-btn").forEach(x=>x.classList.remove("active")); b.classList.add("active");
-    renderTab(b.dataset.go); window.scrollTo({top:0,behavior:"smooth"}); }));
+  nav.setAttribute("role","tablist");
+  nav.setAttribute("aria-label","Secciones del tablero");
+  nav.innerHTML=areasVisibles().map((a,i)=>
+    `<button class="tab-btn ${i===0?'active':''}" role="tab" aria-selected="${i===0}" `
+    +`tabindex="${i===0?0:-1}" data-go="${a.id}">`
+    +`<span class="n">${String(i+1).padStart(2,'0')}</span>${a.label}</button>`).join("");
+  const btns=[...nav.querySelectorAll(".tab-btn")];
+  btns.forEach((b,i)=>{
+    b.addEventListener("click",()=>activarPestana(b,nav,false));
+    b.addEventListener("keydown",ev=>{
+      const K={ArrowRight:1,ArrowLeft:-1};
+      if(K[ev.key]!=null){ ev.preventDefault();
+        activarPestana(btns[(i+K[ev.key]+btns.length)%btns.length],nav,true); }
+      else if(ev.key==="Home"){ ev.preventDefault(); activarPestana(btns[0],nav,true); }
+      else if(ev.key==="End"){ ev.preventDefault(); activarPestana(btns[btns.length-1],nav,true); }
+    });
+  });
+  /* enlace de salto: invisible hasta que recibe el foco, primera parada del Tab */
+  if(!document.getElementById("salto-tabs")){
+    const a=document.createElement("a");
+    a.id="salto-tabs"; a.className="salto"; a.href="#tabnav";
+    a.textContent="Ir a las secciones";
+    a.onclick=e=>{ e.preventDefault(); const act=nav.querySelector(".tab-btn.active")||btns[0]; if(act)act.focus(); };
+    document.body.insertBefore(a,document.body.firstChild);
+  }
 }
 /* último periodo con datos núcleo (ingresos), no un mes parcial vacío */
 /* Último mes con datos REALES (no de presupuesto ni proyección). Debe filtrar por
@@ -3448,6 +3576,18 @@ function fillFilters(){
     }
   }
   F.trm=null; applyPreset("def");
+  /* SA-06: el hash manda sobre los valores por defecto. Va DESPUES de applyPreset para
+     que lo que traiga la direccion no lo pise el preset de arranque. */
+  const tabHash=hashAEstado();
+  if(tabHash){
+    const nav=document.getElementById("tabnav");
+    if(nav) nav.querySelectorAll(".tab-btn").forEach(x=>{
+      const on=x.dataset.go===tabHash;
+      x.classList.toggle("active",on); x.setAttribute("aria-selected",on?"true":"false");
+      x.tabIndex=on?0:-1;
+    });
+  }
+  syncFilterInputs();
   /* N-01: primera medida y reajuste ante cualquier cambio de tamano de la barra. */
   ajustarAltoBarra();
   if(window.ResizeObserver){ new ResizeObserver(ajustarAltoBarra).observe(document.querySelector(".topbar")); }
