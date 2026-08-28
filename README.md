@@ -195,70 +195,100 @@ prioridad y el ajuste no duplica nada.
 
 ## 5. Cierre mensual
 
-Los pasos, en orden. Ninguno se salta.
+Ocho pasos. El orden importa: cada uno asume el anterior.
+
+> **Lo que cambió el 28-ago-2026.** Antes había un script escrito a mano por país y por
+> mes — quince en total, y ahí se coló cada error que hubo que corregir después. Ahora hay
+> uno solo, `cargar_mes.py`, que hace las verificaciones que antes dependían de que alguien
+> se acordara. Los quince viejos están en `migracion/_ejecutados/` y **no deben correrse**.
 
 ### A. Antes de tocar nada
 
 1. **`Actualizar_Desde_GitHub.bat`** — parte siempre de la última versión. Si tienes
    cambios sin subir, el botón se detiene: primero sube, luego baja.
-2. Ten a la mano los **auxiliares contables del mes de los cuatro países** y, si cambió,
-   el modelo financiero.
 
-### B. Revisa la fuente antes de cargarla
+2. Deja los archivos del ERP en **`Entradas/`**, tal como llegan. Sueltos o dentro de los
+   `.zip`, da igual: el script los busca dentro. No hace falta renombrarlos ni convertir
+   nada.
 
-Cada mes, dos comprobaciones sobre los archivos que te llegan. Las dos salieron de
-errores reales:
+### B. Pide la propuesta
 
-3. **¿El archivo es del mes que dice?** Abre el balance y mira el **saldo inicial**:
-   tiene que ser el saldo final del mes anterior. En agosto de 2026 el "julio" de Perú
-   era un reexporte de junio, y se detectó justo así — el mismo movimiento quedó
-   contado dos veces, con dos tasas distintas.
-4. **¿Abre como Excel de verdad?** Algunos llegan como texto tabulado con extensión
-   `.xlsx`. Se ven bien en Excel pero ninguna librería los lee.
+3. **`python migracion/cargar_mes.py 2026-08`**
 
-### C. Carga
+   No toca la base. Descubre los archivos, les corre cinco controles y escribe
+   `Propuesta_2026-08.xlsx` con las filas exactas que cargaría.
 
-5. Carga cada país **en su moneda de origen**: Colombia en COP, Perú en PEN, EE.UU. y
-   Costa Rica en USD. La conversión la hace el tablero, no tú.
-6. Si el mes trae una **tasa de cambio nueva**, cárgala en `TRM` (columna
-   `trm_promedio_mercado`) y en `TRM_Peru` **antes** de cargar las cifras.
-7. Corre el script del cargue que corresponda en `migracion/`. Todos tienen vista previa
-   por defecto y solo escriben con `--escribir`, con respaldo automático.
+   Los cinco controles son los que antes había que recordar:
 
-### D. Después de cargar un país, recompón el consolidado
+   | Control | De dónde salió |
+   |---|---|
+   | ¿Abre como Excel de verdad? | Llegan archivos que son texto tabulado con extensión `.xlsx` |
+   | ¿Es del mes que dice? | El saldo inicial tiene que ser el final del mes anterior. Así se detectó que el «julio» de Perú era un reexporte de junio |
+   | ¿Cuadra la partida doble? | Débitos = créditos a nivel de subcuenta |
+   | ¿El árbol suma igual en cada nivel? | Si no, la exportación se cortó por la mitad |
+   | ¿El mapeo reproduce un mes ya cargado? | Si no reproduce, la regla no se entiende y no se propone nada |
 
-8. **`python migracion/recalcular_consolidado_mes.py 2026-08`**
+   **Si algo sale en ALTO, el script no propone.** Resuélvelo antes de seguir.
 
-   En el bloque `Consolidación USD` el consolidado **no se deriva: tiene fila propia
-   guardada**. Si corriges un país y no recompones, el estado deja de cuadrar con sus
-   propias columnas y nada avisa. Pasó al corregir julio de Perú.
+### C. Revisa la propuesta
 
-### E. Si tocaste gastos
+4. Abre `Propuesta_2026-08.xlsx`. Cuatro hojas:
 
-9. **`python migracion/regenerar_gastos.py --probar`** — corre sobre una copia y compara
-   celda por celda contra lo que hay.
-10. Si el resultado es idéntico, aplica con `--escribir`. Si cambió **y el cambio es
-    intencional**, hace falta `--acepto-cambio`: sin esa bandera el script se niega.
+   - **Controles** — las filas rojas dicen qué falló y con cuál archivo
+   - **Propuesta** — cada fila que entraría, con lo que ya hay en la base al lado
+   - **Sin_regla** — cuentas con movimiento y sin homologación. Van al reporte, nunca a
+     «Otros»
+   - **Contraste_mapeo** — el mapeo aplicado al mes anterior, contra lo que está cargado
 
-    La cifra de control hoy es **144.965,48 en 135 filas**. Si te da otra cosa, algo
-    cambió y hay que mirarlo antes de escribir.
+   Esta revisión es tuya. El script propone; tú decides.
+
+### D. Aplica
+
+5. **`python migracion/cargar_mes.py 2026-08 --escribir`**
+
+   Hace respaldo, escribe, y encadena solo: recompone la fila `Consolidado` y corre la
+   cadena de gastos en modo prueba.
+
+### E. Lo que `cargar_mes.py` NO carga
+
+6. Los EEFF traen la contabilidad. **El resto entra aparte**, porque no sale del ERP:
+
+   - **MRR y cartera** — llegan en su propio archivo de análisis
+   - **Proveedores por tercero** (AWS, Infobip, B2Chat) — no son cuentas PUC, son terceros
+   - **NPS, pipeline, morosidad** — vienen de plantilla
+
+   Para esos: revisa que estén completos antes de cargarlos. En julio llegaron dos de los
+   cuatro proveedores y el porcentaje habría salido artificialmente bajo.
 
 ### F. Verifica
 
-11. **`Revisar_Base.bat`** — corre dos controles:
-    - `conciliar_capas.py`: el bloque **A (Países vs Consolidado) debe estar en OK**.
-      Las diferencias de B y C son archivo histórico, están así **a propósito** desde
-      el 13-ago-2026. **No corras `Corregir_Base.bat` para "arreglarlas"**: eso borra
-      el antes de la homologación.
-    - `exportar_sqlite.py`: las seis validaciones V1–V6. Las que fallen te dicen qué
-      regla del negocio se rompió y dónde.
-12. Abre el tablero y revisa las pestañas afectadas.
-13. Confirma que los periodos sin datos salgan como **`s/d`** y no como cero. Cada `s/d`
-    es un pendiente de cargue; si sobra alguno, el dato llegó y no se subió.
+7. **`Revisar_Base.bat`** — tres pasos, en este orden:
 
-### G. Publica
+   1. **Los tests.** 30 pruebas, un segundo.
+   2. **`conciliar_capas.py`** — el bloque **A (Países vs Consolidado) debe estar en OK**.
+      Las diferencias de B y C son archivo histórico, están así **a propósito**. **No
+      corras `Corregir_Base.bat` para «arreglarlas»**: eso borra el antes de la
+      homologación.
+   3. **`exportar_sqlite.py`** — las validaciones V1–V6.
 
-14. **`Subir_A_GitHub.bat`** — el cierre no está terminado hasta que está publicado.
+### G. Actualiza las cifras de control — este paso ES la revisión
+
+8. **Los tests de `tests/test_cifras.py` van a fallar**, y eso es correcto: fijan las
+   cifras del cierre anterior.
+
+   **No los ajustes a ojo.** Cada cifra que se movió hay que mirarla y decir por qué.
+   Si una cambió y no sabes por qué, ahí hay un error de cargue — que es exactamente lo
+   que estos tests existen para atrapar.
+
+   Los de `tests/test_invariantes.py` **no deberían fallar nunca**. Si uno falla, no es
+   que las cifras cambiaron: algo se rompió.
+
+9. Abre el tablero, revisa las pestañas afectadas, y confirma que los periodos sin datos
+   salgan como **`s/d`** y no como cero. Cada `s/d` es un pendiente de cargue.
+
+### H. Publica
+
+10. **`Subir_A_GitHub.bat`** — el cierre no está terminado hasta que está publicado.
 
 ### Si además actualizaste el Modelo financiero
 
@@ -273,11 +303,12 @@ pestaña mostrando cifras viejas.
 
 ### Lo que NO hay que hacer
 
-- **No conviertas monedas a mano** antes de cargar. El tablero convierte con la tasa del
-  país y del mes; una conversión previa se convierte dos veces.
+- **No conviertas monedas a mano** antes de cargar. Cada país entra en la suya; el tablero
+  convierte con la tasa de su mes. Una conversión previa se convierte dos veces.
 - **No rellenes un faltante con cero.** Un dato que no llegó se marca `s/d`.
-- **No crees la fila `Consolidado` de un mes a mano.** Si no existe, el tablero la arma
-  sumando los cuatro países, y así queda derivada en vez de guardada.
+- **No crees la fila `Consolidado` a mano.** La recompone `cargar_mes.py`.
+- **No corras nada de `migracion/_ejecutados/`.** Ya se ejecutaron. Uno de ellos tiene la
+  TRM de junio escrita dentro y volvería a inflar la cartera un 7,2%.
 - **No corras `Corregir_Base.bat`** salvo que alguien decida, a sabiendas, que la capa
   histórica debe reflejar las cifras vigentes.
 
