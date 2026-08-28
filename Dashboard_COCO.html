@@ -62,9 +62,12 @@ select:focus-visible{box-shadow:0 0 0 2px var(--green)}
 .fr-i:last-child{border-bottom:0}
 .fr-i .fr-c{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fr-i b{color:var(--ink);font-weight:600;white-space:nowrap;font-size:12px}
-.fr-i.fr-tot{border-bottom:0;border-top:1px solid var(--line);margin-top:3px;padding-top:3px}
-.fr-i.fr-tot .fr-c{color:var(--ink2);font-weight:600}
-.fr-i.fr-tot b{color:var(--ink)}
+/* El total va debajo, separado por la linea, y en negrilla: es la cifra que se busca
+   primero y tiene que distinguirse de los conceptos que la componen sin tener que
+   leerlos. */
+.fr-i.fr-tot{border-bottom:0;border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
+.fr-i.fr-tot .fr-c{color:var(--ink);font-weight:700}
+.fr-i.fr-tot b{color:var(--ink);font-weight:700}
 @media(max-width:900px){.franja{grid-template-columns:repeat(2,1fr)}}
 .mtz{width:100%;border-collapse:separate;border-spacing:0;margin-top:12px;font-size:13.5px}
 .mtz th{font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--mute);font-weight:700;
