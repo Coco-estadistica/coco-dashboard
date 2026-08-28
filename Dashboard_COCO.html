@@ -468,7 +468,13 @@ const META={
   costo_proveedor_ventas_pct:{dir:"lo",good:30,warn:40,min:0,max:60},
   dso:{dir:"lo",good:45,warn:75,min:0,max:120},
   dpo:{dir:"hi",good:60,warn:30,min:0,max:120},
-  indice_morosidad:{dir:"lo",good:5,warn:10,min:0,max:40},
+  /* La escala llegaba hasta 40 y el dato que entrega cartera desde julio-26 es 77,3:
+     se salia del medidor. Va a 100 porque es un porcentaje y su definicion todavia
+     no esta confirmada --no coincide con vencida/total (41,6%) ni con la serie vieja
+     (10,5 / 27,81), que quedo archivada en la trazabilidad--. Los umbrales de 5 y 10
+     eran de esa definicion vieja; hasta que se confirme la nueva no significan nada,
+     asi que se apagan en vez de pintar un rojo permanente que nadie pidio. */
+  indice_morosidad:{dir:"lo",min:0,max:100},
   cartera_mayor_60_pct:{dir:"lo",good:20,warn:25,min:0,max:60},
   cartera_arr_pct:{dir:"lo",good:12,warn:25,min:0,max:60},
   concentracion_cartera:{dir:"lo",good:15,warn:30,min:0,max:70},
@@ -498,7 +504,11 @@ const AREAS=[
              {type:"yoybars",code:"ingresos_totales",title:"Facturación 2025 vs 2026"},
              {type:"recon",title:"Facturación Contable vs Ejecutada"}]},
   {id:"mrr",      label:"Ingresos & MRR", hint:"Recurrencia y movimiento de MRR",
-     codes:["mrr_final","arr","arpa","retained_mrr","new_mrr","expansion_mrr","reactivacion_mrr","contraction_mrr","churned_mrr","churn_mrr_mensual"],
+     /* arr_mrr estaba cargado pero no lo mostraba ninguna pestana: el ARR de la tarjeta
+        es el codigo "arr" (ventas totales anualizadas), que es otra cosa. Se agrega al
+        lado en vez de reemplazarlo, para no cambiarle el significado a un KPI que ya
+        se venia leyendo. */
+     codes:["mrr_final","arr","arr_mrr","arpa","retained_mrr","new_mrr","expansion_mrr","reactivacion_mrr","contraction_mrr","churned_mrr","churn_mrr_mensual"],
      charts:[{type:"mrrbridge",title:"Ejecución real de MRR a 12 meses"},
              {type:"pieyear",code:"distribucion_ingresos",title:"Distribución de clientes según tipo de ingreso"},
              {type:"yoylines",codes:["ingresos_recurrentes","ingresos_no_recurrentes"],titles:["Recurrente","No recurrente"],title:"Ingresos Recurrente vs No Recurrente (interanual)"},
