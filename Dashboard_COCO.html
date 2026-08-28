@@ -2960,7 +2960,25 @@ function renderChartCard(ch){
     const sana=rawStored("cartera_sana",{periodo:lp}),venc=rawStored("cartera_vencida",{periodo:lp});
     h.textContent=ch.title+(lp&&lp!==F.periodo?" — "+nombreMes(lp):"");
     if(sana==null&&venc==null){ noData(body,"Sin datos de cartera"); }
-    else pieChart(body,[{n:"Sana",v:sana||0,c:"#00CC58"},{n:"Vencida",v:venc||0,c:"#F4685E"}]); }
+    else {
+      pieChart(body,[{n:"Sana",v:sana||0,c:"#00CC58"},{n:"Vencida",v:venc||0,c:"#F4685E"}]);
+      /* T-02: el donut y la tarjeta "Indice de morosidad" llevan meses dando cifras
+         distintas en la MISMA pantalla --41,6% aqui, 77,3% arriba-- sin que nada
+         explique por que. No es un descuadre: la morosidad la entrega cartera con su
+         propia definicion y el tablero no la calcula. Pero eso vivia solo en el
+         comentario de una fila del Excel, donde nadie lo ve. Aqui si. */
+      const mor=rawStored("indice_morosidad",{periodo:lp});
+      const prop=(sana!=null&&venc!=null&&(sana+venc))?venc/(sana+venc)*100:null;
+      if(mor!=null&&prop!=null&&Math.abs(mor-prop)>1){
+        const n=document.createElement("div");
+        n.style.cssText="font-size:12.5px;color:var(--ink2);line-height:1.7;margin-top:12px;padding-top:11px;border-top:1px solid var(--line)";
+        n.innerHTML="Este "+fPctN(prop,1)+" es <b>vencida ÷ total</b>, calculado sobre las dos cifras del gráfico. "
+          +"La tarjeta <b>Índice de morosidad</b> de arriba dice "+fPctN(mor,1)+" porque <b>la entrega cartera "
+          +"con su propia definición</b> — el tablero no la calcula. Las dos son ciertas y miden cosas distintas; "
+          +"la fórmula de la segunda está pendiente de que cartera la documente.";
+        body.appendChild(n);
+      }
+    } }
   else if(ch.type==="recon"){ renderRecon(card,body,h); }
   else if(ch.type==="factura12"){ renderFactura12(card,body,h); }
   else if(ch.type==="yoybars"){ renderYoYBars(card,body,h,ch); }
