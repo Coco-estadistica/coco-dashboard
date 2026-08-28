@@ -2008,10 +2008,28 @@ function factorPaisUSD(pais,per){
   return {txt:"",factor:""};
 }
 /* lee un fact puntual sin pasar por la exclusión general (para el bloque USD) */
-function factVal(code,per,pais,segmento){ let s=null;
+/* C-03: hasta hoy esta funcion NUNCA miraba f.escenario, y es la que alimenta la tabla
+   del P&G. El resultado: poner ESCENARIO en Presupuesto vaciaba las tarjetas y los
+   graficos --que leen por rawStored, el camino que si filtra-- mientras la tabla seguia
+   mostrando el ejecutado, con el rotulo "Presupuesto" encima. Leer ejecutado creyendo
+   que es plan es el error mas caro que puede cometer este tablero.
+
+   Ahora filtra igual que matchFilters: escenario explicito si se lo pasan, y si no,
+   F.escenario. Las filas sin escenario declarado pasan, como en rawStored.
+
+   El aviso de suma multiple no cambia ningun numero: solo deja rastro cuando una llave
+   junta mas de una fila sin segmento. Hoy no ocurre porque quien llama pasa el segmento
+   a mano, pero la base tiene TRES filas de presupuesto por mes --vacia, "Original
+   enero" y "Revisado mayo"-- y el dia que alguien la llame sin segmento el presupuesto
+   se triplicaria en silencio. Que quede en consola antes de que pase. */
+function factVal(code,per,pais,segmento,escenario){ let s=null; let n=0;
+  const esc=escenario!==undefined?escenario:F.escenario;
   for(const f of S.facts){ if(f.codigo!==code||f.periodo!==per)continue;
     if(pais!==undefined&&f.pais!==pais)continue; if(segmento!==undefined&&(f.segmento||"")!==segmento)continue;
-    if(f.valor==null)continue; s=(s||0)+f.valor; } return s; }
+    if(esc&&esc!=="__ALL__"&&f.escenario&&f.escenario!==esc)continue;
+    if(f.valor==null)continue; s=(s||0)+f.valor; n++; }
+  if(n>1&&segmento===undefined) console.warn("[COCO] suma multiple",{code,per,pais,escenario:esc,filas:n});
+  return s; }
 /* Peru July has no independent accounting support. Zero rows created by the
    June-to-July difference are missing-data markers, not confirmed activity. */
 /* Antes era una excepción escrita a mano ("Perú y julio, siempre"): dejó de ser cierto
@@ -3268,7 +3286,24 @@ const CARGA_AREAS={
   Costos_Gastos:{plantilla:"Plantilla_Carga_Costos_Gastos.xlsx",codigos:["gasto_area","gasto_admin","gasto_comercial","gasto_desarrollo","costo_operacion","costo_proveedor","salario_area_pct"]},
   Internacional:{plantilla:"Plantilla_Carga_Internacional.xlsx",codigos:["ingresos_internacionales","mrr_internacional","pipeline_internacional","clientes_internacionales"]}
 };
-const CARGA_PAISES=["Colombia","Costa Rica","Guatemala","Panamá","Regional","Otros"];
+/* C-10: la lista estaba escrita a mano y llevaba anos desfasada. Ofrecia Guatemala y
+   Panama --que no tienen una sola fila en la base-- y NO ofrecia EE.UU. ni Peru, que son
+   dos de los cuatro paises del consolidado: por este formulario era imposible cargar un
+   dato de la LLC o de Coco Peru. Ahora sale de los datos, asi que no se puede volver a
+   desfasar: si entra un pais nuevo, aparece solo. "Regional" y "Otros" se conservan
+   porque son destinos de cargue validos aunque no sean entidades. */
+function cargaPaises(){
+  const de=new Set();
+  (S.facts||[]).forEach(f=>{ if(f.pais) de.add(String(f.pais).trim()); });
+  de.delete("Consolidado");                 /* se calcula, no se carga a mano */
+  const orden=["Colombia","EE.UU.","Perú","Costa Rica"];
+  const vistos=orden.filter(p=>de.has(p));
+  const resto=[...de].filter(p=>!orden.includes(p)).sort();
+  /* si todavia no hay base cargada, los cuatro del consolidado: nunca una lista vacia
+     ni paises que no existen */
+  if(!vistos.length&&!resto.length) return [...orden, "Regional"];
+  return [...vistos, ...resto, "Regional"];
+}
 
 function cloudCfg(){ try{ return JSON.parse(localStorage.getItem("coco_cloud")||"{}"); }catch(e){ return {}; } }
 function saveCloudCfg(c){ try{ localStorage.setItem("coco_cloud",JSON.stringify(c)); }catch(e){} }
@@ -3460,9 +3495,14 @@ function initCarga(){
   const selArea=document.getElementById("m-area");
   selArea.innerHTML=Object.keys(CARGA_AREAS).map(a=>`<option>${a}</option>`).join("");
   selArea.onchange=refrescarArea;
-  document.getElementById("mi-pais").innerHTML=CARGA_PAISES.map(p=>`<option>${p}</option>`).join("");
+  document.getElementById("mi-pais").innerHTML=cargaPaises().map(p=>`<option>${p}</option>`).join("");
   document.getElementById("btn-cloud").onclick=fetchCloud;
-  document.getElementById("btn-datos").onclick=()=>{ abrirModal(); refrescarArea(); };
+  /* La lista se arma al ABRIR, no al arrancar: initCarga corre antes de que la base
+     este cargada y S.facts todavia esta vacio. Poblarla aqui la deja siempre al dia
+     con lo que hay, incluso despues de "Actualizar desde la nube". */
+  document.getElementById("btn-datos").onclick=()=>{
+    document.getElementById("mi-pais").innerHTML=cargaPaises().map(p=>`<option>${p}</option>`).join("");
+    abrirModal(); refrescarArea(); };
   document.getElementById("m-cerrar").onclick=()=>{ guardarCfgDesdeModal(); cerrarModal(); };
   document.getElementById("modal-datos").addEventListener("click",e=>{ if(e.target.id==="modal-datos"){ guardarCfgDesdeModal(); cerrarModal(); } });
   document.getElementById("mt-ind").onclick=()=>{ document.getElementById("mt-ind").classList.add("on"); document.getElementById("mt-mas").classList.remove("on");
