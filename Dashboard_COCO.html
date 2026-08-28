@@ -2194,10 +2194,28 @@ function consolStatementCard(perOrMeses,resaltar,soloCodes,titulo,segmentoBloque
 
 /* rubros consolidados por área (Costos&Gastos, Ingresos) cuando País=Consolidado/país:
    muestra los rubros de esa área con EE.UU./Perú/Costa Rica/Colombia + Consolidado. */
+/* SA-01. `codes` es lo que la TABLA muestra; `suma` es lo que se puede sumar sin decir
+   una mentira. Son cosas distintas y confundirlas costo caro: la rebanada de finanzas
+   muestra las siete lineas del P&G Y los dos subtotales derivados --utilidad operativa y
+   utilidad neta--, y el total sumaba la lista entera. Sumar un subtotal junto a las
+   lineas que lo componen cuenta la misma plata dos veces: el consolidado de julio salia
+   en USD 702.260 cuando los ingresos del mes eran 350.899, es decir, cerca del doble.
+
+   Un P&G no "totaliza" sumando sus filas: totaliza en su ultima linea. Por eso la suma
+   de finanzas es la utilidad antes de renta, y el rotulo lo dice.
+
+   Ojo con el arreglo anterior: alguien ya habia visto la cifra rara y renombro el rotulo
+   --de "Costos y gastos" a "Suma de las lineas del P&L"-- en vez de corregir la suma. El
+   titulo quedo literalmente cierto y la cifra siguio sin significar nada. */
 const CONSOL_SLICES={
-  finanzas:{titulo:"P&L Consolidado", codes:CONSOL_CUENTAS.map(c=>c.code)},
-  costos:{titulo:"Costos y Gastos Consolidados", codes:["pyg_costo_ventas","pyg_gasto_administracion","pyg_gasto_ventas","pyg_gasto_proyectos","pyg_gastos_financieros"]},
-  mrr:{titulo:"Ingresos Consolidados", codes:["pyg_ingresos_operacionales","pyg_ingresos_no_operacionales"]}
+  finanzas:{titulo:"P&L Consolidado", codes:CONSOL_CUENTAS.map(c=>c.code),
+            suma:["pyg_utilidad_neta"], etq:"Utilidad antes de renta"},
+  costos:{titulo:"Costos y Gastos Consolidados",
+          codes:["pyg_costo_ventas","pyg_gasto_administracion","pyg_gasto_ventas","pyg_gasto_proyectos","pyg_gastos_financieros"],
+          etq:"Costos y gastos consolidados"},
+  mrr:{titulo:"Ingresos Consolidados",
+       codes:["pyg_ingresos_operacionales","pyg_ingresos_no_operacionales"],
+       etq:"Ingresos consolidados"}
 };
 function renderConsolArea(host,area){
   const meses=mesesIntl(); const ent=F.pais; const slice=CONSOL_SLICES[area.id];
@@ -2211,9 +2229,7 @@ function renderConsolArea(host,area){
      TODAS las cuentas del P&L —ingresos incluidos—, así que llamarla "Costos y gastos"
      era falso: mostraba USD 702.251 bajo ese título cuando el consolidado del mes eran
      USD 350.895, y el lector no tenía cómo saber que estaba viendo otra cosa. */
-  const etqTot=area.id==="mrr"?"Ingresos consolidados"
-              :area.id==="costos"?"Costos y gastos consolidados"
-              :"Suma de las líneas del P&L";
+  const etqTot=slice.etq;
 
   /* selector de mes */
   const bar=document.createElement("div"); bar.style.cssText="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap";
@@ -2223,7 +2239,8 @@ function renderConsolArea(host,area){
   host.appendChild(bar);
 
   /* total del área por país: mes seleccionado Y acumulado (suma de todos los meses del bloque) */
-  const totPais=(p,mesesArr)=>slice.codes.reduce((a,code)=>{ const v=factValSum(code,mesesArr,p,"Consolidación USD"); return a+(v||0); },0);
+  const codesSuma=slice.suma||slice.codes;
+  const totPais=(p,mesesArr)=>codesSuma.reduce((a,code)=>{ const v=factValSum(code,mesesArr,p,"Consolidación USD"); return a+(v||0); },0);
   /* mismos totales pero en la moneda elegida, cada mes a su tasa */
   const totPaisD=(p,mesesArr)=>acumEnMoneda(m=>totPais(p,[m]),mesesArr);
   /* Antes estas cuatro tarjetas leían siempre "Consolidado", aunque el encabezado dijera
@@ -2544,6 +2561,26 @@ function ppuestoCard(){
 }
 
 function renderArea(host,area){
+  /* SA-02. Los graficos de Gastos se alimentan de S.gastosResumen --la cadena
+     homologada-- y esas filas NO tienen campo de escenario: son Real por construccion.
+     No es un filtro mal escrito, es un filtro que no puede existir con la estructura de
+     hoy, asi que con ESCENARIO=Presupuesto la pestana seguia mostrando 73 cifras del
+     ejecutado bajo ese rotulo.
+
+     Mientras la cadena no incorpore el escenario, lo honesto es decir que no aplica en
+     vez de mostrar Real disfrazado. Cuando la cadena lo traiga, se borra este bloque. */
+  if(area.id==="gastos" && F.escenario!=="Real" && F.escenario!=="__ALL__"){
+    const av=document.createElement("div"); av.className="chart-card";
+    av.innerHTML='<h3>Gastos · escenario '+F.escenario+'</h3>'
+      +'<div style="font-size:14px;color:var(--ink2);line-height:1.75;margin-top:10px">'
+      +'Esta pestaña se arma con la cadena de gastos homologada, que hoy solo existe para '
+      +'el <b>ejecutado</b>: no hay presupuesto abierto por cuenta contable con el que '
+      +'compararla. Mostrar aquí las cifras reales bajo el rótulo «'+F.escenario+'» sería '
+      +'presentar ejecutado como plan, así que no se muestran.'
+      +'<br><br>El presupuesto de gastos sí existe agregado, en <b>Finanzas &amp; P&amp;L</b>. '
+      +'Para ver el detalle por cuenta, vuelve el escenario a <b>Real</b>.</div>';
+    host.appendChild(av); return;
+  }
   if(esPaisConsol(F.pais)){
     if(CONSOL_SLICES[area.id]) return renderConsolArea(host,area);
     /* Antes, elegir una filial reemplazaba TODA la vista por un aviso y no se veía una
@@ -3372,6 +3409,25 @@ function fillFilters(){
     if(!hayCierre()&&F.trmBase==="cierre") F.trmBase="promedio";
     trmBaseSel.value=F.trmBase;
     trmBaseSel.onchange=e=>{ F.trmBase=e.target.value; render(); };
+    /* SA-04: un desplegable con una sola opcion es una promesa que el tablero no cumple.
+       Mientras la hoja TRM no traiga la columna de cierre, el control se oculta y en su
+       lugar queda dicha la tasa que se esta usando -- que es la informacion que el
+       lector venia a buscar cuando abria el selector. */
+    const ctrl=trmBaseSel.closest(".ctrl");
+    if(ctrl){
+      const solaOpcion=ops.length<2;
+      ctrl.style.display=solaOpcion?"none":"";
+      let nota=document.getElementById("trm-unica");
+      if(solaOpcion){
+        if(!nota){
+          nota=document.createElement("div"); nota.className="ctrl"; nota.id="trm-unica";
+          nota.innerHTML='<label>Base TRM</label>'
+            +'<span style="font-size:13px;color:var(--ink2)" title="La hoja TRM no trae columna de fin de mes. '
+            +'Cuando la traiga, aquí vuelve el selector.">Promedio mensual</span>';
+          ctrl.parentNode.insertBefore(nota,ctrl);
+        }
+      } else if(nota){ nota.remove(); }
+    }
   }
   F.trm=null; applyPreset("def");
   /* N-01: primera medida y reajuste ante cualquier cambio de tamano de la barra. */
