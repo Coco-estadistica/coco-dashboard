@@ -62,6 +62,9 @@ select:focus-visible{box-shadow:0 0 0 2px var(--green)}
 .fr-i:last-child{border-bottom:0}
 .fr-i .fr-c{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fr-i b{color:var(--ink);font-weight:600;white-space:nowrap;font-size:12px}
+.fr-i.fr-tot{border-bottom:0;border-top:1px solid var(--line);margin-top:3px;padding-top:3px}
+.fr-i.fr-tot .fr-c{color:var(--ink2);font-weight:600}
+.fr-i.fr-tot b{color:var(--ink)}
 @media(max-width:900px){.franja{grid-template-columns:repeat(2,1fr)}}
 .mtz{width:100%;border-collapse:separate;border-spacing:0;margin-top:12px;font-size:13.5px}
 .mtz th{font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--mute);font-weight:700;
@@ -524,7 +527,7 @@ const AREAS=[
              {type:"pie",code:"cartera_vencida_cliente",title:"Clientes por cartera vencida"}]},
   {id:"gastos",   label:"Gastos", hint:"Estructura de costos por área · responde al selector de país",
      codes:["gasto_area","gasto_admin","gasto_comercial","gasto_desarrollo","costo_operacion","costo_proveedor","costo_proveedor_ventas_pct","salario_area_pct"],
-     charts:[{type:"pygcosts",title:"Costos y gastos oficiales P&G"},
+     charts:[{type:"pygcosts",code:"pyg_oficial",title:"Costos y gastos oficiales P&G"},
              {type:"stackcol",code:"gasto_area",money:true,title:"Costos y gastos por área"},
              {type:"stackcol",code:"gasto_admin",money:true,title:"Zoom a los gastos Administrativos"},
              {type:"stackcol",code:"gasto_comercial",money:true,title:"Zoom a los gastos de Comercial"},
@@ -1176,7 +1179,7 @@ function officialExpenseDisplay(per, conFinancieros){
 }
 /* Finanzas y Resumen deben conciliar con el P&G oficial. La serie heredada se usa
    solo como respaldo para meses en los que todavía no existe P&G oficial. */
-const FINANCE_VIEW_CODES=new Set(["ingresos_totales","ebitda","utilidad_neta","egresos_totales","gastos_totales","margen_ebitda","margen_neto"]);
+const FINANCE_VIEW_CODES=new Set(["ingresos_totales","ebitda","utilidad_neta","egresos_totales","gastos_totales","margen_ebitda","margen_neto","margen_bruto_pct"]);
 function officialOperatingDisplay(per){
   if(F.escenario!=="Real")return null;
   if(F.pais==="__ALL__"||esPaisConsol(F.pais)){
@@ -1208,6 +1211,17 @@ function officialFinanceDisplay(code,per){
   if(code==="margen_neto"){
     const ing=officialFinanceDisplay("ingresos_totales",per), un=officialFinanceDisplay("utilidad_neta",per);
     return ing&&un!=null?un/ing*100:null;
+  }
+  /* El margen bruto salia en s/d "sin actualizar desde 2025-12" y sin embargo SI se
+     puede medir: la utilidad bruta esta en la tabla del P&G, en las cinco columnas.
+     Se derivaba de costo_proveedor_ventas_pct --una serie de gestion de Colombia que
+     dejo de alimentarse en diciembre-- y nunca miraba el P&G oficial, que la tiene
+     completa desde enero. Ahora sale de ahi: (ingresos - costo de ventas) / ingresos.
+     Consolidado julio: (350.899 - 98.477) / 350.899 = 71,9%. */
+  if(code==="margen_bruto_pct"){
+    const ing=officialPygDisplay("pyg_ingresos_operacionales",per);
+    const cv=officialPygDisplay("pyg_costo_ventas",per);
+    return (ing&&cv!=null)?(ing-Math.abs(cv))/ing*100:null;
   }
   return null;
 }
@@ -1425,9 +1439,13 @@ function pieChart(host,parts,opt){
       svg+=`<text x="${lx.toFixed(1)}" y="${(ly+3).toFixed(1)}" text-anchor="middle" font-size="10.5" font-family="IBM Plex Mono,monospace" fill="#0B1220" font-weight="700">${fPctN(frac*100,1)}</text>`; }
     ang=a2; });
   if(opt.donut)svg+=`<circle cx="${cx}" cy="${cy}" r="46" fill="var(--panel)"/>`;
-  const wrap=document.createElement("div"); wrap.style.cssText="display:flex;gap:18px;align-items:center;flex-wrap:wrap;justify-content:center";
+  /* El conjunto torta+leyenda se centraba como bloque, asi que cada grafico ponia su
+     torta en una x distinta segun lo larga que fuera SU leyenda: dos tortas una debajo
+     de la otra quedaban descuadradas. Ancladas a la izquierda, como el resto de los
+     graficos del tablero, todas arrancan en la misma linea. */
+  const wrap=document.createElement("div"); wrap.style.cssText="display:flex;gap:26px;align-items:center;flex-wrap:wrap;justify-content:flex-start";
   const sv=document.createElement("div"); sv.style.cssText="flex:0 0 200px;max-width:200px"; sv.innerHTML=`<svg viewBox="0 0 220 220" style="width:100%;height:auto;display:block">${svg}</svg>`;
-  const lg=document.createElement("div"); lg.className="stack-lbl"; lg.style.cssText="flex-direction:column;gap:7px;align-items:flex-start";
+  const lg=document.createElement("div"); lg.className="stack-lbl"; lg.style.cssText="flex-direction:column;gap:7px;align-items:flex-start;flex:1 1 200px;min-width:0";
   lg.innerHTML=parts.map((p,i)=>`<span><i class="sq" style="background:${p.c||detColor(p.n,i)}"></i>${p.n} · <b style="color:var(--ink)">${fPctN(Math.abs(p.v)/total*100,1)}</b></span>`).join("");
   wrap.appendChild(sv); wrap.appendChild(lg); host.appendChild(wrap);
 }
@@ -2157,14 +2175,17 @@ function consolStatementCard(perOrMeses,resaltar,soloCodes,titulo,segmentoBloque
   const pendiente=(p)=>!acumulado&&segmentoBloque!=="__ACUM_OFICIAL__"&&datoNoRecibidoPaisPeriodo(p,per);
   const cell=(code,p)=>pendiente(p)?null:(segmentoBloque==="__ACUM_OFICIAL__"?officialAccumVal(code,p,per):factValConsol(code,meses,p,segmentoBloque));
   const rango=etiquetaOverride||(acumulado?(meses.length>1?mesCorto(meses[0])+"–"+mesCorto(meses[meses.length-1]):mesCorto(meses[0])):mesLargo(per));
-  const factRow=cols.map(p=>{ if(p==="Consolidado") return `<th class="r" style="font-size:9px;color:var(--mute);font-weight:600">TOTAL USD</th>`;
+  /* El rotulo decia USD siempre, aunque el tablero estuviera en pesos: con MONEDA=COP
+     la tabla mostraba 5.104.844.401 --que son pesos-- bajo un encabezado que decia USD.
+     Las cifras SI se convierten; lo que no se convertia era el rotulo. */
+  const factRow=cols.map(p=>{ if(p==="Consolidado") return `<th class="r" style="font-size:9px;color:var(--mute);font-weight:600">TOTAL ${F.moneda}</th>`;
     if(acumulado||etiquetaOverride) return `<th class="r" style="font-size:9px;color:var(--mute);font-weight:500">${meses.length>1?meses.length+" meses":"—"}</th>`;
     const f=factorPaisUSD(p,per); return `<th class="r" style="font-size:9px;color:var(--mute);font-weight:500"><div>${f.txt}</div><div class="mono">${f.factor}</div></th>`; }).join("");
   const thCol=p=>{ const sel=(p===resaltar); const base=p==="Consolidado"?"color:var(--green)":"";
     return `<th class="r" style="${base}${sel?';background:var(--panel2)':''}">${p==="Consolidado"?"CONSOLIDADO":p.toUpperCase()}</th>`; };
   let html=`<div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px">
-      <h3>${titulo||"Estado de Resultados Consolidado por Subsidiaria"} · ${etiquetaOverride?rango:(acumulado?"Acumulado "+rango:rango)} <span style="color:var(--mute);font-weight:600">(USD)</span></h3>
-      <span style="font-size:10.5px;color:var(--mute)">Consolidado = EE.UU. + Perú + Costa Rica + Colombia (local) · USD</span></div>
+      <h3>${titulo||"Estado de Resultados Consolidado por Subsidiaria"} · ${etiquetaOverride?rango:(acumulado?"Acumulado "+rango:rango)} <span style="color:var(--mute);font-weight:600">(${F.moneda})</span></h3>
+      <span style="font-size:10.5px;color:var(--mute)">Consolidado = EE.UU. + Perú + Costa Rica + Colombia (local) · ${F.moneda}</span></div>
     <div class="tbl-scroll" style="margin-top:10px"><table class="ptable"><thead>
       <tr><th style="width:44px">Cta.</th><th>Rubro</th>${cols.map(thCol).join("")}</tr>
       <tr><th></th><th style="font-size:9px;color:var(--mute);font-weight:500">${(acumulado||etiquetaOverride)?"Periodo":"Factor→USD"}</th>${factRow}</tr>
@@ -2405,7 +2426,23 @@ function renderBurnRunway(host){
      esta pestaña). Los datos siguen en burn_runway.json (d.dso, d.puente, d.intl). */
   /* ---- Presupuesto vs ejecutado ---- */
   const cPE=document.createElement("div"); cPE.className="chart-card"; cPE.style.marginTop="14px";
-  cPE.innerHTML=`<h3>Ingresos: presupuesto vs ejecutado (COP MM)</h3>
+  cPE.innerHTML=`<h3>Ingresos: presupuesto vs ejecutado (COP MM)</h3>`;
+  /* La brecha se leia recorriendo doce numeros de una tabla. En barras se ve de una:
+     siete meses seguidos por debajo del plan, y ensanchandose. La tabla se queda con el
+     detalle exacto; el grafico da la forma. La fila de total no entra --no es un mes--. */
+  {
+    const filas=d.ppto.filter(x=>!/total/i.test(String(x.mes)));
+    if(filas.length){
+      cPE.appendChild(legendRow([{name:"Presupuesto",color:"#3B82F6"},{name:"Ejecutado",color:"#00CC58"}]));
+      const gb=document.createElement("div"); gb.style.marginBottom="14px"; cPE.appendChild(gb);
+      groupedBarChart(gb, filas.map(x=>String(x.mes)), [
+        {name:"Presupuesto",color:"#3B82F6",values:filas.map(x=>x.pptoCOP)},
+        {name:"Ejecutado",  color:"#00CC58",values:filas.map(x=>x.ejecCOP)}],
+        {delta:filas.map(x=>x.cumpl!=null?fPctN(x.cumpl*100,0):""), axisFmt:v=>fNum(v)});
+    }
+  }
+  const tPE=document.createElement("div"); cPE.appendChild(tPE);
+  tPE.innerHTML=`
     <div class="tbl-scroll" style="margin-top:10px"><table class="ptable"><thead><tr>
       <th>Mes</th><th class="r">Presupuesto</th><th class="r">Ejecutado</th><th class="r">Brecha</th><th class="r">Cumplimiento</th></tr></thead>
     <tbody>${d.ppto.map(x=>{const tot=/total/i.test(String(x.mes));
@@ -2807,6 +2844,11 @@ function alcanceGrafico(ch){
 const MTZ_PAISES = ["Colombia", "Estados Unidos", "Peru", "Costa Rica"];
 const MTZ_ROTULO = {Colombia:"Colombia", "Estados Unidos":"EE.UU.", Peru:"Perú", "Costa Rica":"Costa Rica"};
 const MTZ_FILAS = [
+  /* El P&G oficial es el UNICO grafico de la pestana que suma los cuatro paises, y era
+     el unico sin franja: la matriz solo conocia los seis cortes de la cadena homologada
+     y este viene del bloque consolidado, con otra estructura. Justo donde mas hace falta
+     saber quien aporta que. Se resuelve con un caso propio en casillaGasto. */
+  {code:"pyg_oficial",      titulo:"Costos y gastos oficiales P&G"},
   {code:"gasto_area",       titulo:"Costos y gastos por área"},
   {code:"gasto_admin",      titulo:"Zoom · Administrativos"},
   {code:"gasto_comercial",  titulo:"Zoom · Comercial"},
@@ -2819,6 +2861,28 @@ const MTZ_FILAS = [
    y la franja que va encima de cada grafico, para que digan exactamente lo mismo. */
 function casillaGasto(code, pais){
   const res = S.gastosResumen || [];
+  /* El P&G oficial no vive en la cadena homologada sino en el bloque consolidado, con
+     una linea por rubro y no por concepto contable. Se lee aparte, con los mismos
+     periodos y la misma moneda que el resto de la matriz. */
+  if(code==="pyg_oficial"){
+    const pers=windowPeriodos()||[];
+    const ent=pais==="Estados Unidos" ? "EE.UU." : (pais==="Peru" ? "Perú" : pais);
+    const m={};
+    PYG_COST_STACK.forEach(def=>{
+      let t=0, hay=false;
+      pers.forEach(per=>{
+        const v=rawStored(def.code,{periodo:per,pais:ent,segmento:CONSOL_SEG,escenario:"Real"});
+        if(v!=null){ t+=Math.abs(usdToDisplay(v,per)); hay=true; }
+      });
+      if(hay&&t>0) m[def.label]=t;
+    });
+    const lista=Object.keys(m).map(k=>({n:k,v:m[k]})).sort((a,b)=>b.v-a.v);
+    if(lista.length>1) return {c:"verde", n:lista.length+" líneas", lista:lista,
+      t:"Líneas del P&G oficial, del bloque consolidado"};
+    if(lista.length===1) return {c:"ambar", n:"1 línea", lista:lista,
+      t:"Solo una línea del P&G oficial"};
+    return {c:"gris", n:"n/a", lista:[], t:"Sin P&G oficial para "+MTZ_ROTULO[pais]+" en este rango"};
+  }
   {
     /* Se miran las DOS fuentes y gana la que informe mas. Mirar solo la cadena y
        devolver al encontrar algo dejaba a Colombia en "1 concepto" para el grafico por
@@ -2867,6 +2931,20 @@ function casillaGasto(code, pais){
 
 const MTZ_COL = {verde:"var(--green)", ambar:"var(--amber)", gris:"var(--mute)"};
 
+/* Los conceptos con su total al pie. Sin el total hay que sumar de cabeza para saber
+   cuanto pesa un pais en el corte, que es justo lo que se viene a mirar: los conceptos
+   dicen la composicion y el total dice el tamano. Se suma lo mismo que se lista, asi
+   que no puede discrepar de las barras de arriba. */
+function listaConTotal(lista){
+  if(!lista||!lista.length) return "";
+  const filas=lista.map(i=>'<span class="fr-i"><span class="fr-c">'+i.n
+    +'</span><b class="mono">'+fMoney(i.v)+'</b></span>').join("");
+  if(lista.length<2) return filas;
+  const t=lista.reduce((a,i)=>a+(Number(i.v)||0),0);
+  return filas+'<span class="fr-i fr-tot"><span class="fr-c">Total</span>'
+    +'<b class="mono">'+fMoney(t)+'</b></span>';
+}
+
 function matrizGastos(){
   const casilla = casillaGasto;
   let html = '<table class="mtz"><thead><tr><th class="l">Gráfico</th>'
@@ -2878,8 +2956,7 @@ function matrizGastos(){
       /* los nombres se ven, no se esconden en el tooltip: la pregunta de quien lee la
          pestana es "que hay dentro de esa barra", y eso son los conceptos */
       const nombres = (x.lista && x.lista.length)
-        ? '<span class="cl">'+x.lista.map(i => '<span class="fr-i"><span class="fr-c">'+i.n
-           +'</span><b class="mono">'+fMoney(i.v)+'</b></span>').join('')+'</span>' : '';
+        ? '<span class="cl">'+listaConTotal(x.lista)+'</span>' : '';
       html += '<td><span class="cel" title="'+String(x.t).replace(/"/g,"&quot;")+'">'
             + '<span class="pt" style="background:'+MTZ_COL[x.c]+'"></span>'
             + '<span class="cn'+(x.c==="gris"?" off":"")+'">'+x.n+'</span>'
@@ -2906,10 +2983,7 @@ function franjaGasto(code){
     return '<div class="fr-p" title="'+String(x.t).replace(/"/g,"&quot;")+'">'
          + '<div class="fr-t"><span class="pt" style="background:'+MTZ_COL[x.c]+'"></span>'
          + '<b>'+MTZ_ROTULO[p]+'</b> <span class="fr-n'+(x.c==="gris"?" off":"")+'">'+x.n+'</span></div>'
-         + (x.lista && x.lista.length
-              ? '<div class="fr-l">'+x.lista.map(i => '<span class="fr-i"><span class="fr-c">'+i.n
-                 +'</span><b class="mono">'+fMoney(i.v)+'</b></span>').join("")+'</div>'
-              : '')
+         + (x.lista && x.lista.length ? '<div class="fr-l">'+listaConTotal(x.lista)+'</div>' : '')
          + '</div>';
   }).join("");
   return f;
@@ -3230,14 +3304,31 @@ function renderYoYBars(card,body,h,ch){
     const rotuloMeses=comunes.length? mesLbl[comunes[0]]+"–"+mesLbl[comunes[comunes.length-1]] : "";
     const org=cp?Math.round((cc/cp-1)*1000)/10:null;
     const tot=cp?Math.round(((cc+ic)/cp-1)*1000)/10:null;
+    /* El cierre en prosa obligaba a pescar cuatro cifras dentro de un parrafo. Como
+       tabla se lee de un vistazo, que es lo que se le pide a un cierre. */
+    const pct=v=>v==null?"—":"<b>"+(v>0?"+":"")+String(v).replace(".",",")+"%</b>";
     const nota=document.createElement("div");
-    nota.style.cssText="font-size:12.5px;color:var(--ink2);line-height:1.75;margin-top:12px;padding-top:11px;border-top:1px solid var(--line)";
-    nota.innerHTML="El Δ de cada mes es <b>Colombia contra Colombia</b>: eso es crecimiento."
-      +" En "+rotuloMeses+" —los meses que existen en los dos años— Colombia pasa de "+fMoney(cp)+" a "+fMoney(cc)
-      +(org!=null?" — <b>"+(org>0?"+":"")+String(org).replace(".",",")+"%</b> orgánico":"")
-      +". Las filiales aportan "+fMoney(ic)+" que antes no existían, así que el total sube "
-      +(tot!=null?"<b>"+(tot>0?"+":"")+String(tot).replace(".",",")+"%</b>":"")
-      +". Las dos cifras son ciertas y miden cosas distintas: la primera es cuánto creció el negocio, la segunda cuánto más grande es la compañía.";
+    nota.style.cssText="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)";
+    nota.innerHTML=
+      '<table style="width:100%;border-collapse:collapse;font-size:13px">'
+      +'<tr><td style="padding:5px 0;color:var(--ink2)">Ingresos '+prev+' · '+rotuloMeses+'</td>'
+      +'<td class="mono" style="text-align:right;color:var(--ink)">'+fMoney(cp)+'</td>'
+      +'<td style="width:110px;text-align:right;color:var(--mute);font-size:11.5px">solo Colombia</td></tr>'
+      +'<tr><td style="padding:5px 0;color:var(--ink2)">Ingresos '+endYear+' · Colombia</td>'
+      +'<td class="mono" style="text-align:right;color:var(--ink)">'+fMoney(cc)+'</td>'
+      +'<td style="text-align:right;color:var(--green);font-weight:600">'+pct(org)+' orgánico</td></tr>'
+      +'<tr><td style="padding:5px 0;color:var(--ink2)">Ingresos '+endYear+' · filiales</td>'
+      +'<td class="mono" style="text-align:right;color:var(--ink2)">'+fMoney(ic)+'</td>'
+      +'<td style="text-align:right;color:var(--mute);font-size:11.5px">no existían</td></tr>'
+      +'<tr style="border-top:1px solid var(--line)"><td style="padding:7px 0 0;color:var(--ink);font-weight:600">Total '+endYear+'</td>'
+      +'<td class="mono" style="text-align:right;padding-top:7px;color:var(--ink);font-weight:600">'+fMoney(cc+ic)+'</td>'
+      +'<td style="text-align:right;padding-top:7px;color:var(--green);font-weight:600">'+pct(tot)+' total</td></tr>'
+      +'</table>'
+      +'<div style="font-size:12px;color:var(--mute);line-height:1.7;margin-top:10px">'
+      +'El Δ de cada barra es <b>Colombia contra Colombia</b>: eso es crecimiento. El total incluye '
+      +'las filiales, que en '+prev+' no existían — describe cuánto más grande es la compañía, no '
+      +'cuánto creció el negocio. Cifras en '+F.moneda+'; el porcentaje cambia con la moneda porque '
+      +'la TRM se movió entre los dos años.</div>';
     body.appendChild(nota);
     return;
   }
@@ -3265,10 +3356,17 @@ function renderYoYLines(card,body,h,ch){
   ch.codes.forEach((code,ci)=>{
     const box=document.createElement("div"); box.className="chart-card"; box.style.padding="10px 12px";
     const hh=document.createElement("h3"); hh.textContent=(ch.titles&&ch.titles[ci])||code; hh.style.fontSize="12px"; box.appendChild(hh);
-    box.appendChild(legendRow(years.map(y=>({name:y,color:yrColor[y]}))));
+    /* La leyenda salia de S.periodos, o sea de TODOS los anos que existen en la base,
+       tuviera o no datos este grafico. 2023 solo tiene diciembre y para estos codigos no
+       tiene ninguno: aparecia un rotulo de un ano cuya linea no se dibuja en ninguna
+       parte. Ahora la leyenda sale de lo que de verdad se pinta, asi que se ajusta sola
+       cuando entre o salga un ano. */
+    const conDatos=years.map(y=>({y:y,vals:MES.map(m=>{const v=rawStored(code,{periodo:y+"-"+m});return v==null?null:toDisplay(v,y+"-"+m);})}))
+                        .filter(o=>o.vals.some(v=>v!=null));
+    box.appendChild(legendRow(conDatos.map(o=>({name:o.y,color:yrColor[o.y]}))));
     const cb=document.createElement("div"); box.appendChild(cb);
-    const series=years.map(y=>({color:yrColor[y],values:MES.map(m=>{const v=rawStored(code,{periodo:y+"-"+m});return v==null?null:toDisplay(v,y+"-"+m);})}));
-    if(series.some(s=>s.values.some(v=>v!=null))) sparseLineChart(cb,mesLbl,series,{fmt:v=>fAxisMoney(v),axisFmt:fAxisMoney}); else noData(cb);
+    const series=conDatos.map(o=>({color:yrColor[o.y],values:o.vals}));
+    if(series.length) sparseLineChart(cb,mesLbl,series,{fmt:v=>fAxisMoney(v),axisFmt:fAxisMoney}); else noData(cb);
     wrap.appendChild(box);
   });
 }
