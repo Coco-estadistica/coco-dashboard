@@ -27,7 +27,12 @@ LOS CUATRO CONTROLES, ANTES DE PROPONER NADA
   2. ¿Es del mes que dice?         El saldo inicial tiene que ser el saldo final del mes
                                    anterior. Asi se detecto que el julio de Peru era un
                                    reexporte de junio, con el movimiento contado dos veces.
-  3. ¿El balance cuadra?           Activo = Pasivo + Patrimonio en el propio auxiliar.
+  3. ¿Cuadra la partida doble?     Debitos = Creditos a nivel de subcuenta, y el arbol
+                                   sumando igual en cada nivel. No se usa
+                                   "activo = pasivo + patrimonio": el ERP exporta los
+                                   saldos credito en negativo y el resultado del
+                                   ejercicio no esta cerrado, asi que esa igualdad no
+                                   tiene por que cumplirse a mitad de ano.
   4. ¿El mapeo reproduce lo ya     Se aplica el mapeo a un mes YA CARGADO y se compara
      cargado?                      contra la base. Si no reproduce, no propone: seria
                                    proponer con una regla que no sabemos leer.
@@ -154,7 +159,8 @@ def leer_auxiliar(datos):
         fin = f[cf] if cf is not None and isinstance(f[cf], (int, float)) else nums[-1]
         deb, cre = nums[-3], nums[-2]
         out[cod] = {"nombre": etq.split(" - ", 1)[1].strip(), "ini": float(ini),
-                    "fin": float(fin), "mov": float(deb) - float(cre)}
+                    "fin": float(fin), "mov": float(deb) - float(cre),
+                    "deb": float(deb), "cre": float(cre)}
     return out
 
 
@@ -184,16 +190,49 @@ def controlar(pais, periodo, aux, aux_prev):
                   "; ".join(d) if d else
                   "el saldo inicial es el final del mes anterior"))
 
-    act = aux.get("1", {}).get("fin")
-    pas = aux.get("2", {}).get("fin")
-    pat = aux.get("3", {}).get("fin")
-    if act is not None and pas is not None and pat is not None:
-        dif = act - (abs(pas) + abs(pat))
-        r.append(("Balance cuadra", "OK" if abs(dif) < 2 else "AVISO",
-                  "activo %.2f vs pasivo+patrimonio %.2f (dif %.2f)"
-                  % (act, abs(pas) + abs(pat), dif)))
+    # PARTIDA DOBLE, no "activo = pasivo + patrimonio".
+    #
+    # El primer intento comparaba Activo contra Pasivo+Patrimonio y daba aviso en los
+    # cuatro paises. Estaba mal planteado por dos razones: el ERP exporta el pasivo y el
+    # patrimonio en NEGATIVO --son saldos credito-- y sumar valores absolutos no
+    # reconstruye nada; y ademas el resultado del ejercicio todavia no esta cerrado
+    # contra patrimonio, asi que la igualdad no tiene por que cumplirse a mitad de ano.
+    #
+    # Lo que SI se cumple siempre, sin depender de convenciones de signo: en cualquier
+    # balance de prueba los debitos igualan a los creditos. Medido sobre los archivos de
+    # julio, a nivel de SUBCUENTA (6 digitos) los cuatro paises cuadran exacto.
+    #
+    # Se mide en subcuenta y no en el auxiliar de 8 digitos porque ahi la diferencia es
+    # legitima: las provisiones y causaciones --OTROS, CESANTIAS, APORTES A A.R.L.-- se
+    # registran sin tercero, existen en la subcuenta y no bajan al auxiliar. En julio de
+    # Colombia eso son 4.727.135 en ocho subcuentas, y no es un defecto del archivo.
+    deb = cre = 0.0
+    for cod, d in aux.items():
+        if len(cod) != 6:
+            continue
+        deb += d["deb"]
+        cre += d["cre"]
+    if deb or cre:
+        dif = deb - cre
+        r.append(("Partida doble", "OK" if abs(dif) < 2 else "ALTO",
+                  "debitos %.2f = creditos %.2f" % (deb, cre) if abs(dif) < 2
+                  else "debitos %.2f vs creditos %.2f (descuadre %.2f)" % (deb, cre, dif)))
     else:
-        r.append(("Balance cuadra", "AVISO", "no encontre las clases 1/2/3"))
+        r.append(("Partida doble", "AVISO", "el archivo no trae columnas de debito y credito"))
+
+    # El arbol tiene que sumar igual en cada nivel: clase, grupo, cuenta y subcuenta.
+    # Si un nivel no cuadra con el de abajo, la exportacion se corto por la mitad.
+    niveles = {}
+    for cod, d in aux.items():
+        niveles.setdefault(len(cod), [0.0, 0.0])
+        niveles[len(cod)][0] += d["deb"]
+        niveles[len(cod)][1] += d["cre"]
+    ref = niveles.get(6)
+    malos = [str(n) for n, v in sorted(niveles.items())
+             if n in (1, 2, 4) and ref and abs(v[0] - ref[0]) > 2]
+    r.append(("El arbol suma igual en cada nivel", "ALTO" if malos else "OK",
+              "no cuadran los niveles de %s digitos" % ", ".join(malos) if malos
+              else "clase, grupo, cuenta y subcuenta dan lo mismo"))
     return r
 
 
