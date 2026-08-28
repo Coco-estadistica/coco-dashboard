@@ -548,7 +548,7 @@ const AREAS=[
 
 /* derivados: siempre calculados; devuelven valor en escala nativa (COP para dinero, número por-100 para %) */
 const DERIVE={
-  gastos_totales:o=>{ const det=sumDetalle("gasto_area",o); if(det!=null)return det; return pygGastosTotales(o); },
+  gastos_totales:o=>{ const det=gastoAreaOperativo(o); if(det!=null)return det; return pygGastosTotales(o,false); },
   margen_ebitda:o=>{ const e=rawStored("ebitda",o), i=rawStored("ingresos_totales",o); return (e!=null&&i)?e/i*100:null; },
   margen_neto:o=>{ const u=rawStored("utilidad_neta",o), i=rawStored("ingresos_totales",o); return (u!=null&&i)?u/i*100:null; },
   margen_bruto_pct:o=>{ const cp=valueOf("costo_proveedor_ventas_pct",o); return cp!=null?100-cp:null; },
@@ -601,7 +601,7 @@ const DERIVE={
 };
 const DERIVED_UNIT={ gastos_totales:"COP/USD", margen_ebitda:"%", margen_neto:"%", margen_bruto_pct:"%", nps:"pts" };
 const EXTRA_CATALOG={
-  gastos_totales:{area:"Finanzas",nombre:"Gastos operativos totales",unidad:"COP/USD",tipo:"Derivado",formula:"Σ costos y gastos por área",origen:"Derivado"},
+  gastos_totales:{area:"Finanzas",nombre:"Gastos operativos totales",unidad:"COP/USD",tipo:"Derivado",formula:"Σ costos y gastos por área, SIN gastos financieros",origen:"Derivado"},
   margen_ebitda:{area:"Finanzas",nombre:"Margen EBITDA",unidad:"%",tipo:"Derivado",formula:"ebitda / ingresos_totales",origen:"Derivado"},
   margen_neto:{area:"Finanzas",nombre:"Margen neto",unidad:"%",tipo:"Derivado",formula:"utilidad_neta / ingresos_totales",origen:"Derivado"},
   margen_bruto_pct:{area:"Finanzas",nombre:"Margen bruto %",unidad:"%",tipo:"Derivado",formula:"100 − costo_proveedor / ventas %",origen:"Derivado"}
@@ -949,10 +949,27 @@ const PYG_COST_STACK=[
   {code:"pyg_gasto_proyectos",label:"Proyectos",color:"#8B5CF6"},
   {code:"pyg_gastos_financieros",label:"Financieros",color:"#2DD4BF"}
 ];
-function pygGastosTotales(o){
-  const codes=["pyg_gasto_administracion","pyg_gasto_ventas","pyg_gasto_proyectos","pyg_gastos_financieros"];
+/* I-18: "Egresos totales" y "Gastos operativos totales" mostraban el MISMO numero, y
+   ese numero incluia los gastos financieros. Llamar operativo a algo que carga
+   financiacion contradice al EBITDA que se calcula en la tarjeta de al lado.
+
+   Decision del 28-ago-2026: egresos = todo; operativos = sin financieros.
+   En julio-26 Colombia son 655.901.810 y 650.548.189 -- los 5.353.621 de diferencia
+   son exactamente los gastos financieros de la linea del P&G. */
+function pygGastosTotales(o, conFinancieros){
+  const codes=["pyg_gasto_administracion","pyg_gasto_ventas","pyg_gasto_proyectos"];
+  if(conFinancieros!==false) codes.push("pyg_gastos_financieros");
   let s=null; codes.forEach(c=>{ const v=rawStored(c,o); if(v!=null)s=(s||0)+Math.abs(v); });
   return s;
+}
+/* la serie de gestion tiene su propio rubro "Financieros": se descuenta igual, para que
+   las dos fuentes den lo mismo y la tarjeta no cambie de significado segun el pais */
+function gastoAreaOperativo(o){
+  const tot=sumDetalle("gasto_area",o);
+  if(tot==null) return null;
+  const fin=byDetalle("gasto_area",o).filter(d=>norm(d.detalle||"")==="financieros")
+              .reduce((a,d)=>a+Math.abs(Number(d.valor)||0),0);
+  return tot-fin;
 }
 function usdToDisplay(v,per){ return F.moneda==="COP"?v*trmOf(per):v; }
 
@@ -1053,6 +1070,26 @@ function mesesEntre(a,b){
   if(pa.length<2||pb.length<2) return 0;
   return (parseInt(pb[0],10)-parseInt(pa[0],10))*12 + (parseInt(pb[1],10)-parseInt(pa[1],10));
 }
+/* POLITICA DE ANTIGUEDAD (decision del 28-ago-2026)
+   -------------------------------------------------
+   Un dato del mes anterior se muestra, con su sello de fecha. Mas viejo que eso, no:
+   pasa a s/d y la tarjeta dice cuantos meses lleva sin actualizarse.
+
+   El motivo es concreto: el tablero venia mostrando el margen bruto de DICIEMBRE-2025
+   en una fila de tarjetas de julio-2026, con la fecha en letra chica. Quien lee una
+   fila de seis KPIs asume que las seis son del mismo corte. Un mes de rezago es lo que
+   tarda un cierre en llegar; siete meses es un indicador abandonado, y decirlo es mas
+   util que mostrarlo. */
+const MAX_REZAGO_MESES = 1;
+function rezagoAceptable(perDato, perPedido){
+  if(!perDato||!perPedido) return true;
+  return mesesEntre(perDato, perPedido) <= MAX_REZAGO_MESES;
+}
+/* el motivo, cuando el dato existe pero quedo fuera de la ventana */
+function motivoRezago(perDato, perPedido){
+  const n=mesesEntre(perDato, perPedido);
+  return "sin actualizar desde "+perDato+" · "+n+" meses de rezago";
+}
 function selloFrescura(perDato, perPedido, breve){
   if(!perDato||!perPedido||perDato===perPedido) return "";
   const n=mesesEntre(perDato,perPedido);
@@ -1126,9 +1163,11 @@ function officialPygDisplay(code,per){
   const local=rawStored(code,{periodo:per,pais:filtro});
   return local==null?null:toDisplay(local,per);
 }
-function officialExpenseDisplay(per){
+function officialExpenseDisplay(per, conFinancieros){
   let total=null;
-  PYG_COST_STACK.forEach(def=>{ const v=officialPygDisplay(def.code,per); if(v!=null)total=(total||0)+Math.abs(v); });
+  PYG_COST_STACK.forEach(def=>{
+    if(conFinancieros===false&&def.code==="pyg_gastos_financieros")return;
+    const v=officialPygDisplay(def.code,per); if(v!=null)total=(total||0)+Math.abs(v); });
   return total;
 }
 /* Finanzas y Resumen deben conciliar con el P&G oficial. La serie heredada se usa
@@ -1154,7 +1193,10 @@ function officialFinanceDisplay(code,per){
   if(code==="ingresos_totales")return officialPygDisplay("pyg_ingresos_operacionales",per);
   if(code==="ebitda")return officialOperatingDisplay(per);
   if(code==="utilidad_neta")return officialPygDisplay("pyg_utilidad_neta",per);
-  if(code==="egresos_totales"||code==="gastos_totales")return officialExpenseDisplay(per);
+  /* I-18: los dos codigos apuntaban a la MISMA funcion, y por eso las dos tarjetas
+     mostraban el mismo numero. Egresos es todo; operativos excluye financieros. */
+  if(code==="egresos_totales")return officialExpenseDisplay(per);
+  if(code==="gastos_totales")return officialExpenseDisplay(per,false);
   if(code==="margen_ebitda"){
     const ing=officialFinanceDisplay("ingresos_totales",per), eb=officialFinanceDisplay("ebitda",per);
     return ing&&eb!=null?eb/ing*100:null;
@@ -2531,16 +2573,21 @@ function renderArea(host,area){
     k:item.label,v:item.value==null?"Por medir":fMoneyU(Math.abs(item.value)),dummy:item.value==null,real:item.value!=null,total:item.total,
     sub:item.value==null?"sin P&G oficial para el periodo":(item.total?"suma de las tarjetas de este bloque · "+mesCorto(per):"P&G oficial · "+mesCorto(per)),src:"BD_PYG_OFICIAL"
   })):area.id==="finanzas"?(area.codes||[]).map(code=>{ const c=S.catalog[code]||{};
-    let perShown=per, shown=financeDisplayValue(code,perShown);
-    if(shown==null){ const lp=lastFinancePeriodo(code); if(lp){perShown=lp;shown=financeDisplayValue(code,lp);} }
+    let perShown=per, shown=financeDisplayValue(code,perShown), rezagado=null;
+    if(shown==null){ const lp=lastFinancePeriodo(code);
+      if(lp&&rezagoAceptable(lp,per)){ perShown=lp; shown=financeDisplayValue(code,lp); }
+      else if(lp){ rezagado=lp; } }
     const has=shown!=null, s=statusFor(code,shown), official=officialFinanceDisplay(code,perShown)!=null;
     const meta=META[code], bench=(has&&meta)?benchBarNative(shown,meta):"";
-    return {k:(c.nombre||code),v:has?fmtFinanceDisplay(code,shown):"Por medir",dummy:!has,real:has,s:has?s:null,bench,
-      sub:has?(perShown!==per?selloFrescura(perShown,per):(official?"P&G oficial · "+mesCorto(perShown):(c.tipo||"").toString())):"aún sin cargar en la BD",
+    return {k:(c.nombre||code),v:has?fmtFinanceDisplay(code,shown):"s/d",dummy:!has,rezagado:rezagado,real:has,s:has?s:null,bench,
+      sub:has?(perShown!==per?selloFrescura(perShown,per):(official?"P&G oficial · "+mesCorto(perShown):(c.tipo||"").toString()))
+             :(rezagado?motivoRezago(rezagado,per):"aún sin cargar en la BD"),
       src:official?"BD_PYG_OFICIAL":(c.fuente?(c.fuente+(c.origen?" · "+c.origen:"")):(c.origen||""))};
   }):(area.codes||[]).map(code=>{ const c=S.catalog[code]||{}; const vRaw=valueOf(code,{periodo:per});
-    let vRawShown=vRaw, perShown=per;
-    if(vRaw==null){ const lp=lastPeriodoWith(code); if(lp){ vRawShown=valueOf(code,{periodo:lp}); perShown=lp; } }
+    let vRawShown=vRaw, perShown=per, rezagado=null;
+    if(vRaw==null){ const lp=lastPeriodoWith(code);
+      if(lp&&rezagoAceptable(lp,per)){ vRawShown=valueOf(code,{periodo:lp}); perShown=lp; }
+      else if(lp){ rezagado=lp; } }
     const has=vRawShown!=null; const s=statusFor(code,vRawShown);
     const meta=META[code]; const bench=(has&&meta)?benchBarNative(vRawShown,meta):"";
     /* "Por medir" significa que el indicador está definido pero nadie lo ha medido. Es
@@ -2549,7 +2596,8 @@ function renderArea(host,area){
        manda a perseguir un dato que nadie va a entregar. */
     const noAplicaAqui=esSoloColombia(code)&&esPaisConsol(F.pais);
     const sub=has?(perShown!==per?selloFrescura(perShown,per):(c.tipo||"").toString())
-                 :(noAplicaAqui?motivoSinDato(code):"aún sin cargar en la BD");
+                 :(noAplicaAqui?motivoSinDato(code)
+                   :(rezagado?motivoRezago(rezagado,per):"aún sin cargar en la BD"));
     const freqTag=(area.id==="marketing"&&c.frec)?(" · "+c.frec):"";
     /* sub SI va en la tarjeta. Se venia calculando y descartando: la variable existia,
        el objeto que se pinta no la incluia. Por eso el sello de frescura funcionaba en
@@ -2559,7 +2607,12 @@ function renderArea(host,area){
     return {k:(c.nombre||code)+chipAlcance(code,per),v:has?fmtValue(code,vRawShown,perShown):(noAplicaAqui?"—":"Por medir"),dummy:!has&&!noAplicaAqui,real:has,s:has?s:null,bench,sub,
       src:(c.fuente?(c.fuente+(c.origen?" · "+c.origen:"")):(c.origen||""))+freqTag};
   });
-  mkCards(grid,area.id==="finanzas"?defs.filter(d=>!d.dummy):defs);
+  /* Finanzas oculta las tarjetas sin valor --lleva haciendolo siempre y esta bien: un
+     indicador que nadie ha medido nunca no aporta nada en la fila principal--. Pero la
+     que se quedo vieja SI tiene que verse: es la diferencia entre un indicador que no
+     existe y uno que alguien dejo de alimentar. Sin esta excepcion, aplicar la politica
+     de antiguedad hacia DESAPARECER el margen bruto en vez de explicarlo. */
+  mkCards(grid,area.id==="finanzas"?defs.filter(d=>!d.dummy||d.rezagado):defs);
   /* gráficos del área */
   (area.charts||[]).forEach(ch=>{ const el=renderChartCard(ch); if(el)host.appendChild(el); });
   /* La matriz cierra la pestana de Gastos: despues de los graficos, porque responde
