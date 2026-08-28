@@ -3043,6 +3043,66 @@ function renderFactura12(card,body,h){
   t+="</tbody></table>";
   if(utiEst.some(Boolean)) t+=`<div style="font-size:10.5px;color:var(--mute);margin-top:6px"><span style="color:var(--amber)">est.</span> = utilidad estimada (ingresos − egresos): el mes aún no tiene cifra oficial de utilidad neta.</div>`;
   const tbl=document.createElement("div"); tbl.innerHTML=t; body.appendChild(tbl);
+
+  /* C-07 en esta serie: financeDisplayValue sustituye Colombia por debajo en los meses
+     anteriores al P&G consolidado, asi que la linea arranca siendo Colombia y termina
+     siendo cuatro paises sin decirlo. No se puede reconstruir el consolidado de 2025
+     --las filiales no existian-- pero si se puede decir donde esta el corte, que es la
+     diferencia entre una serie mezclada y una serie declarada. */
+  if(F.pais==="__ALL__"||F.pais==="Consolidado"){
+    const consolDe=p=>{
+      let v=factVal("pyg_ingresos_operacionales",p,"Consolidado",CONSOL_SEG,"Real");
+      if(v==null) v=sumaPaisesConsol("pyg_ingresos_operacionales",p);
+      return v; };
+    const primero=pers.find(p=>consolDe(p)!=null);
+    const soloCol=pers.filter(p=>p<(primero||"9999")&&ingV[pers.indexOf(p)]!=null);
+    if(primero&&soloCol.length){
+      const av=document.createElement("div");
+      av.style.cssText="font-size:12.5px;color:var(--ink2);line-height:1.7;margin-top:12px;padding-top:11px;border-top:1px solid var(--line)";
+      av.innerHTML="<b>La serie cambia de base en "+mesCorto(primero)+".</b> Hasta "
+        +mesCorto(soloCol[soloCol.length-1])+" son cifras de <b>Colombia sola</b>, que era toda la operación; "
+        +"desde "+mesCorto(primero)+" son los <b>cuatro países</b>. El salto entre esos dos meses no es "
+        +"crecimiento: es la entrada de las filiales. El crecimiento comparable está en el gráfico "
+        +"«Crecimiento "+(parseInt(primero.slice(0,4),10)-1)+" vs "+primero.slice(0,4)+"», que compara Colombia contra Colombia.";
+      body.appendChild(av);
+    }
+  }
+}
+
+/* C-07 · CRECIMIENTO ORGANICO VS EXPANSION
+   ----------------------------------------
+   El grafico comparaba 2025 --que es solo Colombia, porque las filiales no existian--
+   contra 2026 consolidado, y de ahi salia un +119% de julio que no es crecimiento: es
+   Colombia creciendo 29,7% mas tres filiales que antes no estaban.
+
+   Las dos cifras describen algo cierto y la compania SI es mas grande. Pero +119% no
+   aguanta la primera pregunta de un inversionista, y es justo la cifra que va a citar.
+
+   Decision del 28-ago-2026: mostrar las dos cosas separadas. Colombia contra Colombia
+   es el crecimiento organico y manda el Δ%; el aporte internacional va como serie
+   propia, encima, para que se vea lo que suma sin contaminar la tasa.
+
+   Estas dos funciones leen un pais concreto sin importar el filtro de la barra, que es
+   lo que ninguna de las existentes hacia. */
+function ingresoPaisDisplay(per, pais){
+  const ofi=rawStored("pyg_ingresos_operacionales",
+                      {periodo:per, pais:pais, segmento:CONSOL_SEG, escenario:"Real"});
+  if(ofi!=null) return usdToDisplay(ofi, per);
+  /* antes de que existiera el P&G oficial, Colombia vivia en la serie de gestion */
+  if(pais!=="Colombia") return null;
+  const leg=rawStored("ingresos_totales", {periodo:per, pais:"Colombia", escenario:"Real"});
+  return leg==null?null:toDisplay(leg, per);
+}
+/* lo que aportan las filiales: el consolidado del mes menos Colombia */
+function ingresoInternacionalDisplay(per){
+  let tot=factVal("pyg_ingresos_operacionales", per, "Consolidado", CONSOL_SEG, "Real");
+  if(tot==null) tot=sumaPaisesConsol("pyg_ingresos_operacionales", per);
+  if(tot==null) return null;
+  const col=rawStored("pyg_ingresos_operacionales",
+                      {periodo:per, pais:"Colombia", segmento:CONSOL_SEG, escenario:"Real"});
+  if(col==null) return null;
+  const d=tot-col;
+  return d<=0?null:usdToDisplay(d, per);
 }
 
 /* Facturación 2025 vs 2026 por mes (barras agrupadas + Δ%) */
@@ -3055,11 +3115,66 @@ function renderYoYBars(card,body,h,ch){
      en 2026). En vez de dejar la mitad del gráfico vacía, el año anterior cae a
      Colombia —que ERA toda la operación— y la leyenda lo declara. */
   const esConsolYoY=(F.pais==="__ALL__"||F.pais==="Consolidado");
+
+  /* ¿el año anterior existe DE VERDAD en el bloque consolidado?
+     Ojo: no sirve preguntarselo a read(). financeDisplayValue ya sustituye Colombia por
+     debajo cuando eraSoloColombia(per), asi que devuelve cifras para 2025 y parece que
+     el consolidado existiera. Hay que preguntarle a la fuente consolidada directamente:
+     es justo esa sustitucion silenciosa la que produce el +119%. */
+  const prevConsol=MES.map(m=>read(prev+"-"+m));
+  const hayPrevConsol=MES.some(m=>{
+    const per=prev+"-"+m;
+    let v=factVal("pyg_ingresos_operacionales",per,"Consolidado",CONSOL_SEG,"Real");
+    if(v==null) v=sumaPaisesConsol("pyg_ingresos_operacionales",per);
+    return v!=null;
+  });
+  const separar=esConsolYoY && !hayPrevConsol && code==="ingresos_totales";
+
+  if(separar){
+    const colPrev=MES.map(m=>ingresoPaisDisplay(prev+"-"+m,"Colombia"));
+    const colCur =MES.map(m=>ingresoPaisDisplay(endYear+"-"+m,"Colombia"));
+    const intCur =MES.map(m=>ingresoInternacionalDisplay(endYear+"-"+m));
+    if(!colPrev.some(v=>v!=null)&&!colCur.some(v=>v!=null)){ noData(body); return; }
+    /* el Δ% es Colombia contra Colombia: eso es crecimiento, lo otro es expansion */
+    const delta=MES.map((m,i)=>(colPrev[i]&&colCur[i]!=null)
+      ? "Δ"+Math.round((colCur[i]/colPrev[i]-1)*100)+"%" : "");
+    h.textContent=`Crecimiento ${prev} vs ${endYear} · Colombia, y el aporte internacional aparte`;
+    card.insertBefore(legendRow([
+      {name:"Colombia "+prev,color:"#3B82F6"},
+      {name:"Colombia "+endYear,color:"#00CC58"},
+      {name:"Filiales "+endYear+" (EE.UU. · Perú · Costa Rica)",color:"#8B5CF6"}]),body);
+    const chartHost=document.createElement("div"); body.appendChild(chartHost);
+    groupedBarChart(chartHost,mesLbl,[
+      {name:"Colombia "+prev,color:"#3B82F6",values:colPrev},
+      {name:"Colombia "+endYear,color:"#00CC58",values:colCur},
+      {name:"Filiales "+endYear,color:"#8B5CF6",values:intCur}],{delta});
+
+    /* El numero que la gente se lleva. Solo los meses que existen en LOS DOS anos:
+       sumar 12 meses de 2025 contra los 7 que van de 2026 daba -26,6% y no es que el
+       negocio se cayera, es que el ano no ha terminado. */
+    const comunes=MES.map((m,i)=>i).filter(i=>colPrev[i]!=null&&colCur[i]!=null);
+    const suma=(a)=>comunes.reduce((s,i)=>s+(a[i]||0),0);
+    const cp=suma(colPrev), cc=suma(colCur), ic=suma(intCur);
+    const rotuloMeses=comunes.length? mesLbl[comunes[0]]+"–"+mesLbl[comunes[comunes.length-1]] : "";
+    const org=cp?Math.round((cc/cp-1)*1000)/10:null;
+    const tot=cp?Math.round(((cc+ic)/cp-1)*1000)/10:null;
+    const nota=document.createElement("div");
+    nota.style.cssText="font-size:12.5px;color:var(--ink2);line-height:1.75;margin-top:12px;padding-top:11px;border-top:1px solid var(--line)";
+    nota.innerHTML="El Δ de cada mes es <b>Colombia contra Colombia</b>: eso es crecimiento."
+      +" En "+rotuloMeses+" —los meses que existen en los dos años— Colombia pasa de "+fMoney(cp)+" a "+fMoney(cc)
+      +(org!=null?" — <b>"+(org>0?"+":"")+String(org).replace(".",",")+"%</b> orgánico":"")
+      +". Las filiales aportan "+fMoney(ic)+" que antes no existían, así que el total sube "
+      +(tot!=null?"<b>"+(tot>0?"+":"")+String(tot).replace(".",",")+"%</b>":"")
+      +". Las dos cifras son ciertas y miden cosas distintas: la primera es cuánto creció el negocio, la segunda cuánto más grande es la compañía.";
+    body.appendChild(nota);
+    return;
+  }
+
+  const vPrev=prevConsol.slice();
   let prevSoloColombia=false;
-  const vPrev=MES.map(m=>{ let v=read(prev+"-"+m);
-    if(v==null&&esConsolYoY){ const r=rawStored(code,{periodo:prev+"-"+m,escenario:"Real",pais:"Colombia"});
-      if(r!=null){ v=toDisplay(r,prev+"-"+m); prevSoloColombia=true; } }
-    return v; });
+  MES.forEach((m,i)=>{ if(vPrev[i]==null&&esConsolYoY){
+    const r=rawStored(code,{periodo:prev+"-"+m,escenario:"Real",pais:"Colombia"});
+    if(r!=null){ vPrev[i]=toDisplay(r,prev+"-"+m); prevSoloColombia=true; } } });
   const vCur =MES.map(m=>read(endYear+"-"+m));
   if(!vPrev.some(v=>v!=null)&&!vCur.some(v=>v!=null)){ noData(body); return; }
   const delta=MES.map((m,i)=>(vPrev[i]&&vCur[i]!=null)?"Δ"+Math.round((vCur[i]/vPrev[i]-1)*100)+"%":"");
