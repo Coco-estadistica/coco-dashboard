@@ -1,0 +1,19 @@
+# Generados: se rehacen con un comando, no deben viajar en el repositorio.
+migracion/coco.db
+migracion/coco.sql
+migracion/Propuesta_*.xlsx
+
+# Respaldos automaticos. Los scripts los crean antes de escribir; git ya guarda el
+# antes de cada cambio, asi que no hace falta versionarlos ademas.
+# Hasta el 28-ago-2026 habia 47 archivos de respaldo ocupando 24 de los 30 MB del
+# proyecto, y ninguno aportaba nada que git no tuviera.
+*_antes_*.xlsx
+*_ANTES_*.xlsx
+*.bak
+respaldos/
+_RESPALDOS_NO_ABRIR/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
