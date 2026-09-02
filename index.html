@@ -849,7 +849,12 @@ function hayCierre(){ return S.trmCierre && Object.keys(S.trmCierre).length>0; }
 function trmBaseMap(){ return (F.trmBase==="cierre"&&hayCierre())?S.trmCierre:(S.trmMercado&&Object.keys(S.trmMercado).length?S.trmMercado:S.trm); }
 function trmSheet(per){ const m=trmBaseMap(); const last=S.periodos[S.periodos.length-1];
   return m[per] || S.trm[per] || m[last] || S.trm[last] || 4170; }
-function trmOf(per){ if(F.trm && !isNaN(F.trm) && F.trm>0) return F.trm; return trmSheet(per); }
+/* La tasa fija solo manda cuando esa base esta elegida. Antes bastaba con que F.trm
+   tuviera un valor: si alguien escribia 4.200 y despues volvia a "Promedio mensual",
+   el tablero seguia convirtiendo a 4.200 y la etiqueta seguia diciendo "fijada a
+   mano" -- pero el selector decia otra cosa. Cifras distintas sin aviso. */
+function trmFijaActiva(){ return F.trmBase==="fija" && F.trm && !isNaN(F.trm) && F.trm>0; }
+function trmOf(per){ if(trmFijaActiva()) return F.trm; return trmSheet(per); }
 /* análisis de tasas COP/USD: valores implícitos distintos y en qué periodo cambian */
 function trmChangePoints(){ const pers=Object.keys(S.trmImpl).sort(); const pts=[]; let prev=null;
   for(const p of pers){ const v=S.trmImpl[p]; if(prev===null||v!==prev){ pts.push({periodo:p,valor:v}); prev=v; } } return pts; }
@@ -1086,9 +1091,13 @@ function etiquetaPais(){ return F.pais==="__ALL__"?"Consolidado":F.pais; }
    cuál está mirando — y la diferencia entre implícita y mercado ya provocó una
    confusión real con la TRM de julio (3.268,95 vs 3.505,27). */
 function etiquetaTasa(per){
-  const manual=F.trm&&!isNaN(F.trm)&&F.trm>0;
   const base=F.trmBase==="cierre"?"tasa de cierre de mes":"tasa promedio mensual";
-  return "TRM "+fNum(trmOf(per))+" · "+(manual?"tasa fijada a mano":base);
+  /* Elegir "fija" y dejar la casilla vacia no es un error, pero tampoco es una tasa
+     fija: el tablero cae al promedio. Decirlo evita que alguien lea el numero
+     creyendo que es el que escribio. */
+  if(F.trmBase==="fija")
+    return "TRM "+fNum(trmOf(per))+" · "+(trmFijaActiva()?"tasa fija indicada a mano":base+" (falta indicar la tasa fija)");
+  return "TRM "+fNum(trmOf(per))+" · "+base;
 }
 /* C-08 / I-19: un dato de otro mes se anunciaba en letra chica y del mismo color que
    el resto ("ultimo dato: 2025-12"), asi que MARGEN BRUTO de diciembre pasaba
@@ -1579,6 +1588,12 @@ function sincronizarControles(tabId){
   apagar(document.getElementById("f-trmbase"), esBurn,
     "No aplica en Burn & Runway (fuente externa con tasa propia).",
     "Tasa COP/USD usada para convertir: implícita (derivada de los EEFF) o promedio mensual de mercado");
+  /* La casilla de la tasa fija sigue la misma regla que su desplegable: en Burn la
+     conversion viene hecha desde el Modelo, asi que dejarla activa invitaria a
+     escribir una tasa que esa pestana no usa. */
+  apagar(document.getElementById("f-trm-fijo"), esBurn,
+    "No aplica en Burn & Runway (fuente externa con tasa propia).",
+    "Tasa COP/USD fija indicada a mano");
 
   /* El pais ya se apaga en las pestanas de alcance fijo (bloque de arriba). Aqui se
      suman Burn --que es siempre consolidado, del Modelo-- y el Catalogo, que lista el
@@ -1619,7 +1634,7 @@ function render(){
   const warnT=document.getElementById("trm-warn");
   if(warnT){
     const hayDatos=S.periodos&&S.periodos.length, m=hayDatos?trmBaseMap():{}, last=hayDatos?S.periodos[S.periodos.length-1]:null;
-    const usaRespaldo=hayDatos&&!F.trm&&!(m[F.periodo]||S.trm[F.periodo]||(last&&(m[last]||S.trm[last])));
+    const usaRespaldo=hayDatos&&!trmFijaActiva()&&!(m[F.periodo]||S.trm[F.periodo]||(last&&(m[last]||S.trm[last])));
     warnT.style.display=usaRespaldo?"":"none";
   }
   renderTab(tabId);
@@ -3533,7 +3548,9 @@ function areasVisibles(){ return AREAS.filter(a=>!PESTANAS_APAGADAS.includes(a.i
    intermedios mientras alguien tantea. La lectura es tolerante: un hash incompleto o
    corrupto cae a los valores por defecto en vez de romper el arranque.
    ============================================================================ */
-const HASH_CAMPOS=["pais","escenario","moneda","start","periodo","trmBase"];
+/* trm va en la direccion junto con trmBase: si no, quien reciba el enlace ve las
+   mismas etiquetas pero cifras convertidas con otra tasa. */
+const HASH_CAMPOS=["pais","escenario","moneda","start","periodo","trmBase","trm"];
 
 function estadoAHash(){
   const b=document.querySelector(".tab-btn.active");
@@ -3551,9 +3568,15 @@ function urlEscribir(nuevoPaso){
 }
 /* Devuelve la pestana pedida, o null. Aplica lo que reconozca y descarta el resto:
    mas vale una vista parcialmente restaurada que un arranque roto. */
-function hashAEstado(){
+/* Recibe opcionalmente el hash a interpretar. Hace falta porque en el arranque la
+   direccion original ya fue sobrescrita: applyPreset("def") termina en render(), y
+   render escribe la URL con los valores por defecto. Sin este parametro, un enlace
+   compartido llegaba aqui ya machacado y se perdian TODOS los filtros -- moneda,
+   pais, escenario, periodo y base de TRM -- no solo la tasa fija. */
+function hashAEstado(hashCrudo){
   let p;
-  try{ p=new URLSearchParams((location.hash||"").replace(/^#/,"")); }catch(e){ return null; }
+  const fuente = (hashCrudo!=null && hashCrudo!=="") ? hashCrudo : (location.hash||"");
+  try{ p=new URLSearchParams(fuente.replace(/^#/,"")); }catch(e){ return null; }
   if(![...p.keys()].length) return null;
   const validos={
     pais:v=>v==="__ALL__"||S.facts.some(f=>f.pais===v),
@@ -3561,9 +3584,14 @@ function hashAEstado(){
     moneda:v=>["USD","COP"].includes(v),
     start:v=>S.periodos.includes(v),
     periodo:v=>S.periodos.includes(v),
-    trmBase:v=>["promedio","cierre","fija"].includes(v)
+    trmBase:v=>["promedio","cierre","fija"].includes(v),
+    trm:v=>!isNaN(parseFloat(v))&&parseFloat(v)>0
   };
   HASH_CAMPOS.forEach(k=>{ const v=p.get(k); if(v!=null&&validos[k]&&validos[k](v)) F[k]=v; });
+  /* La direccion trae texto; F.trm tiene que ser numero o las divisiones de conversion
+     terminan operando sobre una cadena. */
+  F.trm=(F.trm!=null&&F.trm!=="")?parseFloat(F.trm):null;
+  if(isNaN(F.trm)||F.trm<=0) F.trm=null;
   if(F.start&&F.periodo&&F.start>F.periodo) F.start=F.periodo;
   const tab=p.get("tab");
   return (tab&&areasVisibles().some(a=>a.id===tab))?tab:null;
@@ -3658,8 +3686,29 @@ function coreEnd(){
 }
 function markPreset(p){ document.querySelectorAll("#f-presets button").forEach(b=>b.classList.toggle("on",b.dataset.p===p)); }
 function clearPreset(){ document.querySelectorAll("#f-presets button").forEach(b=>b.classList.remove("on")); }
+/* Deja los controles de TRM coherentes con F. Hace falta al arrancar y al volver con
+   Atras/Adelante: el desplegable puede quedar en "fija" mientras la casilla sigue
+   escondida y vacia, y entonces el tablero convierte con el promedio mientras el
+   control afirma que hay una tasa fija. */
+function syncTrmFijo(){
+  const sel=document.getElementById("f-trmbase");
+  const caja=document.getElementById("trm-fijo-ctrl");
+  const inp=document.getElementById("f-trm-fijo");
+  if(sel && [...sel.options].some(o=>o.value===F.trmBase)) sel.value=F.trmBase;
+  if(caja) caja.style.display=(F.trmBase==="fija")?"flex":"none";
+  if(inp){ const v=(F.trm&&!isNaN(F.trm)&&F.trm>0)?String(F.trm):""; if(inp.value!==v) inp.value=v; }
+}
 function syncFilterInputs(){ const s=document.getElementById("f-start"),e=document.getElementById("f-end");
-  if(s)s.value=F.start; if(e)e.value=F.periodo; }
+  if(s)s.value=F.start; if(e)e.value=F.periodo;
+  /* Los demas controles tambien tienen que reflejar F, no solo las fechas: al abrir un
+     enlace compartido F traia el pais, el escenario y la moneda del enlace mientras la
+     barra seguia mostrando los de arranque. */
+  const selPa=document.getElementById("f-pais");
+  if(selPa && [...selPa.options].some(o=>o.value===F.pais)) selPa.value=F.pais;
+  const selEs=document.getElementById("f-escenario");
+  if(selEs && [...selEs.options].some(o=>o.value===F.escenario)) selEs.value=F.escenario;
+  document.querySelectorAll("#f-moneda button").forEach(b=>b.classList.toggle("on", b.dataset.m===F.moneda));
+  syncTrmFijo(); }
 function applyPreset(p){ const end=coreEnd(), idxEnd=S.periodos.indexOf(end);
   /* M-35: "Total" debe abarcar TODA la base. Usaba coreEnd(), que es el ultimo mes
      CON dato real (2026-07), y dejaba fuera los periodos presupuestados hasta 2026-12. */
@@ -3711,15 +3760,12 @@ function fillFilters(){
     trmBaseSel.value=F.trmBase;
     trmBaseSel.onchange=e=>{
       F.trmBase=e.target.value;
-      const trmFijoCtrl=document.getElementById("trm-fijo-ctrl");
-      const trmFijoInput=document.getElementById("f-trm-fijo");
-      if(trmFijoCtrl){
-        trmFijoCtrl.style.display=F.trmBase==="fija"?"flex":"none";
-        if(F.trmBase==="fija"&&trmFijoInput) trmFijoInput.focus();
-      }
+      syncTrmFijo();
+      if(F.trmBase==="fija"){ const i=document.getElementById("f-trm-fijo"); if(i&&!i.disabled) i.focus(); }
       render();
     };
-    /* Event listener para el campo de tasa fija personalizada */
+    /* La casilla de la tasa fija. Se recalcula al teclear; vaciarla devuelve el
+       tablero a la tasa de la hoja en vez de dejarlo con la ultima que se escribio. */
     const trmFijoInput=document.getElementById("f-trm-fijo");
     if(trmFijoInput){
       trmFijoInput.oninput=e=>{
@@ -3748,10 +3794,13 @@ function fillFilters(){
       } else if(nota){ nota.remove(); }
     }
   }
+  /* La direccion, tal como llego, ANTES de que nada la reescriba. applyPreset("def")
+     acaba llamando a render(), y render la sobrescribe con los valores por defecto. */
+  const hashInicial=location.hash;
   F.trm=null; applyPreset("def");
   /* SA-06: el hash manda sobre los valores por defecto. Va DESPUES de applyPreset para
      que lo que traiga la direccion no lo pise el preset de arranque. */
-  const tabHash=hashAEstado();
+  const tabHash=hashAEstado(hashInicial);
   if(tabHash){
     const nav=document.getElementById("tabnav");
     if(nav) nav.querySelectorAll(".tab-btn").forEach(x=>{
@@ -3761,6 +3810,9 @@ function fillFilters(){
     });
   }
   syncFilterInputs();
+  /* Y volver a pintar: hasta aqui F ya tiene lo que traia el enlace, pero la pantalla
+     sigue mostrando el resultado del preset de arranque. */
+  if(tabHash || hashInicial) render();
   /* N-01: primera medida y reajuste ante cualquier cambio de tamano de la barra. */
   ajustarAltoBarra();
   if(window.ResizeObserver){ new ResizeObserver(ajustarAltoBarra).observe(document.querySelector(".topbar")); }
