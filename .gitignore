@@ -9,6 +9,7 @@ migracion/Propuesta_*.xlsx
 # proyecto, y ninguno aportaba nada que git no tuviera.
 *_antes_*.xlsx
 *_ANTES_*.xlsx
+*_respaldo_*.xlsx
 *.bak
 respaldos/
 _RESPALDOS_NO_ABRIR/
