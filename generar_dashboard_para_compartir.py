@@ -8,7 +8,7 @@ import json
 import os
 import time
 
-RAIZ = r"C:\Users\andre\OneDrive - CFOcus\01_CFOCUS_CLIENTES\COCO\1.0 Coco Digital\COCO_Dashboard_Cloud"
+RAIZ = os.path.dirname(os.path.abspath(__file__))
 ORIGEN = os.path.join(RAIZ, "Dashboard_COCO.html")
 XLSX = os.path.join(RAIZ, "migracion", "BD_MAESTRA_COCO.xlsx")
 BURN = os.path.join(RAIZ, "burn_runway.json")
