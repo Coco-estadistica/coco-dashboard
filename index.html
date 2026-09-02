@@ -303,6 +303,7 @@ footer b{color:var(--ink2)}
     <div class="ctrl"><label>País</label><select id="f-pais"></select></div>
     <div class="ctrl"><label>Moneda</label><div class="toggle" id="f-moneda"><button data-m="USD" class="on">USD</button><button data-m="COP">COP</button></div></div>
     <div class="ctrl"><label>Base TRM</label><select id="f-trmbase" title="Tasa COP/USD usada para convertir"></select><span id="trm-warn" style="display:none;cursor:help;margin-left:4px" title="Sin TRM en la base para este periodo: el tablero está convirtiendo con la tasa de respaldo 4.170. Carga la hoja TRM.">⚠️</span></div>
+    <div class="ctrl" id="trm-fijo-ctrl" style="display:none"><label>TRM Fija</label><input id="f-trm-fijo" type="number" step="0.01" min="0" placeholder="ej: 4200" title="Ingresa la tasa de cambio fija COP/USD a usar"></div>
     <button class="btn primary" id="btn-cloud" title="Lee la última versión de BD_MAESTRA_COCO (Google Sheets)">☁ Actualizar desde la nube</button>
     <button class="btn" id="btn-datos" title="Registro individual o carga masiva con plantilla">✎ Ingresar datos</button>
     <button class="btn" id="btn-load" title="Respaldo: cargar un archivo Excel local">Cargar BD</button>
@@ -3560,7 +3561,7 @@ function hashAEstado(){
     moneda:v=>["USD","COP"].includes(v),
     start:v=>S.periodos.includes(v),
     periodo:v=>S.periodos.includes(v),
-    trmBase:v=>["promedio","cierre"].includes(v)
+    trmBase:v=>["promedio","cierre","fija"].includes(v)
   };
   HASH_CAMPOS.forEach(k=>{ const v=p.get(k); if(v!=null&&validos[k]&&validos[k](v)) F[k]=v; });
   if(F.start&&F.periodo&&F.start>F.periodo) F.start=F.periodo;
@@ -3704,10 +3705,29 @@ function fillFilters(){
     /* "Fin de mes" solo aparece cuando la hoja TRM trae esa columna con datos. */
     const ops=[["promedio","Promedio mensual"]];
     if(hayCierre()) ops.push(["cierre","Fin de mes"]);
+    ops.push(["fija","Tasa Fija (personalizada)"]);
     trmBaseSel.innerHTML=ops.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join("");
     if(!hayCierre()&&F.trmBase==="cierre") F.trmBase="promedio";
     trmBaseSel.value=F.trmBase;
-    trmBaseSel.onchange=e=>{ F.trmBase=e.target.value; render(); };
+    trmBaseSel.onchange=e=>{
+      F.trmBase=e.target.value;
+      const trmFijoCtrl=document.getElementById("trm-fijo-ctrl");
+      const trmFijoInput=document.getElementById("f-trm-fijo");
+      if(trmFijoCtrl){
+        trmFijoCtrl.style.display=F.trmBase==="fija"?"flex":"none";
+        if(F.trmBase==="fija"&&trmFijoInput) trmFijoInput.focus();
+      }
+      render();
+    };
+    /* Event listener para el campo de tasa fija personalizada */
+    const trmFijoInput=document.getElementById("f-trm-fijo");
+    if(trmFijoInput){
+      trmFijoInput.oninput=e=>{
+        const val=parseFloat(e.target.value);
+        F.trm=(!isNaN(val)&&val>0)?val:null;
+        render();
+      };
+    }
     /* SA-04: un desplegable con una sola opcion es una promesa que el tablero no cumple.
        Mientras la hoja TRM no traiga la columna de cierre, el control se oculta y en su
        lugar queda dicha la tasa que se esta usando -- que es la informacion que el
