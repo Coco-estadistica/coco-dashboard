@@ -3735,7 +3735,7 @@ function fillFilters(){
     const ctrl=trmBaseSel.closest(".ctrl");
     if(ctrl){
       const solaOpcion=ops.length<2;
-      ctrl.style.display=solaOpcion?"none":"";
+      ctrl.style.display=solaOpcion?"none":"flex";
       let nota=document.getElementById("trm-unica");
       if(solaOpcion){
         if(!nota){
