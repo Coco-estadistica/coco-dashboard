@@ -23,8 +23,13 @@ Cada control salio de un error real de este proyecto, no de un manual:
 
   V1  consolidado = suma de los 4 paises        (se rompio al corregir julio de Peru)
   V2  utilidad = ingresos - gastos, por pais    (quedo desalineada en el mismo cambio)
-  V3  morosidad = cartera vencida / total       (el campo guardado marcaba 27,8%
-                                                 contra 41,6% real)
+  V3  la cartera concilia: sana + vencida       (revisado 03-sep-2026: antes comparaba
+      = cartera_total                            el indice_morosidad cargado contra
+                                                 vencida/total, pero eran definiciones
+                                                 distintas y el hallazgo era permanente.
+                                                 Desde que el tablero calcula la
+                                                 morosidad, lo que importa es que el
+                                                 denominador cuadre)
   V4  la composicion del NPS suma 100           (se sumaban los tres detalles y daba
                                                  100 todos los meses)
   V5  sin llaves duplicadas                     (misma llave repetida pasa inadvertida
@@ -169,16 +174,27 @@ def validar(con):
              % (TOL_PUBLICADO, TOL),
              lambda r: "%s %s: calculada %.2f vs guardada %.2f" % r)
 
-    n3 = chk("V3 morosidad = vencida / total",
+    # V3 cambio de sentido el 03-sep-2026. Antes comparaba el indice_morosidad cargado
+    # contra vencida/total y lo marcaba como descuadre; pero eran dos definiciones
+    # distintas, asi que el hallazgo era permanente y no significaba nada. Conectado al
+    # boton de subir habria frenado todas las subidas por un falso positivo, y en dos
+    # semanas alguien lo habria apagado -- que es como mueren los controles.
+    #
+    # Ahora el tablero calcula la morosidad como vencida/cartera_total, y lo que si hay
+    # que vigilar es el denominador: cuando sana+vencida no da cartera_total, el
+    # porcentaje cambia segun cual se use. En junio de 2026: 27,81% contra 32,18%.
+    n3 = chk("V3 la cartera concilia (sana + vencida = total)",
              """WITH c AS (SELECT periodo,
+                    SUM(CASE codigo_indicador WHEN 'cartera_sana' THEN valor END) AS san,
                     SUM(CASE codigo_indicador WHEN 'cartera_vencida' THEN valor END) AS ven,
-                    SUM(CASE codigo_indicador WHEN 'cartera_total' THEN valor END) AS tot,
-                    SUM(CASE codigo_indicador WHEN 'indice_morosidad' THEN valor END) AS idx
+                    SUM(CASE codigo_indicador WHEN 'cartera_total' THEN valor END) AS tot
                   FROM indicadores WHERE escenario='Real' GROUP BY periodo)
-                SELECT periodo, ROUND(ven*100.0/tot,2), ROUND(idx,2) FROM c
-                WHERE ven IS NOT NULL AND tot>0 AND idx IS NOT NULL
-                  AND ABS(ven*100.0/tot - idx) > 0.5""",
-             lambda r: "%s: calculada %.2f%% vs guardada %.2f%%" % r)
+                SELECT periodo, ROUND(san+ven,0), ROUND(tot,0),
+                       ROUND(ven*100.0/tot,2), ROUND(ven*100.0/(san+ven),2)
+                FROM c
+                WHERE san IS NOT NULL AND ven IS NOT NULL AND tot>0
+                  AND ABS(san+ven-tot) > MAX(1, tot*0.001)""",
+             lambda r: "%s: sana+vencida %.0f vs total %.0f -> morosidad %.2f%% sobre total, %.2f%% sobre la suma" % r)
 
     n4 = chk("V4 la composicion del NPS suma 100",
              """SELECT periodo, ROUND(SUM(valor),2) FROM indicadores
@@ -222,17 +238,29 @@ def main():
     print("  VALIDACIONES")
     print("  " + "-" * 74)
     nombres = ["V1 consolidado = suma de paises", "V2 utilidad = ingresos - gastos",
-               "V3 morosidad = vencida / total", "V4 la composicion del NPS suma 100",
+               "V3 la cartera concilia (sana + vencida = total)",
+               "V4 la composicion del NPS suma 100",
                "V5 sin llaves duplicadas", "V6 sin futuro con escenario Real"]
     dic = {f[0]: f for f in fallos}
     for nom in nombres:
         f = dic.get(nom)
-        print("  %-40s %s" % (nom, "OK" if not f else ("%d hallazgo(s)" % f[1])))
+        print("  %-46s %s" % (nom, "OK" if not f else ("%d hallazgo(s)" % f[1])))
         if f:
             for d in f[2]:
                 print("       %s" % d)
             if f[1] > len(f[2]):
                 print("       … y %d mas" % (f[1] - len(f[2])))
+    # Esta lista repite los titulos que ya estan en validar(), y se emparejan por texto
+    # exacto. Al renombrar V3 el resumen siguio imprimiendo "OK" mientras el control
+    # tenia un hallazgo: un control que miente es peor que no tenerlo. Si algun dia
+    # vuelven a desalinearse, que se vea.
+    huerfanos = [n for n in dic if n not in nombres]
+    if huerfanos:
+        print()
+        print("  AVISO: hay controles cuyo titulo no coincide con esta lista y por eso")
+        print("         no se resumieron arriba. Corrige los nombres:")
+        for n in huerfanos:
+            print("           - %s (%d hallazgo(s))" % (n, dic[n][1]))
 
     if "--volcado" in sys.argv:
         with open(VOLCADO, "w", encoding="utf-8") as fh:

@@ -562,10 +562,14 @@ const AREAS=[
   {id:"marketing",label:"Marketing", hint:"Adquisición y eficiencia",
      codes:["leads_generados","cac_fully_loaded","ltv","ltv_cac","cac_payback_meses","gasto_marketing_total"],
      charts:[{type:"line",code:"leads_generados",title:"Leads calificados por mes"}]},
-  {id:"cs",       label:"Customer Success & Churn", hint:"Clientes, NPS y churn",
-     codes:["clientes_final","clientes_nuevos","clientes_perdidos","clientes_en_riesgo","clientes_riesgo_pct","churn_clientes_pct","nps"],
+  /* NPS oculto por decision de Andres (03-sep-2026). No se borro nada: el dato sigue en
+     la base (hasta 2026-05), el derivado nps() sigue definido y el grafico sigue escrito
+     abajo. Para volver a mostrarlo basta con quitar los dos comentarios marcados NPS-OFF
+     y devolver "nps" a la lista de codes. */
+  {id:"cs",       label:"Customer Success & Churn", hint:"Clientes y churn",
+     codes:["clientes_final","clientes_nuevos","clientes_perdidos","clientes_en_riesgo","clientes_riesgo_pct","churn_clientes_pct"/*,"nps" NPS-OFF*/],
      charts:[{type:"churnpanel",title:"Comportamiento del churn"},
-             {type:"stackcol",code:"nps",pct100:true,title:"NPS mensual (Promotores · Pasivos · Detractores)"},
+             /* NPS-OFF: {type:"stackcol",code:"nps",pct100:true,title:"NPS mensual (Promotores · Pasivos · Detractores)"}, */
              {type:"churn",title:"Análisis de churn (Informe Contabilidad)"}]},
   {id:"catalogo", label:"Catálogo"}
 ];
@@ -589,17 +593,26 @@ const DERIVE={
     if(guardado!=null)return guardado;
     return proveedorVentasPct(o);
   },
-  /* C-01: la morosidad NO se calcula aqui. La entrega contabilidad y el tablero la
-     muestra tal cual: es un indicador con definicion contable propia --que puede no ser
-     vencida sobre total-- y derivarla seria sustituir un criterio ajeno por el nuestro.
+  /* C-01 (revisado, 03-sep-2026): la morosidad AHORA SI se calcula aqui.
+     Decision de Andres, que revierte la anterior.
 
-     Lo que si se resolvio es la contradiccion que reporto la auditoria: la tarjeta
-     mostraba 27,81% (junio) sin decirlo, junto a un donut de julio que daba 41,61%.
-     Al no haber valor de julio, la tarjeta cae al ultimo dato y ahora lo DECLARA en
-     ambar --"ultimo dato: 2026-06"-- via selloFrescura. La discrepancia contra la
-     cartera se sigue reportando en exportar_sqlite.py (control V3) para revisarla en
-     la fuente, que es donde vive.
-     // DECISION CONFIRMADA POR ANDRES -- la morosidad se carga, no se deriva. */
+     Antes se mostraba tal cual la cargaba cartera, con el argumento de que tenia
+     definicion contable propia. El problema practico es que esa definicion nunca se
+     documento, y la cifra guardada (77,3% en julio) convivia en la misma pantalla con
+     un donut que decia 41,6% sin que nadie pudiera decir cual mirar.
+
+     Ahora el tablero declara su formula y la aplica: vencida / cartera_total. La cifra
+     que queda a la vista es reproducible a partir de dos numeros de la propia base, y
+     la tarjeta lo dice en letra chica debajo (ver FORMULA_TARJETA).
+
+     El denominador es cartera_total, no sana+vencida, porque es un dato reportado con
+     nombre propio. No siempre coinciden --en junio de 2026 sana+vencida se pasa en 282,8
+     millones y el porcentaje cambia de 32,18% a 27,81%-- y cuando eso ocurre el donut lo
+     advierte en vez de callarlo. */
+  indice_morosidad:o=>{
+    const ven=rawStored("cartera_vencida",o), tot=rawStored("cartera_total",o);
+    if(ven==null||tot==null||!tot) return null;
+    return ven/tot*100; },
   /* C-09: el NPS no esta guardado como puntaje sino como composicion en tres detalles
      —Promotores, Pasivos, Detractores— que suman 100 todos los meses. rawStored los
      sumaba, asi que el Catalogo mostraba 100,0% en abril, en mayo y en marzo por igual:
@@ -623,12 +636,16 @@ const DERIVE={
     const ppto=valueOf("gastos_totales",{periodo:per,escenario:"Presupuesto",pais:pais});
     return (real!=null&&ppto)?(real/ppto-1)*100:null; }
 };
-const DERIVED_UNIT={ gastos_totales:"COP/USD", margen_ebitda:"%", margen_neto:"%", margen_bruto_pct:"%", nps:"pts" };
+const DERIVED_UNIT={ gastos_totales:"COP/USD", margen_ebitda:"%", margen_neto:"%", margen_bruto_pct:"%", nps:"pts", indice_morosidad:"%" };
+/* La formula, en letra chica debajo de la cifra. Un porcentaje sin su definicion obliga
+   al lector a confiar; con ella puede rehacer la cuenta con dos datos de la misma base. */
+const FORMULA_TARJETA={ indice_morosidad:"cartera vencida ÷ cartera total" };
 const EXTRA_CATALOG={
   gastos_totales:{area:"Finanzas",nombre:"Gastos operativos totales",unidad:"COP/USD",tipo:"Derivado",formula:"Σ costos y gastos por área, SIN gastos financieros",origen:"Derivado"},
   margen_ebitda:{area:"Finanzas",nombre:"Margen EBITDA",unidad:"%",tipo:"Derivado",formula:"ebitda / ingresos_totales",origen:"Derivado"},
   margen_neto:{area:"Finanzas",nombre:"Margen neto",unidad:"%",tipo:"Derivado",formula:"utilidad_neta / ingresos_totales",origen:"Derivado"},
-  margen_bruto_pct:{area:"Finanzas",nombre:"Margen bruto %",unidad:"%",tipo:"Derivado",formula:"100 − costo_proveedor / ventas %",origen:"Derivado"}
+  margen_bruto_pct:{area:"Finanzas",nombre:"Margen bruto %",unidad:"%",tipo:"Derivado",formula:"100 − costo_proveedor / ventas %",origen:"Derivado"},
+  indice_morosidad:{area:"Cartera",nombre:"Índice de morosidad",unidad:"%",tipo:"Derivado",formula:"cartera_vencida / cartera_total",origen:"Derivado"}
 };
 
 /* ============================================================
@@ -731,7 +748,16 @@ function parseWorkbook(wb){
   }
 
   /* añadir catálogo de derivados si faltan */
-  for(const c in EXTRA_CATALOG){ if(!catalog[c]){ catalog[c]=Object.assign({},EXTRA_CATALOG[c]); order.push(c); } }
+  for(const c in EXTRA_CATALOG){
+    if(!catalog[c]){ catalog[c]=Object.assign({},EXTRA_CATALOG[c]); order.push(c); }
+    /* Y si el codigo YA venia en el Diccionario pero ahora lo calcula el tablero, manda
+       la ficha de aqui. Si no, el rotulo sigue describiendo el origen anterior: al pasar
+       indice_morosidad a derivado, la tarjeta seguia titulada "(entregado por cartera)"
+       y su formula en el Catalogo decia "el tablero NO lo calcula" -- las dos cosas
+       dejaron de ser ciertas el mismo dia. El Diccionario del .xlsx tambien hay que
+       corregirlo en la fuente; mientras tanto, lo que se ve no miente. */
+    else if(DERIVE[c]) catalog[c]=Object.assign({},catalog[c],EXTRA_CATALOG[c]);
+  }
 
   /* --- BD_GASTOS_RESUMEN_MENSUAL: puente homologado para graficos de costos/gastos --- */
   const grA=aoaOf(wb,findSheet(wb,["BD_GASTOS_RESUMEN_MENSUAL","GASTOS_RESUMEN_MENSUAL","Gastos Resumen Mensual"]));
@@ -2714,9 +2740,14 @@ function renderArea(host,area){
        códigos que solo tiene Colombia cuando se mira una filial. Decir "Por medir" ahí
        manda a perseguir un dato que nadie va a entregar. */
     const noAplicaAqui=esSoloColombia(code)&&esPaisConsol(F.pais);
-    const sub=has?(perShown!==per?selloFrescura(perShown,per):(c.tipo||"").toString())
+    const subBase=has?(perShown!==per?selloFrescura(perShown,per):(c.tipo||"").toString())
                  :(noAplicaAqui?motivoSinDato(code)
                    :(rezagado?motivoRezago(rezagado,per):"aún sin cargar en la BD"));
+    /* Los indicadores que el tablero calcula llevan su formula al pie de la cifra. Va
+       solo cuando hay cifra: sin dato, lo que el lector necesita es el motivo, no la
+       cuenta que no se pudo hacer. */
+    const formula=FORMULA_TARJETA[code]||"";
+    const sub=(has&&formula)?(subBase?subBase+" · "+formula:formula):subBase;
     const freqTag=(area.id==="marketing"&&c.frec)?(" · "+c.frec):"";
     /* sub SI va en la tarjeta. Se venia calculando y descartando: la variable existia,
        el objeto que se pinta no la incluia. Por eso el sello de frescura funcionaba en
@@ -3111,20 +3142,38 @@ function renderChartCard(ch){
     if(sana==null&&venc==null){ noData(body,"Sin datos de cartera"); }
     else {
       pieChart(body,[{n:"Sana",v:sana||0,c:"#00CC58"},{n:"Vencida",v:venc||0,c:"#F4685E"}]);
-      /* T-02: el donut y la tarjeta "Indice de morosidad" llevan meses dando cifras
-         distintas en la MISMA pantalla --41,6% aqui, 77,3% arriba-- sin que nada
-         explique por que. No es un descuadre: la morosidad la entrega cartera con su
-         propia definicion y el tablero no la calcula. Pero eso vivia solo en el
-         comentario de una fila del Excel, donde nadie lo ve. Aqui si. */
-      const mor=rawStored("indice_morosidad",{periodo:lp});
-      const prop=(sana!=null&&venc!=null&&(sana+venc))?venc/(sana+venc)*100:null;
-      if(mor!=null&&prop!=null&&Math.abs(mor-prop)>1){
+      /* T-02 (revisado, 03-sep-2026): la tarjeta ya no muestra un dato ajeno sino
+         vencida / cartera_total, la misma cuenta que sale de este grafico, asi que la
+         contradiccion que explicaba esta nota desaparecio. Quedan dos cosas que el
+         lector si necesita saber, y solo se dicen cuando ocurren:
+
+           1. Que la cartera reportada no siempre concilia: hay meses en que sana mas
+              vencida no da cartera_total, y entonces el porcentaje depende de cual se
+              use. Junio de 2026: 27,81% contra 32,18%.
+           2. Que existe un indice_morosidad cargado con otra definicion, que el tablero
+              ya no usa. Callarlo dejaria a quien conozca esa cifra sin saber por que el
+              tablero muestra otra. */
+      const totCart=rawStored("cartera_total",{periodo:lp});
+      const suma=(sana!=null&&venc!=null)?sana+venc:null;
+      const morCargada=rawStored("indice_morosidad",{periodo:lp});
+      const conTotal=(venc!=null&&totCart)?venc/totCart*100:null;
+      const conSuma=(venc!=null&&suma)?venc/suma*100:null;
+      const avisos=[];
+      if(conTotal!=null&&conSuma!=null&&Math.abs(conTotal-conSuma)>0.5){
+        avisos.push("La cartera <b>sana + vencida</b> no cuadra con <b>cartera total</b> este mes. "
+          +"El índice sobre cartera total es "+fPctN(conTotal,1)+"; sobre sana + vencida sería "
+          +fPctN(conSuma,1)+". La tarjeta usa <b>cartera total</b>, que es el dato reportado con ese nombre. "
+          +"La diferencia es de la fuente y hay que revisarla con cartera.");
+      }
+      if(morCargada!=null&&conTotal!=null&&Math.abs(morCargada-conTotal)>1){
+        avisos.push("La base además trae un <b>índice de morosidad</b> cargado de "+fPctN(morCargada,1)
+          +", con una definición propia que nunca se documentó. El tablero <b>no lo usa</b>: calcula y declara "
+          +"su fórmula bajo la cifra.");
+      }
+      if(avisos.length){
         const n=document.createElement("div");
         n.style.cssText="font-size:12.5px;color:var(--ink2);line-height:1.7;margin-top:12px;padding-top:11px;border-top:1px solid var(--line)";
-        n.innerHTML="Este "+fPctN(prop,1)+" es <b>vencida ÷ total</b>, calculado sobre las dos cifras del gráfico. "
-          +"La tarjeta <b>Índice de morosidad</b> de arriba dice "+fPctN(mor,1)+" porque <b>la entrega cartera "
-          +"con su propia definición</b> — el tablero no la calcula. Las dos son ciertas y miden cosas distintas; "
-          +"la fórmula de la segunda está pendiente de que cartera la documente.";
+        n.innerHTML=avisos.join("<br><br>");
         body.appendChild(n);
       }
     } }
