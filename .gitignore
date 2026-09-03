@@ -17,3 +17,8 @@ _RESPALDOS_NO_ABRIR/
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# Datos financieros: no deben publicarse en GitHub Pages.
+burn_runway.json
+*.xlsx
+*.xls
