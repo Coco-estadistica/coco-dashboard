@@ -15,7 +15,10 @@ ni se entera. Lo que se gana:
     proyecto es "no edites mientras el otro edita". El volcado .sql se lee y se fusiona.
 
 NO se escribe nada en el .xlsx. Se abre solo para leer, nunca se guarda, asi que las
-3.882 formulas del libro no corren ningun riesgo por este script.
+4.370 formulas del libro no corren ningun riesgo por este script.
+
+Desde el 03-sep-2026 este script decide si se puede subir: Subir_A_GitHub.bat lo ejecuta
+antes de enviar nada y lee su codigo de salida (1 = no subir). Ver BLOQUEANTES.
 
 QUE VALIDA
 ----------
@@ -51,7 +54,38 @@ BASE = os.path.join(AQUI, "BD_MAESTRA_COCO.xlsx")
 DB = os.path.join(AQUI, "coco.db")
 VOLCADO = os.path.join(AQUI, "coco.sql")
 
+# Que controles DETIENEN una subida y cuales solo avisan.
+#
+# Se emparejan por el prefijo (V1, V5...) y no por el titulo completo a proposito: el
+# resumen de mas abajo ya se desalineo una vez al renombrar un control, y estuvo
+# imprimiendo "OK" para uno que si tenia hallazgos.
+#
+# Bloquean solo los que detectan algo objetivamente roto dentro de la propia base, sin
+# definicion contable de por medio:
+#   V1  el consolidado no es la suma de los paises  -> una cifra publicada esta mal
+#   V2  utilidad != ingresos - gastos               -> el P&G no cuadra consigo mismo
+#   V5  la misma llave dos veces                    -> el tablero la suma dos veces
+#   V6  un mes futuro marcado como Real             -> presupuesto colandose como real
+#
+# Avisan sin detener:
+#   V3  junio no concilia y depende de cartera, no de quien sube
+#   V4  el NPS esta fuera del tablero por ahora
+# Un control que frena la subida por algo que el que sube no puede arreglar se acaba
+# desactivando, y entonces no protege de nada.
+#
+# V2 estuvo un rato en la lista de avisos por su diferencia de COP 2, y probandolo se
+# vio el agujero: al duplicar una fila de ingresos a proposito, V2 se desviaba en 680
+# millones y seguia diciendo "(aviso)". El problema no era el control sino su tolerancia
+# --dos centavos-- frente a un redondeo del PDF que vale COP 1 o 2. Con TOL_REDONDEO
+# vuelve a bloquear, y el redondeo conocido ya no lo dispara.
+BLOQUEANTES = ("V1", "V2", "V5", "V6")
+
 TOL = 0.02          # suma binaria de decimales
+# El P&G oficial de Colombia viene publicado redondeado a unidades, y la auditoria
+# del modelo ya documenta "diferencias aritmeticas de COP 1 a 2". Con TOL (dos
+# centavos) V2 marcaba esa diferencia todos los meses. Sobre un P&G de miles de
+# millones, COP 2,50 no esconde ningun error que importe.
+TOL_REDONDEO = 2.5  # V2: redondeo del PDF oficial, no un descuadre
 TOL_PUBLICADO = 1.01  # el bloque "Acumulado H1" viene publicado redondeado a unidades,
                       # asi que comparar contra una suma al centavo siempre difiere por
                       # menos de 1. Eso no es un error: es como se publico el estado.
@@ -171,7 +205,7 @@ def validar(con):
                 SELECT periodo,pais,ROUND(calc,2),ROUND(guard,2) FROM p
                 WHERE tiene>0 AND ABS(calc-guard) >
                       CASE WHEN IFNULL(segmento,'') LIKE 'Acumulado%%' THEN %s ELSE %s END"""
-             % (TOL_PUBLICADO, TOL),
+             % (TOL_PUBLICADO, TOL_REDONDEO),
              lambda r: "%s %s: calculada %.2f vs guardada %.2f" % r)
 
     # V3 cambio de sentido el 03-sep-2026. Antes comparaba el indice_morosidad cargado
@@ -244,7 +278,12 @@ def main():
     dic = {f[0]: f for f in fallos}
     for nom in nombres:
         f = dic.get(nom)
-        print("  %-46s %s" % (nom, "OK" if not f else ("%d hallazgo(s)" % f[1])))
+        bloquea = nom.split()[0] in BLOQUEANTES
+        if not f:
+            estado = "OK"
+        else:
+            estado = "%d hallazgo(s)%s" % (f[1], "  << DETIENE LA SUBIDA" if bloquea else "  (aviso)")
+        print("  %-46s %s" % (nom, estado))
         if f:
             for d in f[2]:
                 print("       %s" % d)
@@ -273,7 +312,26 @@ def main():
     con.close()
     print()
     print("  base: %s (%.0f KB)" % (os.path.basename(DB), os.path.getsize(DB) / 1024))
-    return 1 if fallos else 0
+
+    bloqueantes = [f for f in fallos if f[0].split()[0] in BLOQUEANTES]
+    avisos = [f for f in fallos if f[0].split()[0] not in BLOQUEANTES]
+    print()
+    if bloqueantes:
+        print("  " + "=" * 74)
+        print("  NO SUBAS ESTA BASE TODAVIA")
+        print("  " + "=" * 74)
+        for f in bloqueantes:
+            print("    %s: %d hallazgo(s)" % (f[0], f[1]))
+        print()
+        print("  Son cifras rotas dentro de la propia base, no diferencias de criterio.")
+        print("  Corrigelas en el Excel y vuelve a ejecutar. El detalle esta arriba.")
+    elif avisos:
+        print("  Se puede subir. Quedan %d aviso(s) anotados arriba, para revisar con calma."
+              % len(avisos))
+    else:
+        print("  Todo en orden.")
+    # El codigo de salida es lo que lee Subir_A_GitHub.bat para frenar o dejar pasar.
+    return 1 if bloqueantes else 0
 
 
 if __name__ == "__main__":

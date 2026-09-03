@@ -1,3 +1,12 @@
+# coco.db es binario: git no lo puede comparar ni fusionar, igual que el .xlsx.
 coco.db
-coco.sql
+
+# coco.sql SI se versiona desde el 03-sep-2026. Es el volcado de texto de la base, y es
+# lo que permite ver QUE cifra cambio entre dos versiones en vez de tener que abrir dos
+# Excel y compararlos a mano. Lo regenera Subir_A_GitHub.bat en cada subida.
+#coco.sql
+
 _prueba_*.xlsx
+
+# respaldos con marca de tiempo que dejan los scripts de carga
+*_respaldo_*.xlsx

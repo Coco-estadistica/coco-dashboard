@@ -32,6 +32,60 @@ if "%RAMA%"=="" (
 echo   Rama: %RAMA%
 echo.
 
+REM --- 0. Revisar la base ANTES de subir -------------------------------
+REM     Vuelca la base a SQLite, corre los controles y regenera coco.sql
+REM     (el volcado de texto que si se puede comparar en GitHub).
+REM
+REM     Si un control encuentra una cifra rota DENTRO de la base --el
+REM     consolidado que no es la suma de los paises, una utilidad que no
+REM     cuadra, la misma llave dos veces-- no se sube nada. Los avisos que
+REM     dependen de terceros (cartera) no detienen: se anotan y siguen.
+REM     Se usa el codigo de salida del script: 1 = no subir, 0 = adelante.
+where python >nul 2>&1
+if errorlevel 1 goto SINPYTHON
+
+echo   Revisando las cifras de la base...
+echo.
+python migracion\exportar_sqlite.py --volcado
+if errorlevel 1 goto BASEROTA
+echo.
+goto TRASREVISION
+
+:SINPYTHON
+echo   AVISO: no encuentro Python en este computador, asi que NO pude
+echo   revisar las cifras antes de subir. Se puede subir igual, pero sin
+echo   esa comprobacion. Instala Python desde https://python.org para
+echo   recuperarla.
+echo.
+set "SIGO="
+set /p "SIGO=  Subir de todos modos, sin revisar? (S/N): "
+if /i not "%SIGO%"=="S" goto CANCELADO
+goto TRASREVISION
+
+:BASEROTA
+echo.
+echo   ------------------------------------------------------------
+echo   NO SE SUBIO NADA.
+echo.
+echo   Los controles encontraron cifras rotas dentro de la base.
+echo   Arriba esta el detalle de cada una: dicen el mes, el pais y el
+echo   indicador. Corrigelas en el Excel y vuelve a ejecutar este boton.
+echo.
+echo   Tu trabajo sigue en tu computador, intacto. No se perdio nada.
+echo   ------------------------------------------------------------
+echo.
+pause
+exit /b 1
+
+:CANCELADO
+echo.
+echo   Cancelado. No se subio nada.
+echo.
+pause
+exit /b 0
+
+:TRASREVISION
+
 REM --- 1. Ver si hay algo que subir ------------------------------------
 set HAYCAMBIOS=
 for /f "delims=" %%s in ('git status --porcelain') do set HAYCAMBIOS=1
