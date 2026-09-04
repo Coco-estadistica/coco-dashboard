@@ -1,7 +1,13 @@
 # Generados: se rehacen con un comando, no deben viajar en el repositorio.
+# coco.db es binario -- git no lo puede comparar ni fusionar, igual que el .xlsx.
 migracion/coco.db
-migracion/coco.sql
 migracion/Propuesta_*.xlsx
+
+# coco.sql SI viaja desde el 03-sep-2026, y es el unico archivo de este repositorio con
+# el que se puede responder "que cifra cambio" sin abrir dos Excel y compararlos a mano.
+# Son 0,8 MB de texto que git compara y fusiona; el .xlsx de al lado, no.
+# Lo regenera Subir_A_GitHub.bat antes de cada subida, asi que siempre corresponde a la
+# base que se esta subiendo.
 
 # Respaldos automaticos. Los scripts los crean antes de escribir; git ya guarda el
 # antes de cada cambio, asi que no hace falta versionarlos ademas.
@@ -9,6 +15,7 @@ migracion/Propuesta_*.xlsx
 # proyecto, y ninguno aportaba nada que git no tuviera.
 *_antes_*.xlsx
 *_ANTES_*.xlsx
+*_respaldo_*.xlsx
 *.bak
 respaldos/
 _RESPALDOS_NO_ABRIR/
@@ -17,8 +24,3 @@ _RESPALDOS_NO_ABRIR/
 __pycache__/
 *.pyc
 .pytest_cache/
-
-# Datos financieros: no deben publicarse en GitHub Pages.
-burn_runway.json
-*.xlsx
-*.xls

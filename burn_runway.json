@@ -1,0 +1,512 @@
+{
+ "generado": "2026-08-20 19:39",
+ "modelo": "Modelo_COCO.xlsx",
+ "fuente": {
+  "archivo": "Modelo_COCO.xlsx",
+  "bytes": 482259,
+  "modificado": "2026-08-20 19:34",
+  "md5": "5503f8fb4c3946b8caf4779cc5f773ed"
+ },
+ "corte": "Julio 2026",
+ "resumen": [
+  {
+   "indicador": "Caja Colombia",
+   "valor": 174.266926,
+   "unidad": "COP MM",
+   "nota": "Saldo de efectivo y equivalentes reportado en el balance de julio."
+  },
+  {
+   "indicador": "Caja EE.UU. (al 31-jul)",
+   "valor": 302.33163,
+   "unidad": "USD k",
+   "nota": "Saldo de caja mantenido en Estados Unidos."
+  },
+  {
+   "indicador": "TRM aplicada (promedio julio)",
+   "valor": 3268.95,
+   "unidad": "COP / USD",
+   "nota": "Tasa utilizada para convertir la caja de Estados Unidos a pesos colombianos."
+  },
+  {
+   "indicador": "Caja EE.UU. convertida",
+   "valor": 988.3069818885,
+   "unidad": "COP MM",
+   "nota": "Equivalente en pesos de la caja mantenida en Estados Unidos."
+  },
+  {
+   "indicador": "Caja total consolidada",
+   "valor": 1162.5739078885,
+   "unidad": "COP MM",
+   "nota": "Liquidez consolidada disponible de COP 1,162.6MM; equivale a USD 355.6k."
+  },
+  {
+   "indicador": "Consumo neto caja consolidado julio",
+   "valor": 0,
+   "unidad": "COP MM",
+   "nota": "Mide la disminución real total de la caja durante julio. En julio la caja aumentó, por lo que el consumo neto es cero. Incluye operación, capital de trabajo, CapEx y otros movimientos de inversión o financiación."
+  },
+  {
+   "indicador": "FCF burn consolidado julio",
+   "valor": 2.830291445794117,
+   "unidad": "COP MM / mes",
+   "nota": "Mide el consumo generado por el flujo operativo más CapEx. En julio el FCF fue positivo, por lo que no hubo burn. Excluye otros movimientos de inversión y financiación."
+  },
+  {
+   "indicador": "Runway consolidado al burn de julio",
+   "valor": 410.76119903344704,
+   "unidad": "Meses",
+   "nota": "No aplica: en julio no hubo quema de caja, de modo que el runway al ritmo del mes es indefinido."
+  },
+  {
+   "indicador": "Runway promedio May-Jul",
+   "valor": 8.803046009646726,
+   "unidad": "Meses",
+   "nota": "Escenario reciente: promedio de burn de mayo a julio; julio no aportó quema y mejora el promedio trimestral."
+  },
+  {
+   "indicador": "Runway promedio Ene-Jul",
+   "valor": 10.33818712493733,
+   "unidad": "Meses",
+   "nota": "Escenario conservador, afectado por el consumo extraordinariamente alto registrado en enero."
+  }
+ ],
+ "mensaje": "La compañía cuenta con COP 1,162.6MM de caja total consolidada. En julio la quema consolidada fue marginal (COP 2.8MM): Colombia generó caja y el internacional consumió COP 40.4MM, así que el runway al ritmo del mes no es representativo. Con el burn promedio May-Jul el runway es de 8.8 meses y con el promedio Ene-Jul de 10.3 meses.",
+ "dif_consumo_fcf": {
+  "valor": -2.830291445794117,
+  "unidad": "COP MM",
+  "nota": "La diferencia corresponde a movimientos de caja por fuera del FCF, principalmente inversión, obligaciones financieras, socios u otros movimientos no operativos."
+ },
+ "margenes": [],
+ "mensual": [
+  {
+   "mes": "Ene-26",
+   "cfo": 218.727266,
+   "capex": -7.359954,
+   "intl": null,
+   "fcf": 211.367312,
+   "burn": 0,
+   "prewc": 0,
+   "cambio": 194.135954,
+   "lectura": "Enero concentra el mayor FCF burn del periodo."
+  },
+  {
+   "mes": "Feb-26",
+   "cfo": -304.718599,
+   "capex": -6.269,
+   "intl": null,
+   "fcf": -310.987599,
+   "burn": 310.987599,
+   "prewc": 0,
+   "cambio": -305.293086,
+   "lectura": "Este mes explica el burn del periodo."
+  },
+  {
+   "mes": "Mar-26",
+   "cfo": 125.650513,
+   "capex": -0.289048,
+   "intl": null,
+   "fcf": 125.36146500000001,
+   "burn": 0,
+   "prewc": 22.531841,
+   "cambio": 149.187171,
+   "lectura": "FCF positivo; solo se ve presión en la vista pre-WC."
+  },
+  {
+   "mes": "Abr-26",
+   "cfo": 73.33972236666666,
+   "capex": 1.2286356333333333,
+   "intl": -154.5661937418156,
+   "fcf": -79.99783574181559,
+   "burn": 79.99783574181559,
+   "prewc": 0,
+   "cambio": 88.268448,
+   "lectura": "Abr: flujo histórico Colombia más caja internacional real disponible."
+  },
+  {
+   "mes": "May-26",
+   "cfo": -86.36183,
+   "capex": -7.792981,
+   "intl": -105.7933368666026,
+   "fcf": -199.9481478666026,
+   "burn": 199.9481478666026,
+   "prewc": 0,
+   "cambio": -112.934816,
+   "lectura": "May: flujo histórico Colombia más caja internacional real disponible."
+  },
+  {
+   "mes": "Jun-26",
+   "cfo": -112.212461,
+   "capex": 0,
+   "intl": -81.20397585245762,
+   "fcf": -193.41643685245762,
+   "burn": 193.41643685245762,
+   "prewc": 0,
+   "cambio": -210.5849588524576,
+   "lectura": "Jun: Colombia más flujo bancario de USA, Perú y Costa Rica calculado solo con filas 1–16 del consolidado."
+  },
+  {
+   "mes": "Jul-26",
+   "cfo": 37.553515,
+   "capex": 0,
+   "intl": -40.383806445794114,
+   "fcf": -2.830291445794117,
+   "burn": 2.830291445794117,
+   "prewc": 0,
+   "cambio": 18.441757554205886,
+   "lectura": "Jul: solo Colombia (estados financieros julio); flujo internacional de julio pendiente — Consolidado llega a junio."
+  },
+  {
+   "mes": "YTD Ene-Jul",
+   "cfo": -48.021873633333335,
+   "capex": -20.482347366666666,
+   "intl": -381.94731290666994,
+   "fcf": -450.4515339066699,
+   "burn": 787.18031090667,
+   "prewc": 22.531841,
+   "cambio": -178.7795302982517,
+   "lectura": "Acumulado Ene-Jun. FCF neto total incluye junio."
+  },
+  {
+   "mes": "Promedio 3M May-Jul",
+   "cfo": -53.673592000000006,
+   "capex": -2.5976603333333332,
+   "intl": -75.79370638828478,
+   "fcf": -132.0649587216181,
+   "burn": 132.0649587216181,
+   "prewc": 0,
+   "cambio": -101.69267243275057,
+   "lectura": "Promedio 3M (Abr-Jun) usado para runway."
+  }
+ ],
+ "ppto": [
+  {
+   "mes": "Ene-26",
+   "pptoUSD": 0.186,
+   "ejecUSD": 0.1659207861788618,
+   "gapUSD": -0.020079213821138198,
+   "cumpl": 0.8920472375207624,
+   "pptoCOP": 686.34,
+   "ejecCOP": 612.247701,
+   "gapCOP": -74.09229900000003
+  },
+  {
+   "mes": "Feb-26",
+   "pptoUSD": 0.354,
+   "ejecUSD": 0.20168513197831978,
+   "gapUSD": -0.1523148680216802,
+   "cumpl": 0.5697320112381915,
+   "pptoCOP": 1306.26,
+   "ejecCOP": 744.218137,
+   "gapCOP": -562.041863
+  },
+  {
+   "mes": "Mar-26",
+   "pptoUSD": 0.396,
+   "ejecUSD": 0.2132902945799458,
+   "gapUSD": -0.1827097054200542,
+   "cumpl": 0.5386118549998631,
+   "pptoCOP": 1461.24,
+   "ejecCOP": 787.041187,
+   "gapCOP": -674.198813
+  },
+  {
+   "mes": "Abr-26",
+   "pptoUSD": 0.359,
+   "ejecUSD": 0.20348717127371274,
+   "gapUSD": -0.15551282872628724,
+   "cumpl": 0.5668166330744088,
+   "pptoCOP": 1324.71,
+   "ejecCOP": 750.867662,
+   "gapCOP": -573.842338
+  },
+  {
+   "mes": "May-26",
+   "pptoUSD": 0.403,
+   "ejecUSD": 0.22398773604336045,
+   "gapUSD": -0.17901226395663958,
+   "cumpl": 0.5558008338544924,
+   "pptoCOP": 1487.0700000000002,
+   "ejecCOP": 826.514746,
+   "gapCOP": -660.5552540000002
+  },
+  {
+   "mes": "Jun-26",
+   "pptoUSD": 0.375559,
+   "ejecUSD": 0.20364588455284552,
+   "gapUSD": -0.17191311544715446,
+   "cumpl": 0.542247382043422,
+   "pptoCOP": 1385.81271,
+   "ejecCOP": 751.453314,
+   "gapCOP": -634.359396
+  },
+  {
+   "mes": "Jul-26",
+   "pptoUSD": 0.388085,
+   "ejecUSD": 0.18425218211382116,
+   "gapUSD": -0.20383281788617885,
+   "cumpl": 0.4747727485314329,
+   "pptoCOP": 1432.03365,
+   "ejecCOP": 679.890552,
+   "gapCOP": -752.1430980000001
+  },
+  {
+   "mes": "Total Ene-Jul",
+   "pptoUSD": 2.4616439999999997,
+   "ejecUSD": 1.3962691867208672,
+   "gapUSD": -1.0653748132791325,
+   "cumpl": 0.5672100379749742,
+   "pptoCOP": 9083.46636,
+   "ejecCOP": 5152.2332989999995,
+   "gapCOP": -3931.233061000001
+  }
+ ],
+ "puente": [
+  {
+   "concepto": "Caja inicial (jun-26)",
+   "valor": 115.441362,
+   "comentario": null
+  },
+  {
+   "concepto": "(+) Utilidad neta de julio",
+   "valor": 24.707052,
+   "comentario": "Julio fue rentable"
+  },
+  {
+   "concepto": "(−) Aumento de Clientes (CxC)",
+   "valor": 110.973187,
+   "comentario": "Recuperación de cartera: cobros superaron la facturación a crédito"
+  },
+  {
+   "concepto": "(−) Aumento otros deudores/anticipos",
+   "valor": -31.840709,
+   "comentario": null
+  },
+  {
+   "concepto": "(−) Pago a proveedores",
+   "valor": -79.630602,
+   "comentario": null
+  },
+  {
+   "concepto": "(+/−) Δ Impuestos por pagar",
+   "valor": -4.096021,
+   "comentario": null
+  },
+  {
+   "concepto": "(−) Pago obligaciones laborales",
+   "valor": 18.141309,
+   "comentario": "Aumento de provisiones/obligaciones laborales (fuente de caja)"
+  },
+  {
+   "concepto": "= Flujo operativo neto",
+   "valor": 38.254216,
+   "comentario": null
+  },
+  {
+   "concepto": "(+) Venta de inversiones (fiducia)",
+   "valor": -0.700701,
+   "comentario": "Liquidación para cubrir caja"
+  },
+  {
+   "concepto": "(−) CapEx (Δ PPE neto)",
+   "valor": 0,
+   "comentario": null
+  },
+  {
+   "concepto": "(−) Pago tarjetas / oblig. financieras",
+   "valor": 21.051248,
+   "comentario": null
+  },
+  {
+   "concepto": "(+/−) Movimiento neto con socios",
+   "valor": 0.2208,
+   "comentario": null
+  },
+  {
+   "concepto": "= Caja final (jul-26) calculada",
+   "valor": 174.26692500000001,
+   "comentario": null
+  },
+  {
+   "concepto": "Caja final (jul-26) reportada",
+   "valor": 174.266926,
+   "comentario": null
+  }
+ ],
+ "puente_chequeo": {
+  "dif": -9.999999974752427e-07,
+  "estado": "OK"
+ },
+ "intl": [
+  {
+   "pais": "USA",
+   "ingresosUSD": 5664.45,
+   "egresosUSD": -27968.27,
+   "netoUSD": -22303.82,
+   "netoCOP": -78.18087395836659
+  },
+  {
+   "pais": "Perú",
+   "ingresosUSD": 1821.5124816446382,
+   "egresosUSD": -11.967694566813496,
+   "netoUSD": 1809.5447870778248,
+   "netoCOP": 6.3429400398923015
+  },
+  {
+   "pais": "Costa Rica",
+   "ingresosUSD": 0,
+   "egresosUSD": -2671.99,
+   "netoUSD": -2671.99,
+   "netoCOP": -9.366041933983322
+  },
+  {
+   "pais": "Total internacional",
+   "ingresosUSD": null,
+   "egresosUSD": null,
+   "netoUSD": -23166.265212922175,
+   "netoCOP": -81.20397585245762
+  }
+ ],
+ "trm_junio": 3505.26833333333,
+ "dso_actual": {
+  "ingreso_mes": 679.890552,
+  "cxc": 1688.457915,
+  "dso": 74.50278180950512,
+  "caja": 174.266926,
+  "caja_minima": 200
+ },
+ "dso": [
+  {
+   "dso": 50,
+   "cxc": 1133.15092,
+   "liberada": 555.3069949999999,
+   "resultante": 729.5739209999999,
+   "estado": "OK"
+  },
+  {
+   "dso": 60,
+   "cxc": 1359.781104,
+   "liberada": 328.67681100000004,
+   "resultante": 502.94373700000006,
+   "estado": "OK"
+  },
+  {
+   "dso": 74.50278180950512,
+   "cxc": 1688.4579149999997,
+   "liberada": 0,
+   "resultante": 174.266926,
+   "estado": "Bajo mínimo"
+  },
+  {
+   "dso": 80,
+   "cxc": 1813.0414719999999,
+   "liberada": -124.58355699999993,
+   "resultante": 49.683369000000084,
+   "estado": "Bajo mínimo"
+  },
+  {
+   "dso": 90,
+   "cxc": 2039.6716559999998,
+   "liberada": -351.2137409999998,
+   "resultante": -176.9468149999998,
+   "estado": "Bajo mínimo"
+  },
+  {
+   "dso": 100,
+   "cxc": 2266.30184,
+   "liberada": -577.8439250000001,
+   "resultante": -403.5769990000001,
+   "estado": "Bajo mínimo"
+  }
+ ],
+ "otros_deudores_actual": 3529.697045,
+ "otros_deudores": [
+  {
+   "pct": 0.1,
+   "liberada": 352.96970450000003,
+   "resultante": 527.2366305,
+   "estado": "OK"
+  },
+  {
+   "pct": 0.25,
+   "liberada": 882.42426125,
+   "resultante": 1056.69118725,
+   "estado": "OK"
+  },
+  {
+   "pct": 0.5,
+   "liberada": 1764.8485225,
+   "resultante": 1939.1154485,
+   "estado": "OK"
+  }
+ ],
+ "proyeccion": [
+  {
+   "mes": "Ago-26",
+   "ingresos": 426.45692992644217,
+   "flujo": -1792.4376792242067,
+   "caja": -629.8637713357068,
+   "estado": "Déficit — el salto de capital de trabajo del presupuesto (CxC a 84 días sobre ingresos muy superiores a los reales) concentra el consumo en agosto."
+  },
+  {
+   "mes": "Sep-26",
+   "ingresos": 451.23073945025163,
+   "flujo": 313.38145682601174,
+   "caja": -316.4823145096951,
+   "estado": "Déficit — el flujo mensual proyectado vuelve a ser positivo."
+  },
+  {
+   "mes": "Oct-26",
+   "ingresos": 476.0045489740612,
+   "flujo": 372.82240299723054,
+   "caja": 56.34008848753547,
+   "estado": "Caja positiva — la recuperación operativa recompone la liquidez."
+  },
+  {
+   "mes": "Nov-26",
+   "ingresos": 500.7783584978707,
+   "flujo": 432.8363313679759,
+   "caja": 489.17641985551137,
+   "estado": "Caja positiva — continúa la generación de caja presupuestada."
+  },
+  {
+   "mes": "Dic-26",
+   "ingresos": 525.5521680216802,
+   "flujo": 480.7763993615899,
+   "caja": 969.9528192171013,
+   "estado": "Caja positiva — cierre de año proyectado."
+  }
+ ],
+ "proyeccion_kpis": [
+  {
+   "indicador": "Presupuesto anual de ingresos",
+   "valor": 3.7762919315911736,
+   "unidad": "USD MM",
+   "nota": "Presupuesto total de ingresos 2026 incluido en el Modelo Base."
+  },
+  {
+   "indicador": "Ingresos presupuestados Ago–Dic",
+   "valor": 2.3800227448703057,
+   "unidad": "USD MM",
+   "nota": "Ingresos pendientes del segundo semestre incluidos en la proyección."
+  },
+  {
+   "indicador": "Runway hasta primer déficit",
+   "valor": 0.6485993467798997,
+   "unidad": "Meses",
+   "nota": "Meses que cubre la caja consolidada de julio antes del primer déficit proyectado, si los flujos del presupuesto ocurren exactamente como están modelados."
+  },
+  {
+   "indicador": "Necesidad máxima temporal de liquidez",
+   "valor": 629.8637713357068,
+   "unidad": "COP MM",
+   "nota": "Déficit máximo proyectado en agosto, ya después de girar el total de la línea intercompañía. Es decir: transfiriendo toda la caja de EE.UU., agosto todavía queda 629,9MM corto."
+  },
+  {
+   "indicador": "Caja total proyectada cierre diciembre",
+   "valor": 969.9528192171013,
+   "unidad": "COP MM",
+   "nota": "Caja consolidada al cierre del año. Ya considera el préstamo intercompañía desde EE.UU. que el Modelo Base modela en agosto (COP 988,3MM, el total de la caja disponible en EE.UU.), y su repago con la caja generada en noviembre y diciembre."
+  }
+ ],
+ "conclusion": "Con el presupuesto anual de USD 3.78MM, partiendo de la caja consolidada de julio (COP 1,162.6MM), la proyección muestra un déficit temporal máximo de COP 629.9MM en Ago-26. El bache se explica por el salto de capital de trabajo del presupuesto; el modelo vuelve a generar caja y cerraría diciembre con COP 970.0MM."
+}

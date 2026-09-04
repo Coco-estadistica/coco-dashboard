@@ -277,55 +277,6 @@ footer b{color:var(--ink2)}
 .toast{position:fixed;bottom:22px;right:22px;z-index:95;background:var(--panel2);border:1px solid var(--line2);border-left:3px solid var(--green);border-radius:10px;padding:12px 16px;font-size:12.5px;color:var(--ink);max-width:380px;box-shadow:0 8px 30px rgba(0,0,0,.5);opacity:0;transform:translateY(8px);transition:all .25s}
 .toast.show{opacity:1;transform:none}
 .toast.err{border-left-color:var(--red)}
-/* Tabla resumen consolidada del P&G, encima de la primera grafica de Gastos. */
-.consol-tabla{margin:10px 0 4px}
-.ct-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
-  flex-wrap:wrap;margin-bottom:7px}
-.ct-top .ct-h{margin-bottom:0}
-.ct-seg{display:inline-flex;border:1px solid var(--line2);border-radius:6px;overflow:hidden}
-.ct-btn{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.02em;
-  padding:5px 11px;border:0;background:transparent;color:var(--mute);cursor:pointer}
-.ct-btn+.ct-btn{border-left:1px solid var(--line2)}
-.ct-btn.on{background:var(--green);color:#0B1420;font-weight:600}
-.ct-btn:focus-visible{box-shadow:0 0 0 2px var(--green) inset}
-.consol-tabla .ptable th,.consol-tabla .ptable td{white-space:nowrap}
-.consol-tabla .ct-tot{border-left:1px solid var(--line2)}
-.consol-tabla th.ct-tot,.consol-tabla td.ct-tot{color:var(--ink)}
-.ct-sd{color:var(--mute);font-style:normal}
-.ct-pie{font-size:11.5px;color:var(--mute);line-height:1.65;margin-top:9px}
-.ct-h{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.04em;
-  text-transform:uppercase;color:var(--mute);margin-bottom:7px}
-.ct-n{color:var(--amber);text-transform:none;letter-spacing:0}
-.consol-tabla .ptable td:first-child{white-space:nowrap}
-.consol-tabla .pt{display:inline-block;width:8px;height:8px;border-radius:2px;
-  margin-right:7px;vertical-align:middle}
-/* Los dos pies de cartera, lado a lado en una sola tarjeta. */
-.dos-pies{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
-@media (max-width:820px){.dos-pies{grid-template-columns:1fr}}
-.pie-rot{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.04em;
-  text-transform:uppercase;color:var(--mute);margin:0 0 6px}
-/* ---- rutas de carga del modal (3-sep-2026) ---- */
-.rutas{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0 4px}
-.ruta{display:flex;flex-direction:column;gap:4px;text-align:left;cursor:pointer;
-  background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:12px 13px;
-  color:var(--ink2);font-family:inherit;transition:border-color .12s,background .12s}
-.ruta:hover{border-color:var(--green)}
-.ruta.on{border-color:var(--green);background:var(--green-b)}
-.ruta .ru-i{font-size:17px;line-height:1}
-.ruta .ru-t{font-size:13px;font-weight:700;color:var(--ink)}
-.ruta.on .ru-t{color:var(--green)}
-.ruta .ru-d{font-size:11px;color:var(--mute);line-height:1.45}
-.erp-p{font-size:12.5px;color:var(--ink2);line-height:1.7;margin:0 0 14px}
-.erp-pasos{display:flex;flex-direction:column;gap:9px;margin-bottom:14px}
-.erp-paso{display:flex;gap:11px;align-items:flex-start;font-size:12.5px;color:var(--ink2);line-height:1.65}
-.erp-paso>b:first-child{flex:0 0 21px;height:21px;border-radius:50%;background:var(--green-b);
-  color:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;margin-top:1px}
-.erp-paso span b{color:var(--ink)}
-.erp-nota{font-size:12px;color:var(--ink2);line-height:1.7;background:var(--panel2);
-  border-left:3px solid var(--amber);border-radius:0 8px 8px 0;padding:10px 13px;margin-top:10px}
-.erp-nota code,.erp-paso code{font-family:Consolas,monospace;font-size:11.5px;color:var(--ink);
-  background:var(--panel);padding:1px 5px;border-radius:4px}
-@media(max-width:720px){.rutas{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -352,7 +303,6 @@ footer b{color:var(--ink2)}
     <div class="ctrl"><label>País</label><select id="f-pais"></select></div>
     <div class="ctrl"><label>Moneda</label><div class="toggle" id="f-moneda"><button data-m="USD" class="on">USD</button><button data-m="COP">COP</button></div></div>
     <div class="ctrl"><label>Base TRM</label><select id="f-trmbase" title="Tasa COP/USD usada para convertir"></select><span id="trm-warn" style="display:none;cursor:help;margin-left:4px" title="Sin TRM en la base para este periodo: el tablero está convirtiendo con la tasa de respaldo 4.170. Carga la hoja TRM.">⚠️</span></div>
-    <div class="ctrl" id="trm-fijo-ctrl" style="display:none"><label>TRM Fija</label><input id="f-trm-fijo" type="number" step="0.01" min="0" placeholder="ej: 4200" title="Ingresa la tasa de cambio fija COP/USD a usar"></div>
     <button class="btn primary" id="btn-cloud" title="Lee la última versión de BD_MAESTRA_COCO (Google Sheets)">☁ Actualizar desde la nube</button>
     <button class="btn" id="btn-datos" title="Registro individual o carga masiva con plantilla">✎ Ingresar datos</button>
     <button class="btn" id="btn-load" title="Respaldo: cargar un archivo Excel local">Cargar BD</button>
@@ -395,77 +345,20 @@ footer b{color:var(--ink2)}
   <div class="modal">
     <button class="mclose" id="m-cerrar" aria-label="Cerrar">✕</button>
     <h2>Ingresar datos — BD_MAESTRA_COCO</h2>
-    <div class="msub">Elige por dónde entra el dato. Cada camino valida antes de escribir y deja rastro en el LOG.</div>
+    <div class="msub">Los datos se validan y escriben en el Google Sheet central. Todo cambio queda en el LOG.</div>
 
-    <div class="rutas" id="m-rutas">
-      <button class="ruta on" data-ruta="plantilla">
-        <span class="ru-i">📋</span>
-        <span class="ru-t">Con plantilla</span>
-        <span class="ru-d">Alguien diligencia un Excel: MRR, cartera, gastos, finanzas.</span>
-      </button>
-      <button class="ruta" data-ruta="erp">
-        <span class="ru-i">🏦</span>
-        <span class="ru-t">Archivo del ERP</span>
-        <span class="ru-d">Los estados financieros de los cuatro países, como los baja contabilidad.</span>
-      </button>
-      <button class="ruta" data-ruta="suelto">
-        <span class="ru-i">✏️</span>
-        <span class="ru-t">Un dato suelto</span>
-        <span class="ru-d">Corregir o completar una sola cifra.</span>
-      </button>
-    </div>
-
-    <div class="fgrid" id="m-credenciales" style="grid-template-columns:2fr 1.2fr 1.2fr">
+    <div class="fgrid" style="grid-template-columns:2fr 1.2fr 1.2fr">
       <div class="field"><label>URL del Web App (Apps Script)</label><input id="m-url" placeholder="https://script.google.com/macros/s/…/exec"></div>
       <div class="field"><label>Tu correo</label><input id="m-usuario" placeholder="tu@dominio-coco"></div>
       <div class="field"><label>Token de escritura</label><input id="m-token" type="password" placeholder="token compartido"></div>
     </div>
 
-    <!-- ============ ARCHIVO DEL ERP ============ -->
-    <div class="msec" id="m-erp" style="display:none">
-      <p class="erp-p">Los estados financieros <b>no se diligencian a mano</b>: entra el auxiliar tal como
-      lo baja el ERP, con sus cuentas. Este botón escribe en la nube, y ese camino no sirve para un
-      auxiliar de cientos de cuentas — se carga en el computador, contra la base del disco.</p>
-
-      <div class="erp-pasos">
-        <div class="erp-paso"><b>1</b><span>Guarda el archivo de cada país en la carpeta <code>Entradas\</code>,
-          con el nombre que ya usa contabilidad (<code>Agosto Colombia 2026.xlsx</code>).</span></div>
-        <div class="erp-paso"><b>2</b><span>Abre la carpeta del tablero en una terminal y corre
-          <code>python migracion/cargar_mes.py 2026-08</code>. Muestra la propuesta y <b>no escribe nada</b>.</span></div>
-        <div class="erp-paso"><b>3</b><span>Si los controles salen en verde, repite con
-          <code>--escribir</code>. Deja respaldo de la base antes de tocarla.</span></div>
-      </div>
-
-      <div class="erp-nota">
-        <b>Estado de la homologación.</b> Cada cuenta del ERP necesita saber a qué rubro del tablero va.
-        EE.UU., Perú y Costa Rica están al 100%. Colombia tiene 30 de 100 cuentas con regla, que cubren el
-        46% del gasto; las otras 70 están en <code>migracion\Cuentas_por_homologar_Colombia.xlsx</code>
-        esperando que contabilidad diga a qué rubro pertenecen. Mientras tanto, Colombia entra por totales
-        y no se puede abrir por rubro.
-      </div>
-
-      <div class="erp-nota" style="border-left-color:var(--green)">
-        <b>Burn &amp; Runway</b> va por su propia plantilla, no por el ERP:
-        <code>plantillas\Plantilla_Burn_Runway.xlsx</code>, y se procesa con
-        <code>python modelo/plantilla_a_burn_runway.py &lt;archivo&gt;</code>. Alimenta
-        <code>burn_runway.json</code>, no la base.
-      </div>
-    </div>
-
-    <!-- ============ PLANTILLA / DATO SUELTO ============ -->
-    <div class="msec" id="m-sec-plantilla">
-      <div class="erp-nota" id="m-aviso-mensual" style="border-left-color:var(--green);margin-bottom:14px">
-        <b>Para el cierre de cada mes</b> hay una sola plantilla que junta MRR con cartera y liquidez:
-        <code>plantillas\Plantilla_Mensual_MRR_Cartera.xlsx</code>. Trae una hoja CHEQUEOS que valida el
-        puente de MRR y la conciliación de cartera antes de que cargues. Se sube con
-        <code>python migracion/cargar_plantilla_mensual.py &lt;archivo&gt;</code>.
-        Las plantillas de abajo, por área, siguen sirviendo para cargas sueltas contra la nube.
-      </div>
+    <div class="msec">
       <div class="fgrid" style="grid-template-columns:1fr 1fr">
         <div class="field"><label>Área responsable</label><select id="m-area"></select></div>
         <div class="field" style="align-self:end"><a id="m-plantilla" class="btn" style="display:inline-block;text-decoration:none" download>⬇ Descargar plantilla del área</a></div>
       </div>
-      <div class="mtabs" style="margin-top:14px" id="m-mtabs">
+      <div class="mtabs" style="margin-top:14px">
         <button id="mt-ind" class="on">Registro individual</button>
         <button id="mt-mas">Carga masiva (plantilla)</button>
       </div>
@@ -638,10 +531,7 @@ const AREAS=[
         es el codigo "arr" (ventas totales anualizadas), que es otra cosa. Se agrega al
         lado en vez de reemplazarlo, para no cambiarle el significado a un KPI que ya
         se venia leyendo. */
-     /* 03-sep-2026: se retira "arr" de la fila. Es "ventas totales anualizadas", se
-        quedó en junio y vale la mitad del MRR×12: tres ARR distintos en pantalla no
-        se pueden defender. Sigue en el Catálogo y en la base. */
-     codes:["mrr_final","arr_mrr","arpa","retained_mrr","new_mrr","expansion_mrr","contraction_mrr","churned_mrr"],
+     codes:["mrr_final","arr","arr_mrr","arpa","retained_mrr","new_mrr","expansion_mrr","contraction_mrr","churned_mrr"],
      charts:[{type:"mrrbridge",title:"Ejecución real de MRR a 12 meses"},
              {type:"pieyear",code:"distribucion_ingresos",title:"Distribución de clientes según tipo de ingreso"},
              {type:"yoylines",codes:["ingresos_recurrentes","ingresos_no_recurrentes"],titles:["Recurrente","No recurrente"],title:"Ingresos Recurrente vs No Recurrente (interanual)"},
@@ -650,7 +540,7 @@ const AREAS=[
      codes:["cartera_total","cartera_vencida","cartera_sana","dso","liquidez_total","indice_morosidad","cartera_mayor_60_pct","cartera_arr_pct","concentracion_cartera","write_off_ratio","cartera_cobro_legal"],
      charts:[{type:"line",code:"dso",title:"DSO por mes (días)",bench:60,benchLabel:"60d"},
              {type:"carterasplit",title:"Composición de cartera (sana vs vencida)"},
-             ]},   /* el pie de clientes se fusiono con "Composicion de cartera" */
+             {type:"pie",code:"cartera_vencida_cliente",title:"Clientes por cartera vencida"}]},
   {id:"gastos",   label:"Gastos", hint:"Estructura de costos por área · responde al selector de país",
      codes:["gasto_area","gasto_admin","gasto_comercial","gasto_desarrollo","costo_operacion","costo_proveedor","costo_proveedor_ventas_pct","salario_area_pct"],
      charts:[{type:"pygcosts",code:"pyg_oficial",title:"Costos y gastos oficiales P&G"},
@@ -671,14 +561,10 @@ const AREAS=[
   {id:"marketing",label:"Marketing", hint:"Adquisición y eficiencia",
      codes:["leads_generados","cac_fully_loaded","ltv","ltv_cac","cac_payback_meses","gasto_marketing_total"],
      charts:[{type:"line",code:"leads_generados",title:"Leads calificados por mes"}]},
-  /* NPS oculto por decision de Andres (03-sep-2026). No se borro nada: el dato sigue en
-     la base (hasta 2026-05), el derivado nps() sigue definido y el grafico sigue escrito
-     abajo. Para volver a mostrarlo basta con quitar los dos comentarios marcados NPS-OFF
-     y devolver "nps" a la lista de codes. */
-  {id:"cs",       label:"Customer Success & Churn", hint:"Clientes y churn",
-     codes:["clientes_final","clientes_nuevos","clientes_perdidos","clientes_en_riesgo","clientes_riesgo_pct","churn_clientes_pct"/*,"nps" NPS-OFF*/],
+  {id:"cs",       label:"Customer Success & Churn", hint:"Clientes, NPS y churn",
+     codes:["clientes_final","clientes_nuevos","clientes_perdidos","clientes_en_riesgo","clientes_riesgo_pct","churn_clientes_pct","nps"],
      charts:[{type:"churnpanel",title:"Comportamiento del churn"},
-             /* NPS-OFF: {type:"stackcol",code:"nps",pct100:true,title:"NPS mensual (Promotores · Pasivos · Detractores)"}, */
+             {type:"stackcol",code:"nps",pct100:true,title:"NPS mensual (Promotores · Pasivos · Detractores)"},
              {type:"churn",title:"Análisis de churn (Informe Contabilidad)"}]},
   {id:"catalogo", label:"Catálogo"}
 ];
@@ -702,26 +588,17 @@ const DERIVE={
     if(guardado!=null)return guardado;
     return proveedorVentasPct(o);
   },
-  /* C-01 (revisado, 03-sep-2026): la morosidad AHORA SI se calcula aqui.
-     Decision de Andres, que revierte la anterior.
+  /* C-01: la morosidad NO se calcula aqui. La entrega contabilidad y el tablero la
+     muestra tal cual: es un indicador con definicion contable propia --que puede no ser
+     vencida sobre total-- y derivarla seria sustituir un criterio ajeno por el nuestro.
 
-     Antes se mostraba tal cual la cargaba cartera, con el argumento de que tenia
-     definicion contable propia. El problema practico es que esa definicion nunca se
-     documento, y la cifra guardada (77,3% en julio) convivia en la misma pantalla con
-     un donut que decia 41,6% sin que nadie pudiera decir cual mirar.
-
-     Ahora el tablero declara su formula y la aplica: vencida / cartera_total. La cifra
-     que queda a la vista es reproducible a partir de dos numeros de la propia base, y
-     la tarjeta lo dice en letra chica debajo (ver FORMULA_TARJETA).
-
-     El denominador es cartera_total, no sana+vencida, porque es un dato reportado con
-     nombre propio. No siempre coinciden --en junio de 2026 sana+vencida se pasa en 282,8
-     millones y el porcentaje cambia de 32,18% a 27,81%-- y cuando eso ocurre el donut lo
-     advierte en vez de callarlo. */
-  indice_morosidad:o=>{
-    const ven=rawStored("cartera_vencida",o), tot=rawStored("cartera_total",o);
-    if(ven==null||tot==null||!tot) return null;
-    return ven/tot*100; },
+     Lo que si se resolvio es la contradiccion que reporto la auditoria: la tarjeta
+     mostraba 27,81% (junio) sin decirlo, junto a un donut de julio que daba 41,61%.
+     Al no haber valor de julio, la tarjeta cae al ultimo dato y ahora lo DECLARA en
+     ambar --"ultimo dato: 2026-06"-- via selloFrescura. La discrepancia contra la
+     cartera se sigue reportando en exportar_sqlite.py (control V3) para revisarla en
+     la fuente, que es donde vive.
+     // DECISION CONFIRMADA POR ANDRES -- la morosidad se carga, no se deriva. */
   /* C-09: el NPS no esta guardado como puntaje sino como composicion en tres detalles
      —Promotores, Pasivos, Detractores— que suman 100 todos los meses. rawStored los
      sumaba, asi que el Catalogo mostraba 100,0% en abril, en mayo y en marzo por igual:
@@ -745,16 +622,12 @@ const DERIVE={
     const ppto=valueOf("gastos_totales",{periodo:per,escenario:"Presupuesto",pais:pais});
     return (real!=null&&ppto)?(real/ppto-1)*100:null; }
 };
-const DERIVED_UNIT={ gastos_totales:"COP/USD", margen_ebitda:"%", margen_neto:"%", margen_bruto_pct:"%", nps:"pts", indice_morosidad:"%" };
-/* La formula, en letra chica debajo de la cifra. Un porcentaje sin su definicion obliga
-   al lector a confiar; con ella puede rehacer la cuenta con dos datos de la misma base. */
-const FORMULA_TARJETA={ indice_morosidad:"cartera vencida ÷ cartera total" };
+const DERIVED_UNIT={ gastos_totales:"COP/USD", margen_ebitda:"%", margen_neto:"%", margen_bruto_pct:"%", nps:"pts" };
 const EXTRA_CATALOG={
   gastos_totales:{area:"Finanzas",nombre:"Gastos operativos totales",unidad:"COP/USD",tipo:"Derivado",formula:"Σ costos y gastos por área, SIN gastos financieros",origen:"Derivado"},
   margen_ebitda:{area:"Finanzas",nombre:"Margen EBITDA",unidad:"%",tipo:"Derivado",formula:"ebitda / ingresos_totales",origen:"Derivado"},
   margen_neto:{area:"Finanzas",nombre:"Margen neto",unidad:"%",tipo:"Derivado",formula:"utilidad_neta / ingresos_totales",origen:"Derivado"},
-  margen_bruto_pct:{area:"Finanzas",nombre:"Margen bruto %",unidad:"%",tipo:"Derivado",formula:"100 − costo_proveedor / ventas %",origen:"Derivado"},
-  indice_morosidad:{area:"Cartera",nombre:"Índice de morosidad",unidad:"%",tipo:"Derivado",formula:"cartera_vencida / cartera_total",origen:"Derivado"}
+  margen_bruto_pct:{area:"Finanzas",nombre:"Margen bruto %",unidad:"%",tipo:"Derivado",formula:"100 − costo_proveedor / ventas %",origen:"Derivado"}
 };
 
 /* ============================================================
@@ -857,16 +730,7 @@ function parseWorkbook(wb){
   }
 
   /* añadir catálogo de derivados si faltan */
-  for(const c in EXTRA_CATALOG){
-    if(!catalog[c]){ catalog[c]=Object.assign({},EXTRA_CATALOG[c]); order.push(c); }
-    /* Y si el codigo YA venia en el Diccionario pero ahora lo calcula el tablero, manda
-       la ficha de aqui. Si no, el rotulo sigue describiendo el origen anterior: al pasar
-       indice_morosidad a derivado, la tarjeta seguia titulada "(entregado por cartera)"
-       y su formula en el Catalogo decia "el tablero NO lo calcula" -- las dos cosas
-       dejaron de ser ciertas el mismo dia. El Diccionario del .xlsx tambien hay que
-       corregirlo en la fuente; mientras tanto, lo que se ve no miente. */
-    else if(DERIVE[c]) catalog[c]=Object.assign({},catalog[c],EXTRA_CATALOG[c]);
-  }
+  for(const c in EXTRA_CATALOG){ if(!catalog[c]){ catalog[c]=Object.assign({},EXTRA_CATALOG[c]); order.push(c); } }
 
   /* --- BD_GASTOS_RESUMEN_MENSUAL: puente homologado para graficos de costos/gastos --- */
   const grA=aoaOf(wb,findSheet(wb,["BD_GASTOS_RESUMEN_MENSUAL","GASTOS_RESUMEN_MENSUAL","Gastos Resumen Mensual"]));
@@ -984,12 +848,7 @@ function hayCierre(){ return S.trmCierre && Object.keys(S.trmCierre).length>0; }
 function trmBaseMap(){ return (F.trmBase==="cierre"&&hayCierre())?S.trmCierre:(S.trmMercado&&Object.keys(S.trmMercado).length?S.trmMercado:S.trm); }
 function trmSheet(per){ const m=trmBaseMap(); const last=S.periodos[S.periodos.length-1];
   return m[per] || S.trm[per] || m[last] || S.trm[last] || 4170; }
-/* La tasa fija solo manda cuando esa base esta elegida. Antes bastaba con que F.trm
-   tuviera un valor: si alguien escribia 4.200 y despues volvia a "Promedio mensual",
-   el tablero seguia convirtiendo a 4.200 y la etiqueta seguia diciendo "fijada a
-   mano" -- pero el selector decia otra cosa. Cifras distintas sin aviso. */
-function trmFijaActiva(){ return F.trmBase==="fija" && F.trm && !isNaN(F.trm) && F.trm>0; }
-function trmOf(per){ if(trmFijaActiva()) return F.trm; return trmSheet(per); }
+function trmOf(per){ if(F.trm && !isNaN(F.trm) && F.trm>0) return F.trm; return trmSheet(per); }
 /* análisis de tasas COP/USD: valores implícitos distintos y en qué periodo cambian */
 function trmChangePoints(){ const pers=Object.keys(S.trmImpl).sort(); const pts=[]; let prev=null;
   for(const p of pers){ const v=S.trmImpl[p]; if(prev===null||v!==prev){ pts.push({periodo:p,valor:v}); prev=v; } } return pts; }
@@ -1168,10 +1027,7 @@ const fDispU=v=>conMon(fMoney(v),F.moneda);                    /* valor que ya v
 function acumEnMoneda(getMes,meses){ let s=null; (meses||[]).forEach(m=>{ const v=getMes(m); if(v!=null)s=(s||0)+usdEn(v,m); }); return s; }
 /* Cuando la fuente entrega el acumulado ya totalizado (el H1 oficial) no se puede
    convertir mes a mes: se usa la tasa del corte y la tarjeta lo dice. */
-function notaTasaAcum(per,ent){ if(F.moneda!=="COP") return "";
-  if(ent==="Colombia") return " · pesos del libro contable";
-  if(ent==="Consolidado") return " · Colombia en pesos del libro; filiales a TRM "+fNum(trmOf(per));
-  return " · a TRM "+fNum(trmOf(per)); }
+function notaTasaAcum(per){ return F.moneda==="COP"?" · a TRM "+fNum(trmOf(per)):""; }
 /* ============================================================
    ALCANCE REAL DE CADA INDICADOR
    ============================================================
@@ -1229,13 +1085,9 @@ function etiquetaPais(){ return F.pais==="__ALL__"?"Consolidado":F.pais; }
    cuál está mirando — y la diferencia entre implícita y mercado ya provocó una
    confusión real con la TRM de julio (3.268,95 vs 3.505,27). */
 function etiquetaTasa(per){
+  const manual=F.trm&&!isNaN(F.trm)&&F.trm>0;
   const base=F.trmBase==="cierre"?"tasa de cierre de mes":"tasa promedio mensual";
-  /* Elegir "fija" y dejar la casilla vacia no es un error, pero tampoco es una tasa
-     fija: el tablero cae al promedio. Decirlo evita que alguien lea el numero
-     creyendo que es el que escribio. */
-  if(F.trmBase==="fija")
-    return "TRM "+fNum(trmOf(per))+" · "+(trmFijaActiva()?"tasa fija indicada a mano":base+" (falta indicar la tasa fija)");
-  return "TRM "+fNum(trmOf(per))+" · "+base;
+  return "TRM "+fNum(trmOf(per))+" · "+(manual?"tasa fijada a mano":base);
 }
 /* C-08 / I-19: un dato de otro mes se anunciaba en letra chica y del mismo color que
    el resto ("ultimo dato: 2025-12"), asi que MARGEN BRUTO de diciembre pasaba
@@ -1406,7 +1258,8 @@ function officialFinanceAccumDisplay(code,per){
   if(!entidad)return null;
   const map={ingresos_totales:"pyg_ingresos_operacionales",ebitda:"_utilidad_operativa",utilidad_neta:"pyg_utilidad_neta"};
   const pygCode=map[code]; if(!pygCode)return null;
-  return officialAccumDisplay(pygCode,entidad,per);
+  const usd=officialAccumVal(pygCode,entidad,per);
+  return usd==null?null:usdToDisplay(usd,per);
 }
 function financeDisplayValue(code,per){
   const official=officialFinanceDisplay(code,per);
@@ -1481,7 +1334,7 @@ function card(el,o){
   const flag=o.dummy?`<span class="dummy">Por medir</span>`:(o.real?`<span class="realtag">Real</span>`:"");
   const src=o.src?`<div class="src">📍 ${o.src}</div>`:"";
   const colNeg=esNegativo(o.v)?' style="color:var(--red)"':"";   /* pérdidas siempre en rojo */
-  el.innerHTML=`<div class="top"><span class="k">${o.k} ${flag}</span>${tag}</div><div class="v mono"${colNeg}>${o.v}</div>${o.sub?`<div class="sub">${o.sub}</div>`:""}${(o.meta&&o.meta!==o.sub)?`<div class="sub">${o.meta}</div>`:""}${o.bench||""}${src}`;
+  el.innerHTML=`<div class="top"><span class="k">${o.k} ${flag}</span>${tag}</div><div class="v mono"${colNeg}>${o.v}</div>${o.sub?`<div class="sub">${o.sub}</div>`:""}${o.bench||""}${src}`;
 }
 function mkCards(host,defs){ host.innerHTML=""; defs.forEach(p=>{ const e=document.createElement("div"); e.className="card"+(p.total?" card-total":""); host.appendChild(e); card(e,p); }); }
 
@@ -1725,12 +1578,6 @@ function sincronizarControles(tabId){
   apagar(document.getElementById("f-trmbase"), esBurn,
     "No aplica en Burn & Runway (fuente externa con tasa propia).",
     "Tasa COP/USD usada para convertir: implícita (derivada de los EEFF) o promedio mensual de mercado");
-  /* La casilla de la tasa fija sigue la misma regla que su desplegable: en Burn la
-     conversion viene hecha desde el Modelo, asi que dejarla activa invitaria a
-     escribir una tasa que esa pestana no usa. */
-  apagar(document.getElementById("f-trm-fijo"), esBurn,
-    "No aplica en Burn & Runway (fuente externa con tasa propia).",
-    "Tasa COP/USD fija indicada a mano");
 
   /* El pais ya se apaga en las pestanas de alcance fijo (bloque de arriba). Aqui se
      suman Burn --que es siempre consolidado, del Modelo-- y el Catalogo, que lista el
@@ -1771,7 +1618,7 @@ function render(){
   const warnT=document.getElementById("trm-warn");
   if(warnT){
     const hayDatos=S.periodos&&S.periodos.length, m=hayDatos?trmBaseMap():{}, last=hayDatos?S.periodos[S.periodos.length-1]:null;
-    const usaRespaldo=hayDatos&&!trmFijaActiva()&&!(m[F.periodo]||S.trm[F.periodo]||(last&&(m[last]||S.trm[last])));
+    const usaRespaldo=hayDatos&&!F.trm&&!(m[F.periodo]||S.trm[F.periodo]||(last&&(m[last]||S.trm[last])));
     warnT.style.display=usaRespaldo?"":"none";
   }
   renderTab(tabId);
@@ -1927,47 +1774,16 @@ function officialAccumVal(code,pais,periodo){
     const costo=officialAccumVal("pyg_costo_ventas",pais,periodo);
     return ing!=null?ing-(costo||0):null;
   }
-  /* Decisión 03-sep-2026: el acumulado en dólares es el OFICIAL — el bloque "Acumulado
-     H1" que publicó contabilidad (Colombia ya convertida por ella a una sola tasa) más
-     los meses posteriores del bloque mensual. Antes Colombia se reconvertía mes a mes
-     (colombiaAcumUSD) y el tablero mostraba 1.612.839 donde el estado financiero dice
-     1.664.466: el tablero debe cuadrar con el documento, no discutirle la tasa.
-     Los pesos de Colombia se muestran desde su libro: ver officialAccumDisplay. */
-  return acumGuardado(code,pais,periodo);
-}
-/* Acumulado de Colombia en PESOS, sumando los meses del año hasta el corte desde el
-   libro contable (segmento vacío). Es la cifra que existe en la contabilidad. */
-function colombiaAcumCOP(code,periodo){
-  if(code==="_utilidad_operativa"){
-    const partes=[["pyg_ingresos_operacionales",1],["pyg_costo_ventas",-1],["pyg_gasto_administracion",-1],["pyg_gasto_ventas",-1],["pyg_gasto_proyectos",-1]];
-    let s=null; partes.forEach(par=>{ const v=colombiaAcumCOP(par[0],periodo); if(v!=null) s=(s||0)+par[1]*v; }); return s;
+  const col=colombiaAcumUSD(code,periodo);
+  if(pais==="Colombia") return col!=null?col:acumGuardado(code,pais,periodo);
+  const guardado=acumGuardado(code,pais,periodo);
+  /* El consolidado tiene fila propia en el bloque oficial (no es la suma de países):
+     se le aplica la diferencia de Colombia para no perder las cifras de los otros tres. */
+  if(pais==="Consolidado"&&col!=null&&guardado!=null){
+    const colGuardado=acumGuardado(code,"Colombia",periodo);
+    return guardado-(colGuardado||0)+col;
   }
-  if(code==="_utilidad_bruta_h1"){
-    const ing=colombiaAcumCOP("pyg_ingresos_operacionales",periodo), costo=colombiaAcumCOP("pyg_costo_ventas",periodo);
-    return ing!=null?ing-(costo||0):null;
-  }
-  const anio=String(periodo).slice(0,4); let s=null;
-  for(const m of S.periodos){ if(m.slice(0,4)!==anio||m>periodo) continue;
-    const v=valueOf(code,{periodo:m,pais:"Colombia",segmento:"",escenario:"Real"}); if(v!=null) s=(s||0)+v; }
-  return s;
-}
-/* Acumulado oficial EN LA MONEDA DE LA PANTALLA.
-     USD → la cifra oficial tal cual.
-     COP → Colombia es su libro en pesos; las filiales, que se originan en dólares, se
-           convierten con la tasa del corte; el Consolidado es la suma de las dos cosas,
-           así que la columna Consolidado siempre es la suma de las columnas de país.
-   Antes en COP se multiplicaba el acumulado en dólares por la tasa de julio: Colombia
-   salía en 4.682 MM cuando las siete barras de su propio gráfico suman 5.152 MM. */
-function officialAccumDisplay(code,pais,periodo){
-  const usd=officialAccumVal(code,pais,periodo);
-  if(F.moneda!=="COP"||usd==null) return usd;
-  const t=trmOf(periodo);
-  if(pais==="Colombia"){ const cop=colombiaAcumCOP(code,periodo); return cop!=null?cop:usd*t; }
-  if(pais==="Consolidado"){
-    const colUSD=officialAccumVal(code,"Colombia",periodo), colCOP=colombiaAcumCOP(code,periodo);
-    if(colUSD!=null&&colCOP!=null) return (usd-colUSD)*t+colCOP;
-  }
-  return usd*t;
+  return guardado;
 }
 /* Un renglón vacío puede ser dos cosas MUY distintas:
      - "s/d": la cuenta existe para ese país pero el mes no se cargó  -> hay que perseguirlo.
@@ -1993,8 +1809,7 @@ function bridgeSVG(pais,periodo,escalaMax){
   /* Se distingue el paso que vale cero del paso que no llegó: para la geometría ambos
      ocupan cero, pero el faltante se rotula s/d. Si no, el acumulado se ve cuadrado
      cuando en realidad le falta un renglón. */
-  /* Ya en la moneda de la pantalla (Colombia en COP = su libro). */
-  const brutos=BRIDGE_STEPS.map(s=>officialAccumDisplay(s.code,pais,periodo));
+  const brutos=BRIDGE_STEPS.map(s=>officialAccumVal(s.code,pais,periodo));
   const vals=brutos.map(v=>v==null?0:v);
   /* posiciones acumuladas */
   let run=0; const segs=BRIDGE_STEPS.map((s,i)=>{ const v=vals[i], falta=brutos[i]==null;
@@ -2031,8 +1846,8 @@ function bridgeSVG(pais,periodo,escalaMax){
        millones (COP MM). En USD se mantiene el valor pleno, que sí cabe. Ojo: las
        cifras del puente vienen en USD, así que la conversión es usdToDisplay (USD→COP),
        no toDisplay, que espera pesos. */
-    const fmtCasc=v=>{ if(F.moneda!=="COP") return fMoney(v);
-      return "$"+fNum(Math.round(v/1e6))+" MM"; };
+    const fmtCasc=v=>{ if(F.moneda!=="COP") return fCon(v,periodo);
+      return "$"+fNum(Math.round(usdToDisplay(v,periodo)/1e6))+" MM"; };
     const txt=s.falta?s.marca:(esNeg?"("+fmtCasc(Math.abs(s.val))+")":fmtCasc(s.val));
     const colTxt=s.falta?"rgba(148,163,184,.95)":(esNeg?"#F4685E":"#5FD68A");
     svg+=`<text x="${cx.toFixed(1)}" y="${(yTop-16).toFixed(1)}" text-anchor="middle" font-size="17" font-weight="700"
@@ -2088,12 +1903,7 @@ const PYG_STEPS=[
 ];
 /* lee un código pyg de Colombia (segmento vacío) para un periodo */
 function pygVal(code,per){ return valueOf(code,{periodo:per,pais:"Colombia",segmento:""}); }
-/* El diccionario de la base llama "Utilidad neta" a la utilidad ANTES de impuesto de
-   renta (ninguna entidad la tiene provisionada). Para un lector financiero "neta" es
-   después de impuestos: el rótulo se corrige aquí, el código de la base no se toca. */
-const NOMBRE_KPI={utilidad_neta:"Utilidad antes de renta",pyg_utilidad_neta:"Utilidad antes de renta",margen_neto:"Margen antes de renta"};
-function nombreKPI(code,c){ if(NOMBRE_KPI[code]) return NOMBRE_KPI[code]; c=c||S.catalog[code]||{}; return c.nombre||code; }
-function pygLabel(code){ const n=nombreKPI(code); return n.replace(/^P&G\s*·\s*/,""); }
+function pygLabel(code){ const n=(S.catalog[code]&&S.catalog[code].nombre)||code; return n.replace(/^P&G\s*·\s*/,""); }
 /* último periodo con datos pyg de Colombia */
 function lastPygPeriodo(){ for(let i=S.periodos.length-1;i>=0;i--){ if(pygVal("pyg_utilidad_neta",S.periodos[i])!=null) return S.periodos[i]; } return null; }
 
@@ -2188,10 +1998,10 @@ function renderPyGConsol(host,embedH){
   const netaYTD=usaAcumOficial?officialAccumVal("pyg_utilidad_neta",ent,periodoAcum):factValSum("pyg_utilidad_neta",mesesAcum,ent,"Consolidación USD");
   const rango=periodoPendiente?("ene–"+mesCorto(periodoAcum).split(" ")[0]+" · oficial; "+mesCorto(per).split(" ")[0]+" pendiente"):(usaAcumOficial?("ene–"+mesCorto(per).split(" ")[0]+" · oficial"):(mesesHasta.length>1?(mesCorto(mesesHasta[0])+"–"+mesCorto(mesesHasta[mesesHasta.length-1])):mesCorto(mesesHasta[0])));
   /* acumulados convertidos mes a mes; ver acumEnMoneda */
-  const ingYTDd  = usaAcumOficial?officialAccumDisplay("pyg_ingresos_operacionales",ent,periodoAcum):acumEnMoneda(m=>factValSum("pyg_ingresos_operacionales",[m],ent,"Consolidación USD"),mesesAcum);
-  const ebitYTDd = usaAcumOficial?officialAccumDisplay("_utilidad_operativa",ent,periodoAcum):acumEnMoneda(m=>factValConsol("_utilidad_operativa",m,ent),mesesAcum);
-  const netaYTDd = usaAcumOficial?officialAccumDisplay("pyg_utilidad_neta",ent,periodoAcum):acumEnMoneda(m=>factValSum("pyg_utilidad_neta",[m],ent,"Consolidación USD"),mesesAcum);
-  const notaAc   = usaAcumOficial?notaTasaAcum(periodoAcum,ent):"";
+  const ingYTDd  = usaAcumOficial?usdEn(ingYTD,periodoAcum)   :acumEnMoneda(m=>factValSum("pyg_ingresos_operacionales",[m],ent,"Consolidación USD"),mesesAcum);
+  const ebitYTDd = usaAcumOficial?usdEn(ebitdaYTD,periodoAcum):acumEnMoneda(m=>factValConsol("_utilidad_operativa",m,ent),mesesAcum);
+  const netaYTDd = usaAcumOficial?usdEn(netaYTD,periodoAcum)  :acumEnMoneda(m=>factValSum("pyg_utilidad_neta",[m],ent,"Consolidación USD"),mesesAcum);
+  const notaAc   = usaAcumOficial?notaTasaAcum(periodoAcum):"";
   if(!embedH){
     const grid=document.createElement("div"); grid.className="grid g4"; host.appendChild(grid);
     mkCards(grid,[
@@ -2388,17 +2198,13 @@ function consolStatementCard(perOrMeses,resaltar,soloCodes,titulo,segmentoBloque
      array de objetos (p.ej. CONSOL_CUENTAS_H1) -> se usa directamente como lista de cuentas */
   const cuentas=!soloCodes?CONSOL_CUENTAS:(typeof soloCodes[0]==="string"?CONSOL_CUENTAS.filter(c=>soloCodes.indexOf(c.code)>=0):soloCodes);
   const pendiente=(p)=>!acumulado&&segmentoBloque!=="__ACUM_OFICIAL__"&&datoNoRecibidoPaisPeriodo(p,per);
-  const esAcumOficial=segmentoBloque==="__ACUM_OFICIAL__";
-  /* El acumulado oficial ya llega en la moneda de la pantalla (officialAccumDisplay);
-     el bloque mensual llega en USD y se convierte al pintar (fCon). */
-  const cell=(code,p)=>pendiente(p)?null:(esAcumOficial?officialAccumDisplay(code,p,per):factValConsol(code,meses,p,segmentoBloque));
-  const fmtCel=v=>esAcumOficial?fMoney(v):fCon(v,per);
+  const cell=(code,p)=>pendiente(p)?null:(segmentoBloque==="__ACUM_OFICIAL__"?officialAccumVal(code,p,per):factValConsol(code,meses,p,segmentoBloque));
   const rango=etiquetaOverride||(acumulado?(meses.length>1?mesCorto(meses[0])+"–"+mesCorto(meses[meses.length-1]):mesCorto(meses[0])):mesLargo(per));
   /* El rotulo decia USD siempre, aunque el tablero estuviera en pesos: con MONEDA=COP
      la tabla mostraba 5.104.844.401 --que son pesos-- bajo un encabezado que decia USD.
      Las cifras SI se convierten; lo que no se convertia era el rotulo. */
   const factRow=cols.map(p=>{ if(p==="Consolidado") return `<th class="r" style="font-size:9px;color:var(--mute);font-weight:600">TOTAL ${F.moneda}</th>`;
-    if(acumulado||etiquetaOverride) return `<th class="r" style="font-size:9px;color:var(--mute);font-weight:500">${etiquetaOverride?("ene – "+mesCorto(per)):(meses.length>1?meses.length+" meses":"—")}</th>`;
+    if(acumulado||etiquetaOverride) return `<th class="r" style="font-size:9px;color:var(--mute);font-weight:500">${meses.length>1?meses.length+" meses":"—"}</th>`;
     const f=factorPaisUSD(p,per); return `<th class="r" style="font-size:9px;color:var(--mute);font-weight:500"><div>${f.txt}</div><div class="mono">${f.factor}</div></th>`; }).join("");
   const thCol=p=>{ const sel=(p===resaltar); const base=p==="Consolidado"?"color:var(--green)":"";
     return `<th class="r" style="${base}${sel?';background:var(--panel2)':''}">${p==="Consolidado"?"CONSOLIDADO":p.toUpperCase()}</th>`; };
@@ -2407,7 +2213,7 @@ function consolStatementCard(perOrMeses,resaltar,soloCodes,titulo,segmentoBloque
       <span style="font-size:10.5px;color:var(--mute)">Consolidado = EE.UU. + Perú + Costa Rica + Colombia (local) · ${F.moneda}</span></div>
     <div class="tbl-scroll" style="margin-top:10px"><table class="ptable"><thead>
       <tr><th style="width:44px">Cta.</th><th>Rubro</th>${cols.map(thCol).join("")}</tr>
-      <tr><th></th><th style="font-size:9px;color:var(--mute);font-weight:500">${(acumulado||etiquetaOverride)?"Periodo":("Factor→USD"+(F.moneda==="COP"?" · →COP a "+fNum(trmOf(per)):""))}</th>${factRow}</tr>
+      <tr><th></th><th style="font-size:9px;color:var(--mute);font-weight:500">${(acumulado||etiquetaOverride)?"Periodo":"Factor→USD"}</th>${factRow}</tr>
     </thead><tbody>`;
   cuentas.forEach(c=>{ const bold=(c.total||c.subtotal)?"font-weight:700;border-top:1px solid var(--line2)":"";
     html+=`<tr style="${bold}"><td class="mono" style="color:var(--mute);font-size:10.5px">${c.cta}</td><td style="${(c.total||c.subtotal)?'font-weight:700;color:var(--ink)':''}">${c.label}</td>`+
@@ -2416,13 +2222,10 @@ function consolStatementCard(perOrMeses,resaltar,soloCodes,titulo,segmentoBloque
            una pérdida nunca debe verse en verde aunque esté en la columna del total */
         const peso=(c.total||c.subtotal)?";font-weight:700":"";
         const hl=neg?("color:var(--red)"+peso):(p==="Consolidado"?("color:var(--green)"+peso):peso.replace(/^;/,""));
-        return `<td class="r mono" style="${hl}${sel?';background:var(--panel2)':''}">${pendiente(p)?"Dato no recibido":(v==null?"—":(neg?"("+fmtCel(-v)+")":fmtCel(v)))}</td>`; }).join("")+`</tr>`; });
+        return `<td class="r mono" style="${hl}${sel?';background:var(--panel2)':''}">${pendiente(p)?"Dato no recibido":(v==null?"—":(neg?"("+fCon(-v,per)+")":fCon(v,per)))}</td>`; }).join("")+`</tr>`; });
   html+=`</tbody></table></div>`;
   const crIng=factVal("pyg_ingresos_operacionales",per,"Costa Rica",segmentoBloque);
-  const notaMoneda=F.moneda!=="COP"?"":(esAcumOficial
-    ?" En pesos, Colombia es su libro contable (suma de los meses del año) y las filiales se convierten con la tasa del corte ("+fNum(trmOf(per))+"); la columna Consolidado es la suma de las columnas."
-    :" En pesos, cada cifra se convierte con la tasa del mes ("+fNum(trmOf(per))+").");
-  let avisos=`<div style="font-size:11px;color:var(--mute);margin-top:8px">Cada país se convierte a USD con su factor mensual (Perú: BCRP; Colombia: COP/USD implícito).${notaMoneda} Los rubros se muestran con su signo — valores en rojo/paréntesis son negativos (créditos o gasto neto). La Utilidad Operativa (EBITDA) es calculada: Ingresos − Costo del servicio − Administración − Ventas − Operación. La utilidad de cada país es la cifra oficial de su contabilidad y va ANTES de impuesto de renta: ninguna filial la tiene provisionada en el periodo. PROINNOVATE (Perú) no entra al consolidado.</div>`;
+  let avisos=`<div style="font-size:11px;color:var(--mute);margin-top:8px">Cada país se convierte a USD con su factor mensual (Perú: BCRP; Colombia: COP/USD implícito). Los rubros se muestran con su signo — valores en rojo/paréntesis son negativos (créditos o gasto neto). La Utilidad Operativa (EBITDA) es calculada: Ingresos − Costo del servicio − Administración − Ventas − Operación. La utilidad de cada país es la cifra oficial de su contabilidad y va ANTES de impuesto de renta: ninguna filial la tiene provisionada en el periodo. PROINNOVATE (Perú) no entra al consolidado.</div>`;
   if(!acumulado&&segmentoBloque!=="__ACUM_OFICIAL__"&&datoNoRecibidoPaisPeriodo("Perú",per)&&cols.includes("Perú")){ avisos+=`<div style="font-size:11.5px;color:var(--amber);background:var(--amber-b);border:1px solid rgba(244,183,64,.35);border-radius:8px;padding:8px 11px;margin-top:8px"><b>Perú · ${mesCorto(per)}:</b> dato no recibido. El consolidado del mes no incorpora actividad ordinaria de Perú y debe considerarse provisional.</div>`; }
   /* El aviso de ingresos atípicos de Costa Rica se decide con los datos, no con una
      fecha fija: dispara cuando el mes supera 3x la mediana de los demás meses de CR
@@ -2621,7 +2424,7 @@ function renderBurnRunway(host){
     {k:"Runway promedio "+(rango(rw3)||"3 meses"),v:MM1(rw3&&rw3.valor)+'<span class="cur">meses</span>',meta:"escenario reciente",s:statusFor("runway_meses",rw3&&rw3.valor),real:true},
     {k:"Runway promedio "+(rango(rw6)||"del año"),v:MM1(rw6&&rw6.valor)+'<span class="cur">meses</span>',meta:"escenario conservador",s:statusFor("runway_meses",rw6&&rw6.valor),real:true},
     {k:"Runway hasta primer déficit",v:(function(){const k=busca(d.proyeccion_kpis,"primer déficit");return k?MM1(k.valor)+'<span class="cur">meses</span>':"—";})(),
-      meta:"proyección del modelo con el presupuesto "+(rangoProy||"")+": bache temporal de capital de trabajo, no agotamiento de la caja (ver conclusión abajo)",
+      meta:"con el presupuesto "+(rangoProy||"proyectado"),
       s:(function(){const k=busca(d.proyeccion_kpis,"primer déficit");
          return k&&esNum(k.valor)?statusFor("runway_meses",k.valor):null;})(),real:true}
   ]);
@@ -2648,15 +2451,7 @@ function renderBurnRunway(host){
      esta pestaña). Los datos siguen en burn_runway.json (d.dso, d.puente, d.intl). */
   /* ---- Presupuesto vs ejecutado ---- */
   const cPE=document.createElement("div"); cPE.className="chart-card"; cPE.style.marginTop="14px";
-  /* El "ejecutado" del modelo coincide mes a mes con el libro de Colombia en pesos:
-     se declara, porque el encabezado de la pestaña dice consolidado. */
-  const ejecEsColombia=(function(){ const filas=(d.ppto||[]).filter(x=>!/total/i.test(String(x.mes))&&x.ejecCOP!=null);
-    const MESN={ene:"01",feb:"02",mar:"03",abr:"04",may:"05",jun:"06",jul:"07",ago:"08",sep:"09",oct:"10",nov:"11",dic:"12"};
-    let n=0,ok=0; filas.forEach(x=>{ const m=/^([a-z]{3})-?(\d{2})/i.exec(String(x.mes)); if(!m||!MESN[m[1].toLowerCase()])return;
-      const per="20"+m[2]+"-"+MESN[m[1].toLowerCase()]; const col=ingresoColombiaCOP(per); if(col==null)return; n++;
-      if(Math.abs(col/1e6-Number(x.ejecCOP))<Math.max(1,Math.abs(Number(x.ejecCOP))*0.01)) ok++; });
-    return n>0&&ok===n; })();
-  cPE.innerHTML=`<h3>Ingresos: presupuesto vs ejecutado (COP MM)${ejecEsColombia?' <span style="font-size:11px;color:var(--mute);font-weight:500">· ejecutado = Colombia (libro en pesos)</span>':''}</h3>`;
+  cPE.innerHTML=`<h3>Ingresos: presupuesto vs ejecutado (COP MM)</h3>`;
   /* La brecha se leia recorriendo doce numeros de una tabla. En barras se ve de una:
      siete meses seguidos por debajo del plan, y ensanchandose. La tabla se queda con el
      detalle exacto; el grafico da la forma. La fila de total no entra --no es un mes--. */
@@ -2753,27 +2548,13 @@ function renderResumen(host){
     {k:"Ingresos "+year,code:"ingresos_totales",v:mnyFinU(revYTD),meta:revYTD!=null?etiquetaMeses("ingresos_totales"):motivoSinDato("ingresos_totales")},
     {k:"EBITDA mes",code:"ebitda",v:mnyFinU(ebMes),meta:ebMes!=null?(mEbitda!=null?"Margen "+fPctN(mEbitda,0):"—"):motivoSinDato("ebitda"),s:st(mEbitda)},
     {k:"Utilidad antes de renta "+year,code:"utilidad_neta",v:mnyFinU(unYTD),meta:unYTD!=null?"acumulado":motivoSinDato("utilidad_neta"),s:unYTD!=null?(unYTD>=0?"green":"red"):null},
-    {k:"MRR / ARR",code:"mrr_final",v:mnyRawU(mrr,mrrPer),meta:mrr!=null?"ARR (MRR × 12) "+mnyRaw(mrr*12,mrrPer)+" "+F.moneda:motivoSinDato("mrr_final")},
+    {k:"MRR / ARR",code:"mrr_final",v:mnyRawU(mrr,mrrPer),meta:mrr!=null?"ARR "+mnyRaw(mrr*12,mrrPer)+" "+F.moneda:motivoSinDato("mrr_final")},
     {k:"Cartera / DSO",code:"cartera_total",v:mnyRawU(carTot,carPer),meta:carTot!=null?(dso!=null?"DSO "+fNum(dso)+"d":"cartera total"):motivoSinDato("cartera_total"),s:dso!=null?statusFor("dso",dso):null}
   ];
   document.getElementById("hero").innerHTML=hero.map(h=>{ const dot=h.s?`<span class="dot ${h.s}"></span>`:""; const rt=h.real?`<span class="realtag">Real</span>`:"";
     const cn=esNegativo(h.v)?' style="color:var(--red)"':"";   /* pérdidas en rojo */
     return`<div class="vital ${h.s?'s-'+h.s:''}"><div class="k">${dot}${h.k} ${rt}${chipAlcance(h.code,per)}</div><div class="v mono"${cn}>${h.v}</div><div class="meta">${h.meta}</div></div>`; }).join("");
   const sr=seriesOf("ingresos_totales"); barChart(document.getElementById("ch-rev"),sr.labels,sr.values,{fmt:v=>F.moneda==="USD"?fNum(v/1000):fNum(v/1e6)});
-  /* Con Consolidado, la serie es Colombia sola hasta que existe el bloque multipaís y
-     cuatro países desde ahí. Finanzas lo advierte bajo su tabla; aquí también, que es
-     la primera pantalla que se lee. */
-  if(F.pais==="__ALL__"){
-    const pers=windowPeriodos();
-    const hayConsol=p=>factVal("pyg_ingresos_operacionales",p,"Consolidado",CONSOL_SEG,"Real")!=null||sumaPaisesConsol("pyg_ingresos_operacionales",p)!=null;
-    const primero=pers.find(hayConsol);
-    const previos=primero?pers.filter(p=>p<primero&&sr.values[pers.indexOf(p)]!=null):[];
-    if(primero&&previos.length){
-      const n=document.createElement("div"); n.style.cssText="font-size:11.5px;color:var(--mute);margin-top:8px;line-height:1.6";
-      n.innerHTML="Hasta <b>"+mesCorto(previos[previos.length-1])+"</b> la barra es <b>Colombia sola</b>, que era toda la operación; desde <b>"+mesCorto(primero)+"</b> son los cuatro países. El salto entre esos dos meses no es crecimiento: es la entrada de las filiales.";
-      document.getElementById("ch-rev").parentElement.appendChild(n);
-    }
-  }
   const se=seriesOf("ebitda"); barChart(document.getElementById("ch-eb"),se.labels,se.values,{fmt:v=>F.moneda==="USD"?fNum(v/1000):fNum(v/1e6)});
   const sm=seriesOf("margen_ebitda"); sparseLineChart(document.getElementById("ch-me"),sm.labels,[{color:"#00CC58",values:sm.values}],{fmt:v=>fPctN(v,0)});
   /* PyG en cascada: del ingreso al resultado de la entidad elegida (acumulado
@@ -2878,10 +2659,7 @@ function renderArea(host,area){
   const per=F.periodo;
   const head=document.createElement("div"); head.className="eyebrow";
   const rango=(F.start&&F.start!==F.periodo)?(mesCorto(F.start)+" – "+mesCorto(F.periodo)):per;
-  /* Las tarjetas KPI son del mes de corte y los gráficos del rango: decirlo evita leer
-     "ago 25 – jul 26" arriba y creer que las tarjetas suman doce meses. */
-  const rangoTxt=(F.start&&F.start!==F.periodo)?("tarjetas a "+mesCorto(per)+" · gráficos "+rango):rango;
-  head.innerHTML=`<h2>${area.label}</h2><span class="hint">${area.hint||""} · ${etiquetaPais()} · ${rangoTxt} · ${F.moneda}</span>`;
+  head.innerHTML=`<h2>${area.label}</h2><span class="hint">${area.hint||""} · ${etiquetaPais()} · ${rango} · ${F.moneda}</span>`;
   host.appendChild(head);
   /* La pestaña declara su alcance en vez de cambiarle el filtro al lector. */
   if(area.alcanceFijo!==undefined){
@@ -2904,7 +2682,7 @@ function renderArea(host,area){
       else if(lp){ rezagado=lp; } }
     const has=shown!=null, s=statusFor(code,shown), official=officialFinanceDisplay(code,perShown)!=null;
     const meta=META[code], bench=(has&&meta)?benchBarNative(shown,meta):"";
-    return {k:nombreKPI(code,c),v:has?fmtFinanceDisplay(code,shown):"s/d",dummy:!has,rezagado:rezagado,real:has,s:has?s:null,bench,
+    return {k:(c.nombre||code),v:has?fmtFinanceDisplay(code,shown):"s/d",dummy:!has,rezagado:rezagado,real:has,s:has?s:null,bench,
       sub:has?(perShown!==per?selloFrescura(perShown,per):(official?"P&G oficial · "+mesCorto(perShown):(c.tipo||"").toString()))
              :(rezagado?motivoRezago(rezagado,per):"aún sin cargar en la BD"),
       src:official?"BD_PYG_OFICIAL":(c.fuente?(c.fuente+(c.origen?" · "+c.origen:"")):(c.origen||""))};
@@ -2920,21 +2698,16 @@ function renderArea(host,area){
        códigos que solo tiene Colombia cuando se mira una filial. Decir "Por medir" ahí
        manda a perseguir un dato que nadie va a entregar. */
     const noAplicaAqui=esSoloColombia(code)&&esPaisConsol(F.pais);
-    const subBase=has?(perShown!==per?selloFrescura(perShown,per):(c.tipo||"").toString())
+    const sub=has?(perShown!==per?selloFrescura(perShown,per):(c.tipo||"").toString())
                  :(noAplicaAqui?motivoSinDato(code)
                    :(rezagado?motivoRezago(rezagado,per):"aún sin cargar en la BD"));
-    /* Los indicadores que el tablero calcula llevan su formula al pie de la cifra. Va
-       solo cuando hay cifra: sin dato, lo que el lector necesita es el motivo, no la
-       cuenta que no se pudo hacer. */
-    const formula=FORMULA_TARJETA[code]||"";
-    const sub=(has&&formula)?(subBase?subBase+" · "+formula:formula):subBase;
     const freqTag=(area.id==="marketing"&&c.frec)?(" · "+c.frec):"";
     /* sub SI va en la tarjeta. Se venia calculando y descartando: la variable existia,
        el objeto que se pinta no la incluia. Por eso el sello de frescura funcionaba en
        las tarjetas de Finanzas --que si lo pasan-- y no en las demas areas, donde el
        INDICE DE MOROSIDAD mostraba 27,8% de junio sin decir de cuando era, al lado de
        un donut de julio. */
-    return {k:nombreKPI(code,c)+chipAlcance(code,per),v:has?fmtValue(code,vRawShown,perShown):(noAplicaAqui?"—":"Por medir"),dummy:!has&&!noAplicaAqui,real:has,s:has?s:null,bench,sub,
+    return {k:(c.nombre||code)+chipAlcance(code,per),v:has?fmtValue(code,vRawShown,perShown):(noAplicaAqui?"—":"Por medir"),dummy:!has&&!noAplicaAqui,real:has,s:has?s:null,bench,sub,
       src:(c.fuente?(c.fuente+(c.origen?" · "+c.origen:"")):(c.origen||""))+freqTag};
   });
   /* Finanzas oculta las tarjetas sin valor --lleva haciendolo siempre y esta bien: un
@@ -2947,9 +2720,7 @@ function renderArea(host,area){
   (area.charts||[]).forEach(ch=>{ const el=renderChartCard(ch); if(el)host.appendChild(el); });
   /* La matriz cierra la pestana de Gastos: despues de los graficos, porque responde
      sobre lo que se acaba de ver, no antes de verlo. */
-  /* La matriz "Que aporta cada pais a cada grafico" se retiro: con el P&G declarado
-     consolidado y el resto de la pestana filtrado por pais, ya no explica nada que la
-     interfaz no diga sola. renderMatrizGastos() sigue definida por si hay que volver. */
+  if(area.id==="gastos" && F.pais==="__ALL__") host.appendChild(renderMatrizGastos());
   /* Ventas & Comercial: detalle de oportunidades desde la hoja Pipeline_Comercial */
   if(area.id==="ventas") host.appendChild(renderPipelineDetalle());
   /* Cartera & Liquidez: LIQUIDEZ TOTAL en la tarjeta ya suma los países, pero suma
@@ -2977,10 +2748,9 @@ function renderLiquidezDesglose(per){
   const cop=v=>fMoneyU(v,"COP"), usd=v=>fMoneyU(v/trm,"USD");
   let t=`<div class="tbl-scroll"><table class="ptable"><thead><tr><th>País</th><th class="r">COP</th><th class="r">USD</th></tr></thead><tbody>`;
   paises.forEach(p=>{ t+=`<tr><td>${p}</td><td class="r mono">${cop(porPais[p])}</td><td class="r mono">${usd(porPais[p])}</td></tr>`; });
-  t+=`<tr style="font-weight:700;border-top:1px solid var(--line2)"><td>Total (${paises.join(" + ")})</td><td class="r mono" style="color:var(--green)">${cop(total)}</td><td class="r mono" style="color:var(--green)">${usd(total)}</td></tr>`;
+  t+=`<tr style="font-weight:700;border-top:1px solid var(--line2)"><td>Total consolidado</td><td class="r mono" style="color:var(--green)">${cop(total)}</td><td class="r mono" style="color:var(--green)">${usd(total)}</td></tr>`;
   t+="</tbody></table></div>";
-  const sinSaldo=PAISES_CONSOL.filter(p=>!paises.includes(p));
-  t+=`<div style="font-size:11px;color:var(--mute);margin-top:8px">Cada país en su moneda de origen (Colombia: COP · EE.UU.: USD), convertido con la tasa de ${mesCorto(per)}. Suma antes de convertir a ${F.moneda}, no después.${sinSaldo.length?" <b>Sin saldo de caja cargado:</b> "+sinSaldo.join(", ")+" — el total no los incluye.":""}</div>`;
+  t+=`<div style="font-size:11px;color:var(--mute);margin-top:8px">Cada país en su moneda de origen (Colombia: COP · EE.UU.: USD), convertido con la tasa de ${mesCorto(per)}. Suma antes de convertir a ${F.moneda}, no después.</div>`;
   body.innerHTML=t;
   return card;
 }
@@ -3109,7 +2879,7 @@ function alcanceGrafico(ch){
     const tocaColombia = consolidado || pais==="Colombia";
     return {clase:"verde", chip: consolidado?"Consolidado":pais,
       nota: tocaColombia
-        ? "Líneas del P&G oficial. Para Colombia empiezan en ene-2026 porque el auxiliar del ERP arranca ahí: EF Colombia.zip, la trazabilidad y el modelo financiero coinciden. El s/d de ago–dic 2025 no es un dato perdido — ese periodo vive en la serie de gestión de Colombia («Costos y gastos por área», con PAÍS = Colombia). Para llenarlo hace falta que contabilidad exporte esos cinco meses en el mismo formato de «Enero Colombia 2026.xlsx»."
+        ? "Líneas del P&G oficial. Para Colombia empiezan en ene-2026 porque el auxiliar del ERP arranca ahí: EF Colombia.zip, la trazabilidad y el modelo financiero coinciden. El s/d de ago–dic 2025 no es un dato perdido — ese periodo vive en la serie de gestión, en el gráfico de abajo. Para llenarlo hace falta que contabilidad exporte esos cinco meses en el mismo formato de «Enero Colombia 2026.xlsx»."
         : "Líneas del P&G oficial de "+pais+", homologadas desde su auxiliar contable."};
   }
   return null;
@@ -3128,12 +2898,6 @@ function alcanceGrafico(ch){
      gris   no existe para ese pais -- no es un dato pendiente */
 const MTZ_PAISES = ["Colombia", "Estados Unidos", "Peru", "Costa Rica"];
 const MTZ_ROTULO = {Colombia:"Colombia", "Estados Unidos":"EE.UU.", Peru:"Perú", "Costa Rica":"Costa Rica"};
-/* Los graficos de Gastos que van por pais: todos menos el P&G oficial, que es el
-   unico consolidado de la pestana. */
-const GASTOS_POR_PAIS = new Set(["gasto_area","gasto_admin","gasto_comercial",
-  "costo_operacion","gasto_desarrollo","costo_proveedor","costo_proveedor_ventas_pct",
-  "salario_area_pct"]);
-
 const MTZ_FILAS = [
   /* El P&G oficial es el UNICO grafico de la pestana que suma los cuatro paises, y era
      el unico sin franja: la matriz solo conocia los seis cortes de la cadena homologada
@@ -3162,9 +2926,7 @@ function casillaGasto(code, pais){
     PYG_COST_STACK.forEach(def=>{
       let t=0, hay=false;
       pers.forEach(per=>{
-        /* factVal (USD crudo) y no rawStored (ya en COP): con rawStored+usdToDisplay
-           las tarjetas por pais mostraban billones de pesos. */
-        const v=factVal(def.code,per,ent,CONSOL_SEG);
+        const v=rawStored(def.code,{periodo:per,pais:ent,segmento:CONSOL_SEG,escenario:"Real"});
         if(v!=null){ t+=Math.abs(usdToDisplay(v,per)); hay=true; }
       });
       if(hay&&t>0) m[def.label]=t;
@@ -3265,107 +3027,6 @@ function matrizGastos(){
   return html;
 }
 
-/* Tabla resumen del P&G oficial. Reemplaza las cuatro tarjetas por pais que habia
-   encima del grafico: el P&G es el UNICO corte consolidado de la pestana, asi que lo
-   que el lector necesita ahi es la composicion del consolidado --cuanto pesa cada
-   rubro-- y no cuanto aporta cada pais, que es la pregunta de los graficos de abajo.
-   Lee por officialPygDisplay, el mismo camino que alimenta las tarjetas KPI y las
-   barras, para que los tres no puedan discrepar. */
-/* Tabla resumen del P&G oficial, abierta por pais. Reemplaza las cuatro tarjetas que
-   habia encima del grafico: mismas cifras, pero leidas como estado financiero --una
-   fila por rubro, una columna por pais-- en vez de cuatro bloques sueltos. Lee del
-   bloque consolidado, el mismo que alimenta las tarjetas KPI y las barras. */
-/* La tabla tiene su propio conmutador de periodo: "Ultimo mes" muestra solo el corte
-   elegido en HASTA; "Corrido del ano" va de enero de ese ano hasta el corte. Es
-   independiente del rango de la barra porque la pregunta que responde la tabla --cuanto
-   se gasto y en que-- casi siempre es del mes o del ano, no de una ventana arbitraria. */
-let PYG_TABLA_MODO = "ytd";
-function periodosTablaPyG(){
-  const fin = F.periodo || S.periodos[S.periodos.length-1];
-  if(PYG_TABLA_MODO==="mes") return [fin];
-  const anio = String(fin).slice(0,4);
-  return S.periodos.filter(p=>p.slice(0,4)===anio && p<=fin);
-}
-function tablaConsolidadaPyG(){
-  const pers = periodosTablaPyG();
-  if(!pers.length) return null;
-  const ROT = {Colombia:"Colombia","EE.UU.":"EE.UU.","Perú":"Perú","Costa Rica":"Costa Rica"};
-  const ORDEN = ["EE.UU.","Perú","Costa Rica","Colombia"];
-  /* Un pais y un rubro: se lee del bloque consolidado, que esta en USD, y se convierte
-     con la tasa del mes de cada fila. Nunca se suma el rango y se convierte al final:
-     la TRM se mueve mes a mes y hacerlo al reves distorsiona el acumulado. */
-  const valor = (code, ent) => {
-    /* factVal y no rawStored: rawStored normaliza todo dinero a COP (aCopSiHaceFalta),
-       asi que pasarle su resultado a usdToDisplay convierte dos veces. El bloque
-       consolidado esta en USD y factVal lo devuelve tal cual. Mismo camino que
-       officialPygDisplay, que es el que alimenta las tarjetas KPI. */
-    if(F.escenario!=="Real" && F.escenario!=="__ALL__") return null;
-    /* Corrido del año: la MISMA fuente que el P&G acumulado de Finanzas (bloque
-       oficial «Acumulado H1» + meses posteriores). Sumar las filas mensuales daba otro
-       número para EE.UU. y Perú —contabilidad reclasificó rubros al cerrar el
-       semestre— y el mismo rubro salía distinto en dos pestañas. */
-    if(PYG_TABLA_MODO!=="mes"){
-      const v=officialAccumDisplay(code,ent,pers[pers.length-1]);
-      return v==null?null:Math.abs(v);
-    }
-    let t=null;
-    pers.forEach(per=>{
-      let v = factVal(code,per,ent,CONSOL_SEG);
-      if(v==null && ent==="Consolidado") v=sumaPaisesConsol(code,per);
-      if(v!=null) t=(t||0)+Math.abs(usdToDisplay(v,per));
-    });
-    return t;
-  };
-  const filas = PYG_COST_STACK.map(def=>{
-    const cel={}; let hay=false;
-    ORDEN.concat(["Consolidado"]).forEach(ent=>{
-      const v=valor(def.code,ent); cel[ent]=v; if(v!=null) hay=true; });
-    return hay ? {n:def.label, color:def.color, cel} : null;
-  }).filter(Boolean);
-  if(!filas.length) return null;
-  const cols = ORDEN.concat(["Consolidado"]);
-  const tot = {}; cols.forEach(c=>{ tot[c]=filas.reduce((a,f)=>a+(f.cel[c]||0),0); });
-  /* El periodo va escrito: la fila de tarjetas KPI de arriba muestra UN mes y esta
-     tabla el rango completo. Sin decirlo, ver una cifra arriba y otra mayor aqui hace
-     pensar que algo esta mal cuando las dos son correctas. */
-  const rango = PYG_TABLA_MODO==="mes" ? mesLargo(pers[0])
-              : mesCorto(pers[0])+" – "+mesCorto(pers[pers.length-1])+" · corrido del año";
-  const cifra = v => v==null ? '<span class="ct-sd">s/d</span>' : fMoney(v);
-  const wrap = document.createElement("div");
-  wrap.className = "consol-tabla";
-  const on = m => PYG_TABLA_MODO===m ? " on" : "";
-  let t = '<div class="ct-top"><div class="ct-h">4 paises &middot; '+rango+' &middot; '+F.moneda
-        + ' <span class="ct-n">no responde al selector de pais</span></div>'
-        + '<div class="ct-seg">'
-        + '<button type="button" class="ct-btn'+on("mes")+'" data-modo="mes">Último mes</button>'
-        + '<button type="button" class="ct-btn'+on("ytd")+'" data-modo="ytd">Corrido del año</button>'
-        + '</div></div>'
-        + '<div class="tbl-scroll"><table class="ptable"><thead><tr><th>Rubro</th>'
-        + cols.map(c=>'<th class="r'+(c==="Consolidado"?' ct-tot':'')+'">'
-                       +(ROT[c]||c)+'</th>').join("")
-        + '</tr></thead><tbody>';
-  filas.forEach(f=>{
-    t += '<tr><td><span class="pt" style="background:'+f.color+'"></span> '+f.n+'</td>'
-       + cols.map(c=>'<td class="r mono'+(c==="Consolidado"?' ct-tot':'')+'">'
-                      +cifra(f.cel[c])+'</td>').join("") + '</tr>';
-  });
-  t += '<tr style="font-weight:700;border-top:1px solid var(--line2)"><td>Total</td>'
-     + cols.map(c=>'<td class="r mono'+(c==="Consolidado"?' ct-tot':'')
-                    +'" style="color:var(--green)">'+cifra(tot[c]||null)+'</td>').join("")
-     + '</tr></tbody></table></div>'
-     + '<div class="ct-pie">'+(PYG_TABLA_MODO==="mes"
-        ? 'Fila mensual del bloque consolidado, convertida con la tasa del mes. La columna Consolidado es la fila oficial cuando existe; si no, la suma de los cuatro paises. '
-        : 'Misma fuente que el P&amp;G acumulado de Finanzas: bloque oficial «Acumulado H1» + meses posteriores'+(F.moneda==="COP"?' (Colombia en pesos de su libro; filiales a la tasa del corte)':'')+'. ')
-     + '<b>s/d</b> = ese rubro no existe en el plan de cuentas de ese pais, no es un cero.</div>';
-  wrap.innerHTML = t;
-  wrap.querySelectorAll(".ct-btn").forEach(b=>b.addEventListener("click",()=>{
-    PYG_TABLA_MODO = b.dataset.modo;
-    const nueva = tablaConsolidadaPyG();
-    if(nueva) wrap.replaceWith(nueva);
-  }));
-  return wrap;
-}
-
 /* La misma fila de la matriz, pero encima del grafico al que corresponde. Quien mira
    una barra apilada necesita saber ANTES que hay dentro y quien aporta; tenerlo solo en
    la tabla del pie obliga a bajar y volver. */
@@ -3414,21 +3075,9 @@ function renderChartCard(ch){
   /* La franja va antes del dibujo: primero se sabe que se esta mirando. Solo en la
      vista consolidada: si el lector ya eligio un pais, "que aporta cada pais" es una
      pregunta que no se esta haciendo, y la franja le roba el espacio al grafico. */
-  /* Solo el P&G oficial es consolidado y lleva UNA tabla consolidada. Los demas
-     graficos de Gastos responden al selector de pais, asi que "que aporta cada pais"
-     dejo de ser la pregunta y las cuatro tarjetas por grafico sobraban. */
-  if(ch.code==="pyg_oficial"){
-    const tc=tablaConsolidadaPyG(); if(tc) card.appendChild(tc);
-  }
+  if(alc && ch.code && F.pais==="__ALL__" && MTZ_FILAS.some(f=>f.code===ch.code))
+    card.appendChild(franjaGasto(ch.code));
   const body=document.createElement("div"); body.style.marginTop="8px"; card.appendChild(body);
-  /* De la primera grafica para abajo, la pestana de Gastos es por pais: el plan de
-     cuentas de las filiales no coincide con el de Colombia, asi que sumarlos seria
-     inventar un consolidado que la contabilidad no respalda. Con "Consolidado" puesto
-     se pide elegir uno en vez de dejar la grafica vacia sin explicar por que. */
-  if(GASTOS_POR_PAIS.has(ch.code) && (F.pais==="__ALL__"||esPaisConsol(F.pais))){
-    noData(body,"Este corte existe por pais, no consolidado. Elige Colombia, EE.UU., Peru o Costa Rica en el selector PAIS de la barra de arriba.");
-    return card;
-  }
   const M=F.moneda;
   if(ch.type==="bar"){ const s=seriesOf(ch.code); if(!s.values.some(v=>v!=null)){noData(body);return null;} const mny=isMoney(ch.code); barChart(body,s.labels,s.values,{fmt:v=>mny?fAxisMoney(v):fNum(v)}); }
   else if(ch.type==="line"){ const s=seriesOf(ch.code); const money=isMoney(ch.code),pct=unitOf(ch.code)==="%"; if(!s.values.some(v=>v!=null)){noData(body);return null;}
@@ -3445,76 +3094,27 @@ function renderChartCard(ch){
     h.textContent=ch.title+(lp&&lp!==F.periodo?" — "+nombreMes(lp):"");
     if(sana==null&&venc==null){ noData(body,"Sin datos de cartera"); }
     else {
-      /* Los dos pies de cartera van en la MISMA tarjeta, lado a lado: la composicion
-         dice cuanto esta vencido y el de clientes dice quien lo debe. Separados
-         obligaban a bajar y volver para responder una sola pregunta. */
-      const dosPies=document.createElement("div");
-      dosPies.className="dos-pies";
-      const pIzq=document.createElement("div"); const pDer=document.createElement("div");
-      dosPies.appendChild(pIzq); dosPies.appendChild(pDer); body.appendChild(dosPies);
-      const rot=document.createElement("div"); rot.className="pie-rot";
-      rot.textContent="Sana vs vencida"; pIzq.appendChild(rot);
-      pieChart(pIzq,[{n:"Sana",v:sana||0,c:"#00CC58"},{n:"Vencida",v:venc||0,c:"#F4685E"}]);
-      const lpCli=lastPeriodoWith("cartera_vencida_cliente")||lp;
-      const cli=byDetalle("cartera_vencida_cliente",{periodo:lpCli}).filter(x=>x.valor!=null&&x.valor!==0);
-      const rot2=document.createElement("div"); rot2.className="pie-rot";
-      rot2.textContent="Quien debe la vencida"+(lpCli&&lpCli!==lp?" — "+nombreMes(lpCli):"");
-      pDer.appendChild(rot2);
-      if(cli.length) pieChart(pDer,cli.map(x=>({n:x.detalle,v:x.valor})));
-      else noData(pDer,"Sin desglose por cliente");
-      if(cli.length&&lpCli&&lp&&lpCli<lp){
-        const nv=document.createElement("div"); nv.style.cssText="font-size:11px;color:var(--amber);margin-top:6px;line-height:1.5";
-        nv.textContent="El desglose por cliente es de "+nombreMes(lpCli)+": cartera aún no envía el de "+nombreMes(lp)+". Los porcentajes de la izquierda sí son de "+nombreMes(lp)+".";
-        pDer.appendChild(nv);
-      }
-      /* T-02 (revisado, 03-sep-2026): la tarjeta ya no muestra un dato ajeno sino
-         vencida / cartera_total, la misma cuenta que sale de este grafico, asi que la
-         contradiccion que explicaba esta nota desaparecio. Quedan dos cosas que el
-         lector si necesita saber, y solo se dicen cuando ocurren:
-
-           1. Que la cartera reportada no siempre concilia: hay meses en que sana mas
-              vencida no da cartera_total, y entonces el porcentaje depende de cual se
-              use. Junio de 2026: 27,81% contra 32,18%.
-           2. Que existe un indice_morosidad cargado con otra definicion, que el tablero
-              ya no usa. Callarlo dejaria a quien conozca esa cifra sin saber por que el
-              tablero muestra otra. */
-      const totCart=rawStored("cartera_total",{periodo:lp});
-      const suma=(sana!=null&&venc!=null)?sana+venc:null;
-      const morCargada=rawStored("indice_morosidad",{periodo:lp});
-      const conTotal=(venc!=null&&totCart)?venc/totCart*100:null;
-      const conSuma=(venc!=null&&suma)?venc/suma*100:null;
-      const avisos=[];
-      if(conTotal!=null&&conSuma!=null&&Math.abs(conTotal-conSuma)>0.5){
-        avisos.push("La cartera <b>sana + vencida</b> no cuadra con <b>cartera total</b> este mes. "
-          +"El índice sobre cartera total es "+fPctN(conTotal,1)+"; sobre sana + vencida sería "
-          +fPctN(conSuma,1)+". La tarjeta usa <b>cartera total</b>, que es el dato reportado con ese nombre. "
-          +"La diferencia es de la fuente y hay que revisarla con cartera.");
-      }
-      if(morCargada!=null&&conTotal!=null&&Math.abs(morCargada-conTotal)>1){
-        avisos.push("La base además trae un <b>índice de morosidad</b> cargado de "+fPctN(morCargada,1)
-          +", con una definición propia que nunca se documentó. El tablero <b>no lo usa</b>: calcula y declara "
-          +"su fórmula bajo la cifra.");
-      }
-      if(avisos.length){
+      pieChart(body,[{n:"Sana",v:sana||0,c:"#00CC58"},{n:"Vencida",v:venc||0,c:"#F4685E"}]);
+      /* T-02: el donut y la tarjeta "Indice de morosidad" llevan meses dando cifras
+         distintas en la MISMA pantalla --41,6% aqui, 77,3% arriba-- sin que nada
+         explique por que. No es un descuadre: la morosidad la entrega cartera con su
+         propia definicion y el tablero no la calcula. Pero eso vivia solo en el
+         comentario de una fila del Excel, donde nadie lo ve. Aqui si. */
+      const mor=rawStored("indice_morosidad",{periodo:lp});
+      const prop=(sana!=null&&venc!=null&&(sana+venc))?venc/(sana+venc)*100:null;
+      if(mor!=null&&prop!=null&&Math.abs(mor-prop)>1){
         const n=document.createElement("div");
         n.style.cssText="font-size:12.5px;color:var(--ink2);line-height:1.7;margin-top:12px;padding-top:11px;border-top:1px solid var(--line)";
-        n.innerHTML=avisos.join("<br><br>");
+        n.innerHTML="Este "+fPctN(prop,1)+" es <b>vencida ÷ total</b>, calculado sobre las dos cifras del gráfico. "
+          +"La tarjeta <b>Índice de morosidad</b> de arriba dice "+fPctN(mor,1)+" porque <b>la entrega cartera "
+          +"con su propia definición</b> — el tablero no la calcula. Las dos son ciertas y miden cosas distintas; "
+          +"la fórmula de la segunda está pendiente de que cartera la documente.";
         body.appendChild(n);
       }
     } }
   else if(ch.type==="recon"){ renderRecon(card,body,h); }
   else if(ch.type==="factura12"){ renderFactura12(card,body,h); }
-  else if(ch.type==="yoybars"){
-    /* Con Consolidado puesto esta grafica no se muestra: 2025 solo tiene a Colombia,
-       asi que no hay historia multipais contra la cual comparar. Sustituir el ano
-       anterior por Colombia y llamarlo consolidado produce crecimientos que no
-       existen. Elegido un pais, la comparacion si es contra si mismo y vale. */
-    /* Para las filiales (EE.UU., Perú, Costa Rica) no hay año anterior: se omite.
-       En Consolidado sí se muestra, separando Colombia contra Colombia del aporte
-       internacional (ver renderYoYBars). */
-    if(esPaisConsol(F.pais)) return null;
-    renderYoYBars(card,body,h,ch);
-  }
+  else if(ch.type==="yoybars"){ renderYoYBars(card,body,h,ch); }
   else if(ch.type==="yoylines"){ renderYoYLines(card,body,h,ch); }
   else if(ch.type==="pieyear"){ renderPieMulti(card,body,h,ch); }
   else if(ch.type==="colavg"){ renderColAvg(card,body,h,ch); }
@@ -3599,21 +3199,6 @@ function renderRecon(card,body,h){
   fijo.style.cssText="font-size:12px;color:var(--mute);line-height:1.65;margin-bottom:12px";
   fijo.textContent="Conciliación puntual de "+(perRec||"un cierre")+". No responde a los filtros de "
     +"país, escenario ni rango: viene de la hoja Analisis_Reconciliacion, que trae un solo corte.";
-  /* La hoja trae otra base que el P&G oficial del mismo mes (en mayo: 223.988 contra
-     233.075 consolidado / 222.539 Colombia). Se dice con las dos cifras al lado, para que
-     nadie tome la conciliación por el P&G ni al revés. */
-  (function(){
-    const MESN={enero:"01",febrero:"02",marzo:"03",abril:"04",mayo:"05",junio:"06",julio:"07",agosto:"08",septiembre:"09",octubre:"10",noviembre:"11",diciembre:"12"};
-    const m=/([a-záéíóú]+)\s+(\d{4})/i.exec(perRec||""); if(!m||!MESN[m[1].toLowerCase()])return;
-    const per=m[2]+"-"+MESN[m[1].toLowerCase()];
-    const ingRow=(rows.find(r=>norm(r.concepto).includes("ingresos operativos"))||rows[0]);
-    const cont=useUSD?ingRow.contUSD:ingRow.contCOP; if(cont==null)return;
-    const col=factVal("pyg_ingresos_operacionales",per,"Colombia",CONSOL_SEG,"Real");
-    let tot=factVal("pyg_ingresos_operacionales",per,"Consolidado",CONSOL_SEG,"Real"); if(tot==null) tot=sumaPaisesConsol("pyg_ingresos_operacionales",per);
-    if(col==null&&tot==null)return;
-    const d=v=>v==null?"—":fMoney(usdToDisplay(v,per));
-    fijo.textContent+=" Sus ingresos contables ("+fMoney(cont)+") no son el P&G oficial de "+mesCorto(per)+": Colombia "+d(col)+" · consolidado "+d(tot)+". La cifra vigente es la del P&G; esta hoja está pendiente de actualizar.";
-  })();
   body.appendChild(fijo);
   const get=(r,k)=>useUSD?(k==="c"?r.contUSD:r.ejeUSD):(k==="c"?r.contCOP:r.ejeCOP);
   /* tabla */
@@ -3645,25 +3230,15 @@ function renderFactura12(card,body,h){
     if(u==null&&ingV[i]!=null&&egrV[i]!=null){ utiEst[i]=true; return ingV[i]-egrV[i]; }
     return u; });
   if(!ingV.some(v=>v!=null)){ noData(body); return; }
-  /* La utilidad oficial incluye los ingresos no operacionales, y la tabla no los
-     mostraba: febrero decía 207.354 − 209.979 = +20.409, y el lector no podía cerrar
-     la cuenta. La columna sale del P&G oficial cuando existe; si no, es el residuo. */
-  const otrV=pers.map((p,i)=>{
-    const o=(F.escenario==="Real")?officialPygDisplay("pyg_ingresos_no_operacionales",p):null;
-    if(o!=null) return o;
-    if(utiV[i]!=null&&ingV[i]!=null&&egrV[i]!=null){ const r=utiV[i]-(ingV[i]-egrV[i]); return Math.abs(r)<1?0:r; }
-    return null; });
-  if(pers.length!==12) h.textContent="Facturación · "+(pers.length===1?mesCorto(pers[0]):pers.length+" meses");
   card.insertBefore(legendRow([{name:"Ingresos",color:"#3B82F6"},{name:"Egresos",color:"#F4685E"},{name:"Utilidad",color:"#00CC58"}]),body);
   const chartHost=document.createElement("div"); body.appendChild(chartHost);
   sparseLineChart(chartHost,pers.map(mesCorto),[
     {color:"#3B82F6",values:ingV},{color:"#F4685E",values:egrV},{color:"#00CC58",values:utiV}],{fmt:v=>fAxisMoney(v),axisFmt:fAxisMoney});
   /* tabla */
-  let t=`<table class="cat-table" style="margin-top:12px"><thead><tr><th>Mes</th><th style="text-align:right">Ingresos</th><th style="text-align:right">Otros ingresos</th><th style="text-align:right">Egresos</th><th style="text-align:right">Utilidad</th></tr></thead><tbody>`;
-  pers.forEach((p,i)=>{ t+=`<tr><td style="color:var(--ink)">${nombreMes(p)} ${p.slice(0,4)}</td><td class="mono" style="text-align:right">${fMoney(ingV[i])}</td><td class="mono" style="text-align:right;color:var(--mute)">${otrV[i]==null?"—":fMoney(otrV[i])}</td><td class="mono" style="text-align:right">${fMoney(egrV[i])}</td><td class="mono" style="text-align:right;color:${utiV[i]<0?'var(--red)':'var(--ink2)'}">${fMoney(utiV[i])}${utiEst[i]?' <span style="font-size:9px;color:var(--amber)">est.</span>':''}</td></tr>`; });
+  let t=`<table class="cat-table" style="margin-top:12px"><thead><tr><th>Mes</th><th style="text-align:right">Ingresos</th><th style="text-align:right">Egresos</th><th style="text-align:right">Utilidad</th></tr></thead><tbody>`;
+  pers.forEach((p,i)=>{ t+=`<tr><td style="color:var(--ink)">${nombreMes(p)} ${p.slice(0,4)}</td><td class="mono" style="text-align:right">${fMoney(ingV[i])}</td><td class="mono" style="text-align:right">${fMoney(egrV[i])}</td><td class="mono" style="text-align:right;color:${utiV[i]<0?'var(--red)':'var(--ink2)'}">${fMoney(utiV[i])}${utiEst[i]?' <span style="font-size:9px;color:var(--amber)">est.</span>':''}</td></tr>`; });
   t+="</tbody></table>";
-  t+=`<div style="font-size:10.5px;color:var(--mute);margin-top:6px">Utilidad antes de renta = Ingresos + Otros ingresos − Egresos (los egresos incluyen los financieros).</div>`;
-  if(utiEst.some(Boolean)) t+=`<div style="font-size:10.5px;color:var(--mute);margin-top:6px"><span style="color:var(--amber)">est.</span> = utilidad estimada (ingresos − egresos): el mes aún no tiene cifra oficial de utilidad antes de renta.</div>`;
+  if(utiEst.some(Boolean)) t+=`<div style="font-size:10.5px;color:var(--mute);margin-top:6px"><span style="color:var(--amber)">est.</span> = utilidad estimada (ingresos − egresos): el mes aún no tiene cifra oficial de utilidad neta.</div>`;
   const tbl=document.createElement("div"); tbl.innerHTML=t; body.appendChild(tbl);
 
   /* C-07 en esta serie: financeDisplayValue sustituye Colombia por debajo en los meses
@@ -3711,10 +3286,8 @@ function ingresoPaisDisplay(per, pais){
      seguia pintando el crecimiento ejecutado con ESCENARIO=Presupuesto puesto: el mismo
      defecto que ya se corrigio en factVal, reintroducido en una funcion nueva. */
   const esc=F.escenario;
-  /* factVal y no rawStored: rawStored normaliza a COP y usdToDisplay espera USD; la
-     mezcla daba 18,5 billones de pesos de ingresos 2026 y un +430.000% de crecimiento. */
-  if(esc!=="Real" && esc!=="__ALL__") return null;
-  const ofi=factVal("pyg_ingresos_operacionales", per, pais, CONSOL_SEG);
+  const ofi=rawStored("pyg_ingresos_operacionales",
+                      {periodo:per, pais:pais, segmento:CONSOL_SEG, escenario:esc});
   if(ofi!=null) return usdToDisplay(ofi, per);
   /* antes de que existiera el P&G oficial, Colombia vivia en la serie de gestion */
   if(pais!=="Colombia") return null;
@@ -3726,22 +3299,13 @@ function ingresoInternacionalDisplay(per){
   let tot=factVal("pyg_ingresos_operacionales", per, "Consolidado", CONSOL_SEG, F.escenario);
   if(tot==null) tot=sumaPaisesConsol("pyg_ingresos_operacionales", per);
   if(tot==null) return null;
-  /* col en USD, igual que tot: antes col salia de rawStored (COP) y la resta mezclaba
-     monedas. */
-  const col=factVal("pyg_ingresos_operacionales", per, "Colombia", CONSOL_SEG);
+  const col=rawStored("pyg_ingresos_operacionales",
+                      {periodo:per, pais:"Colombia", segmento:CONSOL_SEG, escenario:F.escenario});
   if(col==null) return null;
   const d=tot-col;
   return d<=0?null:usdToDisplay(d, per);
 }
 
-/* Ingreso de Colombia en PESOS (su moneda de origen), para medir crecimiento sin que
-   la TRM lo infle: enero 2026 contra enero 2025 es +21% en pesos y +41% en dólares,
-   y los 20 puntos de diferencia son la revaluación del peso, no ventas. */
-function ingresoColombiaCOP(per){
-  let v=valueOf("pyg_ingresos_operacionales",{periodo:per,pais:"Colombia",segmento:"",escenario:"Real"});
-  if(v==null) v=rawStored("ingresos_totales",{periodo:per,pais:"Colombia",escenario:"Real"});
-  return v;
-}
 /* Facturación 2025 vs 2026 por mes (barras agrupadas + Δ%) */
 function renderYoYBars(card,body,h,ch){
   const code=ch.code||"ingresos_totales"; const endYear=parseInt((F.periodo||S.periodos[S.periodos.length-1]).slice(0,4),10);
@@ -3772,12 +3336,9 @@ function renderYoYBars(card,body,h,ch){
     const colCur =MES.map(m=>ingresoPaisDisplay(endYear+"-"+m,"Colombia"));
     const intCur =MES.map(m=>ingresoInternacionalDisplay(endYear+"-"+m));
     if(!colPrev.some(v=>v!=null)&&!colCur.some(v=>v!=null)){ noData(body); return; }
-    /* el Δ% es Colombia contra Colombia: eso es crecimiento, lo otro es expansion.
-       Y se mide en PESOS aunque las barras esten en dolares (ver ingresoColombiaCOP). */
-    const copPrev=MES.map(m=>ingresoColombiaCOP(prev+"-"+m)), copCur=MES.map(m=>ingresoColombiaCOP(endYear+"-"+m));
-    const delta=MES.map((m,i)=>(copPrev[i]&&copCur[i]!=null)
-      ? "Δ"+Math.round((copCur[i]/copPrev[i]-1)*100)+"%"
-      : ((colPrev[i]&&colCur[i]!=null)?"Δ"+Math.round((colCur[i]/colPrev[i]-1)*100)+"%":""));
+    /* el Δ% es Colombia contra Colombia: eso es crecimiento, lo otro es expansion */
+    const delta=MES.map((m,i)=>(colPrev[i]&&colCur[i]!=null)
+      ? "Δ"+Math.round((colCur[i]/colPrev[i]-1)*100)+"%" : "");
     h.textContent=`Crecimiento ${prev} vs ${endYear} · Colombia, y el aporte internacional aparte`;
     card.insertBefore(legendRow([
       {name:"Colombia "+prev,color:"#3B82F6"},
@@ -3796,8 +3357,7 @@ function renderYoYBars(card,body,h,ch){
     const suma=(a)=>comunes.reduce((s,i)=>s+(a[i]||0),0);
     const cp=suma(colPrev), cc=suma(colCur), ic=suma(intCur);
     const rotuloMeses=comunes.length? mesLbl[comunes[0]]+"–"+mesLbl[comunes[comunes.length-1]] : "";
-    const cpCOP=suma(copPrev), ccCOP=suma(copCur);
-    const org=cpCOP?Math.round((ccCOP/cpCOP-1)*1000)/10:(cp?Math.round((cc/cp-1)*1000)/10:null);
+    const org=cp?Math.round((cc/cp-1)*1000)/10:null;
     const tot=cp?Math.round(((cc+ic)/cp-1)*1000)/10:null;
     /* El cierre en prosa obligaba a pescar cuatro cifras dentro de un parrafo. Como
        tabla se lee de un vistazo, que es lo que se le pide a un cierre. */
@@ -3822,9 +3382,8 @@ function renderYoYBars(card,body,h,ch){
       +'<div style="font-size:12px;color:var(--mute);line-height:1.7;margin-top:10px">'
       +'El Δ de cada barra es <b>Colombia contra Colombia</b>: eso es crecimiento. El total incluye '
       +'las filiales, que en '+prev+' no existían — describe cuánto más grande es la compañía, no '
-      +'cuánto creció el negocio. Cifras en '+F.moneda+'; <b>el Δ orgánico se mide en pesos</b>, la '
-      +'moneda de origen de Colombia, para que la TRM (que se movió entre los dos años) no lo infle. '
-      +'El total sí depende de la moneda.</div>';
+      +'cuánto creció el negocio. Cifras en '+F.moneda+'; el porcentaje cambia con la moneda porque '
+      +'la TRM se movió entre los dos años.</div>';
     body.appendChild(nota);
     return;
   }
@@ -3836,22 +3395,11 @@ function renderYoYBars(card,body,h,ch){
     if(r!=null){ vPrev[i]=toDisplay(r,prev+"-"+m); prevSoloColombia=true; } } });
   const vCur =MES.map(m=>read(endYear+"-"+m));
   if(!vPrev.some(v=>v!=null)&&!vCur.some(v=>v!=null)){ noData(body); return; }
-  /* Colombia: el Δ se mide en pesos, su moneda de origen, aunque las barras esten en
-     dolares. En dolares enero daba +41% cuando en pesos fue +21%: la diferencia es TRM. */
-  const enPesos=(F.pais==="Colombia"&&code==="ingresos_totales");
-  const copPrev=enPesos?MES.map(m=>ingresoColombiaCOP(prev+"-"+m)):null, copCur=enPesos?MES.map(m=>ingresoColombiaCOP(endYear+"-"+m)):null;
-  const delta=MES.map((m,i)=>{
-    if(enPesos&&copPrev[i]&&copCur[i]!=null) return "Δ"+Math.round((copCur[i]/copPrev[i]-1)*100)+"%";
-    return (vPrev[i]&&vCur[i]!=null)?"Δ"+Math.round((vCur[i]/vPrev[i]-1)*100)+"%":""; });
-  h.textContent=`Facturación ${prev} vs ${endYear}`+(enPesos&&F.moneda!=="COP"?" · Δ medido en pesos":"");
+  const delta=MES.map((m,i)=>(vPrev[i]&&vCur[i]!=null)?"Δ"+Math.round((vCur[i]/vPrev[i]-1)*100)+"%":"");
+  h.textContent=`Facturación ${prev} vs ${endYear}`;
   card.insertBefore(legendRow([{name:String(prev)+(prevSoloColombia?" (solo Colombia)":""),color:"#3B82F6"},{name:String(endYear),color:"#00CC58"}]),body);
   const chartHost=document.createElement("div"); body.appendChild(chartHost);
   groupedBarChart(chartHost,mesLbl,[{name:String(prev),color:"#3B82F6",values:vPrev},{name:String(endYear),color:"#00CC58",values:vCur}],{delta});
-  if(enPesos&&F.moneda!=="COP"){
-    const n=document.createElement("div"); n.style.cssText="font-size:11.5px;color:var(--mute);margin-top:8px;line-height:1.6";
-    n.textContent="Las barras están en "+F.moneda+"; el Δ de cada mes se calcula en pesos, la moneda en que Colombia factura, para que la revaluación del peso entre los dos años no se lea como crecimiento.";
-    body.appendChild(n);
-  }
 }
 
 /* Recurrente / No recurrente interanual (multi-línea por año) */
@@ -3888,12 +3436,6 @@ function renderPieMulti(card,body,h,ch){
   } else { /* sin segmento → últimos 2 periodos con datos */
     const withData=S.periodos.filter(p=>rawStored(code,{periodo:p})!=null); const last2=withData.slice(-2);
     panels=last2.map(p=>({title:nombreMes(p)+" "+p.slice(0,4), parts:byDetalle(code,{periodo:p}).map(x=>({detalle:x.detalle,valor:x.valor}))}));
-    const ult=last2[last2.length-1];
-    if(ult&&F.periodo&&ult<F.periodo){
-      const nv=document.createElement("div"); nv.style.cssText="font-size:11px;color:var(--amber);margin-bottom:8px;line-height:1.5";
-      nv.textContent="Últimos dos cortes cargados en la base. No hay distribución para "+mesLargo(F.periodo)+"; cuando se cargue, aparece aquí sola.";
-      body.insertBefore(nv,wrap);
-    }
   }
   if(!panels.length||!panels.some(pn=>pn.parts.length)){ noData(body); return; }
   panels.forEach(pn=>{ const box=document.createElement("div"); box.className="chart-card"; box.style.padding="10px 12px";
@@ -3955,24 +3497,13 @@ function renderCatalogo(host){
   const box=document.createElement("div"); box.className="cat-wrap"; host.appendChild(box);
   let rows="";
   S.order.forEach(code=>{ const c=S.catalog[code]; if(!c)return; if(norm(c.area)==="control")return;
-    /* Los códigos de la vista financiera (ingresos, EBITDA, utilidad, egresos, márgenes)
-       se leen por el MISMO camino que las tarjetas de Finanzas. Leídos de la serie
-       cruda, el Catálogo decía EBITDA "Por medir" y egresos de junio mientras Finanzas
-       mostraba EBITDA 133.162 y egresos de julio: dos verdades para el mismo código. */
-    let shown,per=F.periodo,vtxt;
-    if(FINANCE_VIEW_CODES.has(code)){
-      shown=financeDisplayValue(code,per);
-      if(shown==null){ const lp=lastFinancePeriodo(code); if(lp){shown=financeDisplayValue(code,lp);per=lp;} }
-      vtxt=shown!=null?fmtFinanceDisplay(code,shown):'<span style="color:var(--mute)">Por medir</span>';
-    } else {
-      const vRaw=valueOf(code,{periodo:F.periodo}); shown=vRaw;
-      if(vRaw==null){ const lp=lastPeriodoWith(code); if(lp){shown=valueOf(code,{periodo:lp});per=lp;} }
-      vtxt=shown!=null?fmtValue(code,shown,per):'<span style="color:var(--mute)">Por medir</span>';
-    }
+    const vRaw=valueOf(code,{periodo:F.periodo}); let shown=vRaw,per=F.periodo;
+    if(vRaw==null){ const lp=lastPeriodoWith(code); if(lp){shown=valueOf(code,{periodo:lp});per=lp;} }
+    const vtxt=shown!=null?fmtValue(code,shown,per):'<span style="color:var(--mute)">Por medir</span>';
     /* C-08: cada fila declara de que mes es su cifra. */
     const ptxt=shown==null?'<span style="color:var(--mute)">—</span>'
               :(per===F.periodo?'<span style="color:var(--mute)">'+per+'</span>':selloFrescura(per,F.periodo,true));
-    rows+=`<tr><td><span class="area-chip">${c.area||"—"}</span></td><td class="code">${code}</td><td style="color:var(--ink)">${nombreKPI(code,c)}</td>
+    rows+=`<tr><td><span class="area-chip">${c.area||"—"}</span></td><td class="code">${code}</td><td style="color:var(--ink)">${c.nombre||""}</td>
       <td class="mono" style="text-align:right;color:var(--ink)">${vtxt}</td><td class="mono" style="font-size:11px;white-space:nowrap">${ptxt}</td><td style="font-size:11px">${c.unidad||""}</td>
       <td style="font-size:11px;color:var(--mute)">${c.formula||""}</td><td style="font-size:11px">${c.origen||""}</td></tr>`; });
   box.innerHTML=`<table class="cat-table"><thead><tr><th>Área</th><th>Código</th><th>Nombre</th><th style="text-align:right">Valor</th><th>Periodo</th><th>Unidad</th><th>Fórmula / regla</th><th>Origen</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -4001,9 +3532,7 @@ function areasVisibles(){ return AREAS.filter(a=>!PESTANAS_APAGADAS.includes(a.i
    intermedios mientras alguien tantea. La lectura es tolerante: un hash incompleto o
    corrupto cae a los valores por defecto en vez de romper el arranque.
    ============================================================================ */
-/* trm va en la direccion junto con trmBase: si no, quien reciba el enlace ve las
-   mismas etiquetas pero cifras convertidas con otra tasa. */
-const HASH_CAMPOS=["pais","escenario","moneda","start","periodo","trmBase","trm"];
+const HASH_CAMPOS=["pais","escenario","moneda","start","periodo","trmBase"];
 
 function estadoAHash(){
   const b=document.querySelector(".tab-btn.active");
@@ -4021,15 +3550,9 @@ function urlEscribir(nuevoPaso){
 }
 /* Devuelve la pestana pedida, o null. Aplica lo que reconozca y descarta el resto:
    mas vale una vista parcialmente restaurada que un arranque roto. */
-/* Recibe opcionalmente el hash a interpretar. Hace falta porque en el arranque la
-   direccion original ya fue sobrescrita: applyPreset("def") termina en render(), y
-   render escribe la URL con los valores por defecto. Sin este parametro, un enlace
-   compartido llegaba aqui ya machacado y se perdian TODOS los filtros -- moneda,
-   pais, escenario, periodo y base de TRM -- no solo la tasa fija. */
-function hashAEstado(hashCrudo){
+function hashAEstado(){
   let p;
-  const fuente = (hashCrudo!=null && hashCrudo!=="") ? hashCrudo : (location.hash||"");
-  try{ p=new URLSearchParams(fuente.replace(/^#/,"")); }catch(e){ return null; }
+  try{ p=new URLSearchParams((location.hash||"").replace(/^#/,"")); }catch(e){ return null; }
   if(![...p.keys()].length) return null;
   const validos={
     pais:v=>v==="__ALL__"||S.facts.some(f=>f.pais===v),
@@ -4037,14 +3560,9 @@ function hashAEstado(hashCrudo){
     moneda:v=>["USD","COP"].includes(v),
     start:v=>S.periodos.includes(v),
     periodo:v=>S.periodos.includes(v),
-    trmBase:v=>["promedio","cierre","fija"].includes(v),
-    trm:v=>!isNaN(parseFloat(v))&&parseFloat(v)>0
+    trmBase:v=>["promedio","cierre"].includes(v)
   };
   HASH_CAMPOS.forEach(k=>{ const v=p.get(k); if(v!=null&&validos[k]&&validos[k](v)) F[k]=v; });
-  /* La direccion trae texto; F.trm tiene que ser numero o las divisiones de conversion
-     terminan operando sobre una cadena. */
-  F.trm=(F.trm!=null&&F.trm!=="")?parseFloat(F.trm):null;
-  if(isNaN(F.trm)||F.trm<=0) F.trm=null;
   if(F.start&&F.periodo&&F.start>F.periodo) F.start=F.periodo;
   const tab=p.get("tab");
   return (tab&&areasVisibles().some(a=>a.id===tab))?tab:null;
@@ -4139,29 +3657,8 @@ function coreEnd(){
 }
 function markPreset(p){ document.querySelectorAll("#f-presets button").forEach(b=>b.classList.toggle("on",b.dataset.p===p)); }
 function clearPreset(){ document.querySelectorAll("#f-presets button").forEach(b=>b.classList.remove("on")); }
-/* Deja los controles de TRM coherentes con F. Hace falta al arrancar y al volver con
-   Atras/Adelante: el desplegable puede quedar en "fija" mientras la casilla sigue
-   escondida y vacia, y entonces el tablero convierte con el promedio mientras el
-   control afirma que hay una tasa fija. */
-function syncTrmFijo(){
-  const sel=document.getElementById("f-trmbase");
-  const caja=document.getElementById("trm-fijo-ctrl");
-  const inp=document.getElementById("f-trm-fijo");
-  if(sel && [...sel.options].some(o=>o.value===F.trmBase)) sel.value=F.trmBase;
-  if(caja) caja.style.display=(F.trmBase==="fija")?"flex":"none";
-  if(inp){ const v=(F.trm&&!isNaN(F.trm)&&F.trm>0)?String(F.trm):""; if(inp.value!==v) inp.value=v; }
-}
 function syncFilterInputs(){ const s=document.getElementById("f-start"),e=document.getElementById("f-end");
-  if(s)s.value=F.start; if(e)e.value=F.periodo;
-  /* Los demas controles tambien tienen que reflejar F, no solo las fechas: al abrir un
-     enlace compartido F traia el pais, el escenario y la moneda del enlace mientras la
-     barra seguia mostrando los de arranque. */
-  const selPa=document.getElementById("f-pais");
-  if(selPa && [...selPa.options].some(o=>o.value===F.pais)) selPa.value=F.pais;
-  const selEs=document.getElementById("f-escenario");
-  if(selEs && [...selEs.options].some(o=>o.value===F.escenario)) selEs.value=F.escenario;
-  document.querySelectorAll("#f-moneda button").forEach(b=>b.classList.toggle("on", b.dataset.m===F.moneda));
-  syncTrmFijo(); }
+  if(s)s.value=F.start; if(e)e.value=F.periodo; }
 function applyPreset(p){ const end=coreEnd(), idxEnd=S.periodos.indexOf(end);
   /* M-35: "Total" debe abarcar TODA la base. Usaba coreEnd(), que es el ultimo mes
      CON dato real (2026-07), y dejaba fuera los periodos presupuestados hasta 2026-12. */
@@ -4207,26 +3704,10 @@ function fillFilters(){
     /* "Fin de mes" solo aparece cuando la hoja TRM trae esa columna con datos. */
     const ops=[["promedio","Promedio mensual"]];
     if(hayCierre()) ops.push(["cierre","Fin de mes"]);
-    ops.push(["fija","Tasa Fija (personalizada)"]);
     trmBaseSel.innerHTML=ops.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join("");
     if(!hayCierre()&&F.trmBase==="cierre") F.trmBase="promedio";
     trmBaseSel.value=F.trmBase;
-    trmBaseSel.onchange=e=>{
-      F.trmBase=e.target.value;
-      syncTrmFijo();
-      if(F.trmBase==="fija"){ const i=document.getElementById("f-trm-fijo"); if(i&&!i.disabled) i.focus(); }
-      render();
-    };
-    /* La casilla de la tasa fija. Se recalcula al teclear; vaciarla devuelve el
-       tablero a la tasa de la hoja en vez de dejarlo con la ultima que se escribio. */
-    const trmFijoInput=document.getElementById("f-trm-fijo");
-    if(trmFijoInput){
-      trmFijoInput.oninput=e=>{
-        const val=parseFloat(e.target.value);
-        F.trm=(!isNaN(val)&&val>0)?val:null;
-        render();
-      };
-    }
+    trmBaseSel.onchange=e=>{ F.trmBase=e.target.value; render(); };
     /* SA-04: un desplegable con una sola opcion es una promesa que el tablero no cumple.
        Mientras la hoja TRM no traiga la columna de cierre, el control se oculta y en su
        lugar queda dicha la tasa que se esta usando -- que es la informacion que el
@@ -4234,7 +3715,7 @@ function fillFilters(){
     const ctrl=trmBaseSel.closest(".ctrl");
     if(ctrl){
       const solaOpcion=ops.length<2;
-      ctrl.style.display=solaOpcion?"none":"flex";
+      ctrl.style.display=solaOpcion?"none":"";
       let nota=document.getElementById("trm-unica");
       if(solaOpcion){
         if(!nota){
@@ -4247,13 +3728,10 @@ function fillFilters(){
       } else if(nota){ nota.remove(); }
     }
   }
-  /* La direccion, tal como llego, ANTES de que nada la reescriba. applyPreset("def")
-     acaba llamando a render(), y render la sobrescribe con los valores por defecto. */
-  const hashInicial=location.hash;
   F.trm=null; applyPreset("def");
   /* SA-06: el hash manda sobre los valores por defecto. Va DESPUES de applyPreset para
      que lo que traiga la direccion no lo pise el preset de arranque. */
-  const tabHash=hashAEstado(hashInicial);
+  const tabHash=hashAEstado();
   if(tabHash){
     const nav=document.getElementById("tabnav");
     if(nav) nav.querySelectorAll(".tab-btn").forEach(x=>{
@@ -4263,9 +3741,6 @@ function fillFilters(){
     });
   }
   syncFilterInputs();
-  /* Y volver a pintar: hasta aqui F ya tiene lo que traia el enlace, pero la pantalla
-     sigue mostrando el resultado del preset de arranque. */
-  if(tabHash || hashInicial) render();
   /* N-01: primera medida y reajuste ante cualquier cambio de tamano de la barra. */
   ajustarAltoBarra();
   if(window.ResizeObserver){ new ResizeObserver(ajustarAltoBarra).observe(document.querySelector(".topbar")); }
@@ -4339,23 +3814,16 @@ function loadFromCache(){ try{ const raw=localStorage.getItem(CACHE_KEY); if(!ra
    INGRESO DE DATOS A LA NUBE (Apps Script)
    ============================================================ */
 /* Mapa área → plantilla + códigos permitidos. Respaldo local del CATALOGOS
-   del Sheet maestro (si doGet trae CATALOGOS, se prefiere esa versión).
-
-   3-sep-2026: quedan solo las áreas que alimentan una pestaña encendida. Se
-   retiraron Comercial_Ventas, Marketing y Customer_Success --sus tres pestañas
-   estan apagadas desde agosto, ver PESTANAS_APAGADAS-- e Internacional, cuyos
-   cuatro codigos no tienen una sola fila en la base. Ofrecer una plantilla para
-   cargar datos que despues no se ven en ninguna parte es mandar a alguien a
-   trabajar de gratis.
-
-   Nada se borro: las plantillas siguen en plantillas/ y los datos que ya estaban
-   cargados siguen en la base y en el Catalogo. Para volver a encender un area,
-   basta con devolver su renglon aqui y quitar su pestaña de PESTANAS_APAGADAS. */
+   del Sheet maestro (si doGet trae CATALOGOS, se prefiere esa versión). */
 const CARGA_AREAS={
   Finanzas:{plantilla:"Plantilla_Carga_Finanzas.xlsx",codigos:["ingresos_totales","ingresos_recurrentes","ingresos_no_recurrentes","costo_proveedor_ventas_pct","ebitda","utilidad_neta","egresos_totales","burn_rate_neto","runway_meses"]},
-  Ingresos_MRR:{plantilla:"Plantilla_Carga_Ingresos_MRR.xlsx",codigos:["mrr_final","arr","arr_mrr","arpa","retained_mrr","new_mrr","expansion_mrr","reactivacion_mrr","contraction_mrr","churned_mrr","churn_mrr_mensual","distribucion_ingresos"]},
+  Ingresos_MRR:{plantilla:"Plantilla_Carga_Ingresos_MRR.xlsx",codigos:["mrr_final","arr","arpa","retained_mrr","new_mrr","expansion_mrr","reactivacion_mrr","contraction_mrr","churned_mrr","churn_mrr_mensual","distribucion_ingresos"]},
+  Comercial_Ventas:{plantilla:"Plantilla_Carga_Comercial_Ventas.xlsx",codigos:["pipeline_total","pipeline_ponderado","ventas_cerradas","ticket_promedio","forecast_comercial","deals_ganados","distribucion_facturacion_tamano"]},
+  Marketing:{plantilla:"Plantilla_Carga_Marketing.xlsx",codigos:["leads_generados","cac_fully_loaded","ltv","ltv_cac","cac_payback_meses","gasto_marketing_total"]},
+  Customer_Success:{plantilla:"Plantilla_Carga_Customer_Success.xlsx",codigos:["clientes_final","clientes_nuevos","clientes_perdidos","clientes_en_riesgo","clientes_riesgo_pct","churn_clientes_pct","nps"]},
   Cartera_Liquidez:{plantilla:"Plantilla_Carga_Cartera_Liquidez.xlsx",codigos:["cartera_total","cartera_vencida","cartera_sana","dso","dpo","ccc","liquidez_total","indice_morosidad","cartera_mayor_60_pct","cartera_arr_pct","concentracion_cartera","write_off_ratio","cartera_cobro_legal","cartera_vencida_cliente"]},
-  Costos_Gastos:{plantilla:"Plantilla_Carga_Costos_Gastos.xlsx",codigos:["gasto_area","gasto_admin","gasto_comercial","gasto_desarrollo","costo_operacion","costo_proveedor","salario_area_pct"]}
+  Costos_Gastos:{plantilla:"Plantilla_Carga_Costos_Gastos.xlsx",codigos:["gasto_area","gasto_admin","gasto_comercial","gasto_desarrollo","costo_operacion","costo_proveedor","salario_area_pct"]},
+  Internacional:{plantilla:"Plantilla_Carga_Internacional.xlsx",codigos:["ingresos_internacionales","mrr_internacional","pipeline_internacional","clientes_internacionales"]}
 };
 /* C-10: la lista estaba escrita a mano y llevaba anos desfasada. Ofrecia Guatemala y
    Panama --que no tienen una sola fila en la base-- y NO ofrecia EE.UU. ni Peru, que son
@@ -4448,8 +3916,7 @@ function refrescarArea(){
   sel.innerHTML=codigosDeArea(area).map(c=>{ const cat=S.catalog[c]; const n=cat?cat.nombre:c;
     return `<option value="${c}">${n} (${c})</option>`; }).join("");
   document.getElementById("m-plantilla").href="plantillas/"+(def.plantilla||"");
-  /* El snapshot de pipeline era exclusivo de Comercial_Ventas, area retirada. */
-  const pw=document.getElementById("mm-pipe-wrap"); if(pw) pw.style.display="none";
+  document.getElementById("mm-pipe-wrap").style.display=(area==="Comercial_Ventas")?"inline-flex":"none";
   _masiva={filas:[],pipeline:[],area:area};
   document.getElementById("mm-nombre").textContent="ningún archivo";
   document.getElementById("mm-confirmar-wrap").style.display="none";
@@ -4574,34 +4041,13 @@ function initCarga(){
      con lo que hay, incluso despues de "Actualizar desde la nube". */
   document.getElementById("btn-datos").onclick=()=>{
     document.getElementById("mi-pais").innerHTML=cargaPaises().map(p=>`<option>${p}</option>`).join("");
-    abrirModal(); refrescarArea(); if(window.__verRuta) window.__verRuta("plantilla"); };
+    abrirModal(); refrescarArea(); };
   document.getElementById("m-cerrar").onclick=()=>{ guardarCfgDesdeModal(); cerrarModal(); };
   document.getElementById("modal-datos").addEventListener("click",e=>{ if(e.target.id==="modal-datos"){ guardarCfgDesdeModal(); cerrarModal(); } });
-  /* Las dos solapas de siempre (individual / masiva) viven DENTRO de la ruta
-     "Con plantilla"; la ruta "Un dato suelto" es un atajo a la individual. */
-  const verSolapa=cual=>{
-    document.getElementById("mt-ind").classList.toggle("on",cual==="ind");
-    document.getElementById("mt-mas").classList.toggle("on",cual==="mas");
-    document.getElementById("m-individual").style.display=(cual==="ind")?"block":"none";
-    document.getElementById("m-masiva").style.display=(cual==="mas")?"block":"none";
-  };
-  document.getElementById("mt-ind").onclick=()=>verSolapa("ind");
-  document.getElementById("mt-mas").onclick=()=>verSolapa("mas");
-  window.__verRuta=ruta=>{
-    document.querySelectorAll("#m-rutas .ruta").forEach(b=>b.classList.toggle("on",b.dataset.ruta===ruta));
-    const erp=ruta==="erp";
-    document.getElementById("m-erp").style.display=erp?"block":"none";
-    /* El camino del ERP no pasa por la nube: pedir la URL y el token ahi solo confunde. */
-    document.getElementById("m-credenciales").style.display=erp?"none":"grid";
-    document.getElementById("m-sec-plantilla").style.display=erp?"none":"block";
-    /* La ruta del dato suelto no necesita ni el selector de plantilla ni las solapas. */
-    const suelto=ruta==="suelto";
-    document.getElementById("m-aviso-mensual").style.display=suelto?"none":"block";
-    document.getElementById("m-mtabs").style.display=suelto?"none":"flex";
-    document.getElementById("m-plantilla").parentElement.style.display=suelto?"none":"block";
-    if(!erp) verSolapa(suelto?"ind":"mas");
-  };
-  document.querySelectorAll("#m-rutas .ruta").forEach(b=>b.onclick=()=>window.__verRuta(b.dataset.ruta));
+  document.getElementById("mt-ind").onclick=()=>{ document.getElementById("mt-ind").classList.add("on"); document.getElementById("mt-mas").classList.remove("on");
+    document.getElementById("m-individual").style.display="block"; document.getElementById("m-masiva").style.display="none"; };
+  document.getElementById("mt-mas").onclick=()=>{ document.getElementById("mt-mas").classList.add("on"); document.getElementById("mt-ind").classList.remove("on");
+    document.getElementById("m-individual").style.display="none"; document.getElementById("m-masiva").style.display="block"; };
   document.getElementById("mi-enviar").onclick=enviarIndividual;
   const fp=document.getElementById("file-plantilla");
   document.getElementById("mm-elegir").onclick=()=>fp.click();
@@ -4678,11 +4124,11 @@ async function arrancar(){
       }
     }
   }
-  /* El aviso de "de memoria, puede estar desactualizado" se retiro el 3-sep-2026:
-     salia tambien cuando el cache tenia exactamente la misma base del disco, asi que
-     avisaba de un problema que casi nunca existia. La fuente y su fecha ya van en la
-     franja de arriba, que es donde hay que mirarlo. */
-  loadFromCache();
+  if(loadFromCache()){
+    /* aviso: lo que se ve viene de la memoria del navegador, puede estar desactualizado */
+    const t=document.getElementById("ts");
+    if(t) t.innerHTML=t.textContent+' <span style="color:var(--amber)">· de memoria, puede estar desactualizado — usa «Cargar BD»</span>';
+  }
 }
 initUI();
 </script>

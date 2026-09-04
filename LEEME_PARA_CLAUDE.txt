@@ -21,6 +21,18 @@ COMO SE TRABAJA (desde el 20-ago-2026)
   a la vez. Si hay trabajo cruzado, los botones se detienen en vez de arriesgar cifras.
   Ver seccion 1.1 del README.
 
+  DESDE EL 03-SEP-2026, Subir_A_GitHub.bat revisa la base antes de enviarla:
+    - Vuelca el Excel a SQLite y corre los seis controles de exportar_sqlite.py.
+    - Si V1, V2, V5 o V6 encuentran algo --consolidado que no suma, utilidad que no
+      cuadra, la misma llave dos veces, un mes futuro marcado Real-- NO SUBE NADA y
+      dice cual es y en que mes. Son cifras rotas dentro de la base, no criterios.
+    - V3 y V4 solo avisan: dependen de terceros y frenar por ellos acabaria en que
+      alguien apague el control.
+    - De paso regenera migracion/coco.sql, que SI se versiona: es el volcado de texto
+      con el que se puede ver QUE cifra cambio entre dos versiones. El .xlsx de al
+      lado no se puede comparar; este si.
+  Si no hay Python en el computador, avisa y deja subir sin revisar (preguntando).
+
 LO QUE CAMBIO EL 20-AGO-2026
   - BD_PYG_OFICIAL (capa de archivo): el julio de Colombia estaba convertido a la
     TRM de junio. Corregido con migracion/corregir_trm_julio_trazabilidad.py.

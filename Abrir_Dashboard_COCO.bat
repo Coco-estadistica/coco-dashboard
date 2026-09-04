@@ -9,7 +9,7 @@ cd /d "%~dp0"
 echo.
 echo   COCO Tecnologias - Cockpit Financiero
 echo   -------------------------------------------------
-echo   Archivo: Dashboard_COCO.html  (unico oficial)
+echo   Archivo: index.html  (unico oficial)
 echo   Base:    migracion\BD_MAESTRA_COCO.xlsx
 echo.
 echo   Abriendo el tablero en tu navegador...
@@ -18,7 +18,7 @@ echo   Para terminar: cierra esta ventana.
 echo.
 
 REM Abre el navegador tras un breve arranque del servidor
-start "" cmd /c "timeout /t 2 >nul & start http://localhost:8740/Dashboard_COCO.html"
+start "" cmd /c "timeout /t 2 >nul & start http://localhost:8740/index.html"
 
 REM Arranca el servidor (queda corriendo en esta ventana)
 python -m http.server 8740
