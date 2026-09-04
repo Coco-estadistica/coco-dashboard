@@ -1853,6 +1853,7 @@ const BRIDGE_STEPS=[
   {code:"pyg_gasto_administracion",      label:"Gastos de\nadministración",     tipo:"neg"},
   {code:"pyg_gasto_ventas",              label:"Gastos de\nventas",             tipo:"neg"},
   {code:"pyg_gasto_proyectos",           label:"Operación /\nproyectos",        tipo:"neg"},
+  {code:"pyg_reclasif_honorarios_peru",  label:"Reclasif.\nhonorarios Perú",    tipo:"neg"},
   {code:"_utilidad_operativa",           label:"Resultado de\nla operación",    tipo:"subtotal"},
   {code:"pyg_ingresos_no_operacionales", label:"Ingresos no\noperacionales",    tipo:"pos"},
   {code:"pyg_gastos_financieros",        label:"Gastos\nfinancieros",           tipo:"neg"},
@@ -1916,7 +1917,7 @@ function officialAccumVal(code,pais,periodo){
      reconversión de Colombia, y el subtotal no cuadraría con sus propias líneas. */
   if(code==="_utilidad_operativa"){
     const partes=[["pyg_ingresos_operacionales",1],["pyg_costo_ventas",-1],["pyg_gasto_administracion",-1],
-                  ["pyg_gasto_ventas",-1],["pyg_gasto_proyectos",-1]];
+                  ["pyg_gasto_ventas",-1],["pyg_gasto_proyectos",-1],["pyg_reclasif_honorarios_peru",-1]];
     let s=null;
     partes.forEach(par=>{ const v=officialAccumVal(par[0],pais,periodo); if(v!=null) s=(s||0)+par[1]*v; });
     return s;
@@ -1970,8 +1971,9 @@ function officialAccumDisplay(code,pais,periodo){
 }
 /* Un renglón vacío puede ser dos cosas MUY distintas:
      - "s/d": la cuenta existe para ese país pero el mes no se cargó  -> hay que perseguirlo.
-     - "n/a": la cuenta no pertenece a esa entidad (p. ej. el costo del servicio, clase 7,
-              solo existe en Colombia) -> no falta nada, y marcarlo como faltante sería una alarma falsa.
+     - "n/a": la cuenta no pertenece a esa entidad (p. ej. la reclasificación de honorarios
+              de Perú es un ajuste de consolidación que solo vive en EE.UU. y Consolidado)
+              -> no falta nada, y marcarlo como faltante sería una alarma falsa.
    Se decide con los datos, no con una lista fija: si el código nunca aparece para ese
    país en ningún periodo, no aplica. */
 function codigoAplicaA(code,pais){ return S.facts.some(f=>f.codigo===code&&f.pais===pais); }
@@ -2267,6 +2269,7 @@ const CONSOL_CUENTAS_H1=[
   {code:"pyg_gasto_administracion",      cta:"51",     label:"Gastos de administración"},
   {code:"pyg_gasto_ventas",              cta:"52",     label:"Gastos de ventas"},
   {code:"pyg_gasto_proyectos",           cta:"75",     label:"Gastos de operación / proyectos"},
+  {code:"pyg_reclasif_honorarios_peru",  cta:"",       label:"Reclasificación honorarios Perú pagados por EE.UU."},
   {code:"_utilidad_operativa",           cta:"",       label:"Resultado de la operación", subtotal:true, calc:true},
   {code:"pyg_ingresos_no_operacionales", cta:"420505", label:"Ingresos no operacionales"},
   {code:"pyg_gastos_financieros",        cta:"530505", label:"Gastos financieros"},
@@ -2325,8 +2328,8 @@ function factValConsol(code,perOrMeses,pais,segmento){
   segmento=segmento||"Consolidación USD";
   const meses=Array.isArray(perOrMeses)?perOrMeses:[perOrMeses];
   if(code==="_utilidad_operativa"){
-    const partes=["pyg_ingresos_operacionales","pyg_costo_ventas","pyg_gasto_administracion","pyg_gasto_ventas","pyg_gasto_proyectos"];
-    const signos=[1,-1,-1,-1,-1]; let s=null;
+    const partes=["pyg_ingresos_operacionales","pyg_costo_ventas","pyg_gasto_administracion","pyg_gasto_ventas","pyg_gasto_proyectos","pyg_reclasif_honorarios_peru"];
+    const signos=[1,-1,-1,-1,-1,-1]; let s=null;   /* la reclasificación también resta */
     partes.forEach((c,i)=>{ const v=factValSum(c,meses,pais,segmento); if(v!=null) s=(s||0)+signos[i]*v; });
     return s;
   }
