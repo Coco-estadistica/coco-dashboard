@@ -125,7 +125,7 @@ const baseChart = {
     'Castigo o depuración, no recuperación. Invalida el dato del último mes.', ORANGE);
 
   const dec = [
-    ['Intervenir los dos puntos que pierden', 'Cartagena-Suzuki y Puerto Berrío AKT llegan al mes 6 con 12,4% y 12,0% de mora, contra 5,8% del mejor punto. Cerrar esa brecha vale unos COP 71 millones al año.'],
+    ['Auditar los dos puntos con peor comportamiento', 'Cartagena-Suzuki y Puerto Berrío AKT llegan al mes 6 con 12,4% y 12,0% de mora, contra 5,8% del mejor punto. La señal es la más fuerte que hay, aunque no alcanza significancia estadística; auditar cuesta poco y, si es real, la brecha vale COP 71 millones al año.'],
     ['Cuadrar el castigo con contabilidad', 'Confirmar qué se castigó, contra qué provisión y con qué efecto en el P&G, antes de reportar cualquier mejora de la mora.'],
     ['Pedir tres campos que hoy no existen', 'Cuota inicial, score de buró y asesor comercial. Sin ellos no se puede fijar el punto de corte de aprobación.'],
   ];
@@ -425,9 +425,9 @@ ANIOS.forEach(([anio, titulo]) => {
     catAxisLabelFontSize: 10.5, valAxisLabelFontSize: 10, barGapWidthPct: 40,
   }));
 
-  txt(s, 'No es la plaza, es la operación', { x: 8.75, y: 2.12, w: 4.0, h: 0.28,
+  txt(s, 'Lo que llama la atención', { x: 8.75, y: 2.12, w: 4.0, h: 0.28,
     fontSize: 13, bold: true, color: INK, fontFace: BODY });
-  txt(s, 'En Puerto Berrío operan tres líneas distintas y rinden distinto entre sí: Suzuki va en 5,8%, Hero en 8,1% y AKT en 12,0%, con la misma ciudad y la misma clientela. La diferencia está en cómo origina cada punto, no en el mercado que atiende.',
+  txt(s, 'En Puerto Berrío operan tres líneas distintas y rinden distinto entre sí: Suzuki va en 5,8%, Hero en 8,1% y AKT en 12,0%, con la misma ciudad y la misma clientela. Si la diferencia es real, apunta a cómo origina cada punto y no al mercado que atiende. Eso es lo que la auditoría debe establecer.',
     { x: 8.75, y: 2.44, w: 4.0, h: 1.45, fontSize: 11, color: MUTED, fontFace: BODY,
       valign: 'top', lineSpacing: 15 });
 
@@ -437,10 +437,10 @@ ANIOS.forEach(([anio, titulo]) => {
   txt(s, 'menos en mora si Cartagena-Suzuki y Puerto Berrío AKT rindieran como el promedio de los demás',
     { x: 8.99, y: 4.68, w: 3.55, h: 0.7, fontSize: 11, color: '6E4130', fontFace: BODY,
       valign: 'top', lineSpacing: 15 });
-  txt(s, 'Esos dos puntos ponen el 33% del capital y el 42% de la mora. La brecha son COP 22 millones sobre las cinco cosechas medidas; anualizada al ritmo de colocación de 2026, COP 71 millones.',
+  txt(s, 'Esos dos puntos ponen el 33% del capital y el 42% de la mora. La brecha son COP 22 millones sobre las cinco cosechas medidas; anualizada, COP 71 millones — si la diferencia es real.',
     { x: 8.99, y: 5.38, w: 3.55, h: 0.78, fontSize: 9.5, color: '8A6552', fontFace: BODY,
       valign: 'top', lineSpacing: 12 });
-  footer(s, 'Se excluye Administración por tener menos de 20 créditos. Denominador: capital inicial de los créditos vigentes, que a los 6 meses cubre el 81% de lo colocado.');
+  footer(s, 'Se excluye Administración por tener menos de 20 créditos. Denominador: capital inicial de los créditos vigentes, que a los 6 meses cubre el 81% de lo colocado. Con 21 a 67 créditos por punto, la diferencia entre ellos no alcanza significancia estadística (p = 0,91 a esta edad; p = 0,083 controlando la edad sobre toda la muestra): es la señal más fuerte disponible, no un hecho probado.');
   s.addNotes('La comparación es a edad constante, que es lo que la hace defendible. Si preguntan por qué no se ven todas las cosechas: a los 6 meses la cobertura es del 81%, más allá el sesgo de supervivencia la arruina.');
 }
 
@@ -541,7 +541,7 @@ ANIOS.forEach(([anio, titulo]) => {
     color: WHITE, fontFace: HEAD });
 
   const dec = [
-    ['Intervenir Cartagena-Suzuki y Puerto Berrío AKT', 'Auditoría de originación de los dos puntos con peor mora al mes 6: expediente, avalúo, verificación de ingresos y cuota inicial efectiva de las cosechas 2025–2026.', 'Gerencia comercial', '31 de octubre', 'COP 71 M/año'],
+    ['Intervenir Cartagena-Suzuki y Puerto Berrío AKT', 'Auditoría de originación de los dos puntos con peor mora al mes 6: expediente, avalúo, verificación de ingresos y cuota inicial efectiva de las cosechas 2025–2026. Se somete como decisión bajo incertidumbre: la diferencia observada no alcanza significancia (p = 0,083).', 'Gerencia comercial', '31 de octubre', 'Hasta COP 71 M/año'],
     ['Cuadrar el castigo de julio con contabilidad', 'Confirmar qué se castigó, contra qué provisión, con qué autorización y con qué efecto en el P&G del año. Sin esto no se reporta mejora de mora a la junta ni al fondeador.', 'Contabilidad', '15 de octubre', 'COP 549 M'],
     ['Incorporar tres campos al reporte mensual', 'Cuota inicial y precio de factura, score de buró en la originación, y asesor comercial. Que el corte de octubre ya salga con ellos.', 'Sistemas y crédito', '30 de nov.', 'Fijar política'],
   ];

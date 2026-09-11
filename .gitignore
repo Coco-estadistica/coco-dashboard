@@ -30,3 +30,6 @@ cosechas_districolmotos/junta/node_modules/
 cosechas_districolmotos/junta/package*.json
 cosechas_districolmotos/junta/slide-*.jpg
 cosechas_districolmotos/junta/*.pdf
+cosechas_districolmotos/comite/node_modules
+cosechas_districolmotos/comite/slide-*.jpg
+cosechas_districolmotos/comite/*.pdf
