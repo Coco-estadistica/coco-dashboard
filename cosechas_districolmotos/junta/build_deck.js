@@ -7,6 +7,7 @@ const D = JSON.parse(fs.readFileSync(__dirname + '/deck_data.json', 'utf8'));
 // ---------------------------------------------------------------- paleta y tipos
 const NAVY = '12263A', INK = '18242F', MUTED = '62717F', SOFT = '8B98A5';
 const WHITE = 'FFFFFF', SURF = 'F2F5F8', LINE = 'DDE3EA';
+const PIE = '6B7785';   // el pie necesita contraste real, no gris decorativo
 const BLUE = '2A78D6', ORANGE = 'EB6834', RED = 'C4342F', GREEN = '0F7B3F';
 const ORD = ['9EC5F4', '5598E7', '2A78D6', '1C5CAB', '0D366B'];
 const HEAD = 'Cambria', BODY = 'Calibri';
@@ -34,8 +35,8 @@ function header(s, kicker, title, sub) {
 }
 
 function footer(s, t) {
-  txt(s, t, { x: MX, y: H - 0.78, w: W - 2 * MX, h: 0.56, fontSize: 9,
-    color: SOFT, fontFace: BODY, valign: 'bottom', lineSpacing: 12 });
+  txt(s, t, { x: MX, y: H - 0.95, w: W - 2 * MX, h: 0.55, fontSize: 9,
+    color: PIE, fontFace: BODY, valign: 'top', lineSpacing: 12 });
 }
 
 function card(s, x, y, w, h, fill) {
@@ -60,8 +61,8 @@ function numbered(s, x, y, w, n, title, bodyTxt) {
     color: WHITE, align: 'center', valign: 'middle', fontFace: BODY });
   txt(s, title, { x: x + 0.5, y: y - 0.02, w: w - 0.5, h: 0.52, fontSize: 13, bold: true,
     color: INK, fontFace: BODY, valign: 'top', lineSpacing: 17 });
-  txt(s, bodyTxt, { x: x + 0.5, y: y + 0.54, w: w - 0.5, h: 1.1, fontSize: 10.8,
-    color: MUTED, fontFace: BODY, valign: 'top', lineSpacing: 14 });
+  txt(s, bodyTxt, { x: x + 0.5, y: y + 0.54, w: w - 0.5, h: 1.25, fontSize: 11,
+    color: MUTED, fontFace: BODY, valign: 'top', lineSpacing: 15 });
 }
 
 // eje de MOB común a todos los gráficos de curvas
@@ -130,7 +131,7 @@ const baseChart = {
   ];
   txt(s, 'Lo que se pide aprobar', { x: MX, y: 4.1, w: 6, h: 0.3, fontSize: 13,
     bold: true, color: INK, fontFace: BODY });
-  dec.forEach(([t, b], i) => numbered(s, MX + i * 4.05, 4.6, 3.85, i + 1, t, b));
+  dec.forEach(([t, b], i) => numbered(s, MX + i * 4.05, 4.75, 3.85, i + 1, t, b));
   footer(s, 'Indicador: capital vencido de los créditos con más de 30 días de mora, sobre la colocación original de cada cosecha. Series cortadas en jun-2026.');
   s.addNotes('Arrancar por aquí. Los tres números de arriba son el informe entero. Las tres decisiones de abajo son lo que se somete a aprobación.');
 }
@@ -206,7 +207,7 @@ const baseChart = {
   const data = years.map(y => ({ name: 'Cosechas ' + y, labels: cada(6),
     values: serieMob(D.curvas_anio[y].mob, D.curvas_anio[y].pct) }));
   s.addChart(pres.ChartType.line, data, Object.assign({}, baseChart, {
-    x: MX, y: 2.02, w: 8.5, h: 4.55, chartColors: ORD, lineSize: 2.5,
+    x: MX, y: 2.02, w: 8.5, h: 4.35, chartColors: ORD, lineSize: 2.5,
     showLegend: true, legendPos: 'b', legendFontSize: 10.5, legendColor: MUTED,
     valAxisMaxVal: 9, valAxisMajorUnit: 3, catAxisLabelFontSize: 10, valAxisLabelFontSize: 10,
     showCatAxisTitle: true, catAxisTitle: 'Meses en libros desde el desembolso (MOB)',
@@ -270,13 +271,13 @@ ANIOS.forEach(([anio, titulo]) => {
   const s = pres.addSlide();
   header(s, 'Cosecha por cosecha · ' + anio, titulo, null);
 
-  const cols = 4, gx = 0.14, gy = 0.30;
+  const cols = 4, gx = 0.14, gy = 0.28;
   const cw = (W - 2 * MX - (cols - 1) * gx) / cols;
   const filas = Math.ceil(cos.length / cols);
-  const ch = filas >= 3 ? 1.40 : 2.00;   // una sola fila: cuadro más alto, y el resto lo explica la tarjeta
+  const ch = filas >= 3 ? 1.34 : 2.00;   // una sola fila: cuadro más alto, y el resto lo explica la tarjeta
   cos.forEach((c, i) => {
     const x = MX + (i % cols) * (cw + gx);
-    const yy = 1.75 + Math.floor(i / cols) * (ch + gy);
+    const yy = 1.70 + Math.floor(i / cols) * (ch + gy);
     const v = D.cosechas[c];
     txt(s, cosNice(c), { x, y: yy - 0.24, w: cw * 0.55, h: 0.22, fontSize: 11,
       bold: true, color: INK, fontFace: BODY });
@@ -319,7 +320,7 @@ ANIOS.forEach(([anio, titulo]) => {
   const s = pres.addSlide();
   header(s, 'Todo junto', '52 de las 56 cosechas, en una sola vista',
     'Cada fila es un mes de desembolso; cada columna, un mes de vida. Cuanto más oscuro, más mora. Faltan las cuatro últimas cosechas de 2026: el archivo no trae su porcentaje calculado antes del corte de junio.');
-  s.addImage({ path: __dirname + '/heatmap.png', x: MX, y: 2.05, w: 10.8, h: 4.35 });
+  s.addImage({ path: __dirname + '/heatmap.png', x: MX, y: 2.05, w: 9.95, h: 4.0 });
   const notas = [
     ['Dos bandas oscuras', 'Las cosechas de 2022 y las de abril a septiembre de 2023.'],
     ['El aclaramiento', 'De 2024 en adelante, sostenido. Es la corrección.'],
@@ -328,10 +329,10 @@ ANIOS.forEach(([anio, titulo]) => {
   ];
   let y = 2.1;
   notas.forEach(([t, b]) => {
-    txt(s, t, { x: 11.55, y, w: 1.6, h: 0.36, fontSize: 10.5, bold: true, color: INK,
+    txt(s, t, { x: 10.82, y, w: 1.89, h: 0.32, fontSize: 11, bold: true, color: INK,
+      fontFace: BODY, valign: 'top', lineSpacing: 14 });
+    txt(s, b, { x: 10.82, y: y + 0.34, w: 1.89, h: 0.82, fontSize: 9.8, color: MUTED,
       fontFace: BODY, valign: 'top', lineSpacing: 13 });
-    txt(s, b, { x: 11.55, y: y + 0.38, w: 1.6, h: 0.85, fontSize: 9.2, color: MUTED,
-      fontFace: BODY, valign: 'top', lineSpacing: 12 });
     y += 1.14;
   });
   footer(s, 'Escala común: 0% a 12% o más de la colocación en mora 30+. Observaciones hasta jun-2026.');
@@ -343,7 +344,8 @@ ANIOS.forEach(([anio, titulo]) => {
   header(s, 'Comportamiento de la mora', 'A los 60 días de mora ya casi no hay vuelta atrás',
     'Hacia dónde se mueve el saldo de un mes al siguiente, según el balde de mora en que esté. Promedio de las transiciones de feb a jun de 2026, ponderado por saldo.');
 
-  const rr = D.roll.filter(r => ['1-30', '31-60', '61-90'].includes(r.desde));
+  const rr = D.roll.filter(r => ['1-30', '31-60', '61-90'].includes(r.desde)).reverse();
+  // las cifras van en el texto, no dentro de franjas de 8 px donde se cortan
   const sale = r => Math.max(0, Math.round((100 - r.cura - r.igual - r.empeora) * 10) / 10);
   s.addChart(pres.ChartType.bar, [
     { name: 'Se pone al día', labels: rr.map(r => r.desde + ' días'), values: rr.map(r => r.cura) },
@@ -353,8 +355,6 @@ ANIOS.forEach(([anio, titulo]) => {
   ], Object.assign({}, baseChart, {
     x: MX, y: 2.15, w: 7.6, h: 3.7, barDir: 'bar', barGrouping: 'stacked',
     chartColors: [GREEN, '6E7D8C', RED, 'B9C3CD'], valAxisMaxVal: 100, valAxisMajorUnit: 25,
-    showValue: true, dataLabelPosition: 'ctr', dataLabelColor: 'FFFFFF',
-    dataLabelFontSize: 10, dataLabelFontBold: true, dataLabelFormatCode: '0"%"',
     catAxisLabelFontSize: 11, valAxisLabelFontSize: 10,
     showLegend: true, legendPos: 'b', legendFontSize: 10.5, legendColor: MUTED,
   }));
@@ -364,10 +364,10 @@ ANIOS.forEach(([anio, titulo]) => {
   card(s, 8.5, 3.97, 4.2, 1.88);
   txt(s, 'Dónde está la palanca', { x: 8.74, y: 4.17, w: 3.8, h: 0.28, fontSize: 12.5,
     bold: true, color: INK, fontFace: BODY });
-  txt(s, 'Del balde de 1 a 30 días, el 41% se recupera solo. Del de 31 a 60, apenas el 9%. Y del de 61 a 90, más de la mitad rueda al balde siguiente. Pasados los 90 días, el 70% se queda donde está y solo el 1% se pone al día.\n\nLa cobranza que sirve es la de los primeros treinta días. Después de los sesenta, lo que se hace es recuperar garantía, no cartera.',
-    { x: 8.74, y: 4.47, w: 3.75, h: 1.35, fontSize: 10.5, color: MUTED, fontFace: BODY,
+  txt(s, 'Se pone al día el 41% del balde de 1 a 30 días, el 9% del de 31 a 60 y el 9% del de 61 a 90. Empeora el 20%, el 31% y el 53%. Pasados los 90 días, el 70% se queda donde está y solo el 1% se recupera.\n\nLa cobranza que sirve es la de los primeros treinta días. Después de los sesenta, lo que se hace es recuperar garantía, no cartera.',
+    { x: 8.74, y: 4.47, w: 3.75, h: 1.45, fontSize: 10.5, color: MUTED, fontFace: BODY,
       valign: 'top', lineSpacing: 14 });
-  footer(s, 'Se excluye la transición de junio a julio de 2026 porque el castigo la distorsiona. "Empeora" incluye el saldo que pasa a un balde de mayor altura. No se grafica el balde de 91 a 180 días porque su franja de cura es demasiado delgada para etiquetarla; su dato está en el texto.');
+  footer(s, 'Se excluye la transición de junio a julio de 2026 porque el castigo la distorsiona. "Empeora" incluye el saldo que pasa a un balde de mayor altura. No se grafica el balde de 91 a 180 días para mantener el foco donde todavía hay margen de acción; su dato está en el texto de la derecha.');
   s.addNotes('Esta lámina justifica presupuesto de cobranza temprana. El 41% de cura en el primer balde contra 9% en el segundo es el argumento.');
 }
 
@@ -387,9 +387,9 @@ ANIOS.forEach(([anio, titulo]) => {
   const alt = D.altura;
   s.addChart(pres.ChartType.bar, [{ name: 'Saldo', labels: alt.map(a => a.balde),
     values: alt.map(a => a.saldo_M) }], Object.assign({}, baseChart, {
-    x: MX, y: 4.15, w: 7.4, h: 2.55, barDir: 'col', chartColors: [BLUE],
-    valAxisLabelFormatCode: '#,##0', showValue: true, dataLabelPosition: 'outEnd',
-    dataLabelColor: MUTED, dataLabelFontSize: 9.5, dataLabelFormatCode: '#,##0',
+    x: MX, y: 4.15, w: 7.4, h: 2.35, barDir: 'col', chartColors: [BLUE],
+    valAxisLabelFormatCode: '0', showValue: true, dataLabelPosition: 'outEnd',
+    dataLabelColor: MUTED, dataLabelFontSize: 9.5, dataLabelFormatCode: '0',
     catAxisLabelFontSize: 9.5, valAxisLabelFontSize: 9.5, barGapWidthPct: 45,
   }));
   txt(s, 'Saldo por altura de mora, en millones de COP', { x: MX, y: 3.92, w: 6, h: 0.24,
@@ -416,14 +416,13 @@ ANIOS.forEach(([anio, titulo]) => {
     'Suzuki Pto Berrio': 'Puerto Berrío · Suzuki',
   };
   const p = [...D.punto_mob6].map(d => ({ ...d, punto: NOMBRE[d.punto] || d.punto }))
-    .sort((a, b) => b.pct - a.pct);
-  s.addChart(pres.ChartType.bar, [{ name: 'Mora 30+ al mes 6', labels: p.map(d => d.punto),
-    values: p.map(d => d.pct) }], Object.assign({}, baseChart, {
-    x: MX, y: 2.12, w: 7.9, h: 3.85, barDir: 'bar', chartColors: [BLUE],
-    valAxisMaxVal: 14, valAxisMajorUnit: 3.5, showValue: true, dataLabelPosition: 'outEnd',
-    dataLabelColor: INK, dataLabelFontSize: 10.5, dataLabelFontBold: true,
-    dataLabelFormatCode: '0.0"%"', catAxisLabelFontSize: 10.5, valAxisLabelFontSize: 10,
-    barGapWidthPct: 40,
+    .sort((a, b) => a.pct - b.pct);   // el gráfico de barras horizontales dibuja de abajo a arriba
+  s.addChart(pres.ChartType.bar, [{ name: 'Mora 30+ al mes 6',
+    labels: p.map(d => d.punto + '   ' + nf(d.pct) + '%'), values: p.map(d => d.pct) }],
+    Object.assign({}, baseChart, {
+    x: MX, y: 2.12, w: 7.9, h: 3.8, barDir: 'bar', chartColors: [BLUE],
+    valAxisMaxVal: 14, valAxisMajorUnit: 3.5,
+    catAxisLabelFontSize: 10.5, valAxisLabelFontSize: 10, barGapWidthPct: 40,
   }));
 
   txt(s, 'No es la plaza, es la operación', { x: 8.75, y: 2.12, w: 4.0, h: 0.28,
@@ -432,14 +431,14 @@ ANIOS.forEach(([anio, titulo]) => {
     { x: 8.75, y: 2.44, w: 4.0, h: 1.45, fontSize: 11, color: MUTED, fontFace: BODY,
       valign: 'top', lineSpacing: 15 });
 
-  card(s, 8.75, 3.97, 4.0, 2.0, 'FBF2EC');
+  card(s, 8.75, 3.97, 4.0, 2.22, 'FBF2EC');
   txt(s, 'COP 71 M al año', { x: 8.99, y: 4.15, w: 3.6, h: 0.5, fontSize: 24, bold: true,
     color: '9A4520', fontFace: HEAD });
   txt(s, 'menos en mora si Cartagena-Suzuki y Puerto Berrío AKT rindieran como el promedio de los demás',
     { x: 8.99, y: 4.68, w: 3.55, h: 0.7, fontSize: 11, color: '6E4130', fontFace: BODY,
       valign: 'top', lineSpacing: 15 });
   txt(s, 'Esos dos puntos ponen el 33% del capital y el 42% de la mora. La brecha son COP 22 millones sobre las cinco cosechas medidas; anualizada al ritmo de colocación de 2026, COP 71 millones.',
-    { x: 8.99, y: 5.38, w: 3.55, h: 0.72, fontSize: 9.5, color: '8A6552', fontFace: BODY,
+    { x: 8.99, y: 5.38, w: 3.55, h: 0.78, fontSize: 9.5, color: '8A6552', fontFace: BODY,
       valign: 'top', lineSpacing: 12 });
   footer(s, 'Se excluye Administración por tener menos de 20 créditos. Denominador: capital inicial de los créditos vigentes, que a los 6 meses cubre el 81% de lo colocado.');
   s.addNotes('La comparación es a edad constante, que es lo que la hace defendible. Si preguntan por qué no se ven todas las cosechas: a los 6 meses la cobertura es del 81%, más allá el sesgo de supervivencia la arruina.');
@@ -450,6 +449,7 @@ ANIOS.forEach(([anio, titulo]) => {
   const s = pres.addSlide();
   header(s, 'Cobranza', 'La décima parte de la cartera tiene tres cuartas partes de la mora',
     'Cartera viva a ago-2026, ordenada por saldo en mora de cada crédito.');
+  footer(s, 'ICV = mora 30+ sobre saldo vigente. No es comparable con el indicador de cosechas, que divide por la colocación original.');
 
   stat(s, MX, 1.95, 3.85, D.concentracion.creditos + ' créditos', 'concentran el ' + nf(D.concentracion.pct_mora) + '% de la mora',
     'Son el 10% de la cartera y suman COP ' + D.concentracion.monto_M + ' millones de exposición.', RED);
@@ -461,7 +461,7 @@ ANIOS.forEach(([anio, titulo]) => {
   const e = D.exposicion.filter(x => +x.anio >= 2023);
   s.addChart(pres.ChartType.bar, [{ name: 'ICV', labels: e.map(x => 'Cosechas ' + x.anio),
     values: e.map(x => x.icv) }], Object.assign({}, baseChart, {
-    x: MX, y: 4.15, w: 6.0, h: 2.15, barDir: 'col', chartColors: [ORANGE],
+    x: MX, y: 4.15, w: 6.0, h: 2.35, barDir: 'col', chartColors: [ORANGE],
     valAxisMaxVal: 100, valAxisMajorUnit: 25, showValue: true, dataLabelPosition: 'outEnd',
     dataLabelColor: INK, dataLabelFontSize: 10, dataLabelFontBold: true,
     dataLabelFormatCode: '0"%"', catAxisLabelFontSize: 10, valAxisLabelFontSize: 9.5,
@@ -472,8 +472,8 @@ ANIOS.forEach(([anio, titulo]) => {
 
   txt(s, 'Por qué las cosechas viejas muestran un ICV tan alto', { x: 7.0, y: 3.92, w: 5.7,
     h: 0.26, fontSize: 12.5, bold: true, color: INK, fontFace: BODY });
-  txt(s, 'No es que se hayan deteriorado más de lo que dice el análisis de cosechas. Es que de esas cosechas ya se pagó casi todo lo bueno: lo que queda vivo es, por definición, lo que no ha pagado. De 2023 solo quedan COP 85 millones vivos, y son mora casi en su totalidad.\n\nPor eso el ICV sirve para dimensionar lo que hay que cobrar hoy, y el análisis de cosechas para juzgar cómo se originó.',
-    { x: 7.0, y: 4.24, w: 5.7, h: 2.2, fontSize: 11, color: MUTED, fontFace: BODY,
+  txt(s, 'No es que se hayan deteriorado más de lo que dice el análisis de cosechas. Es que de esas cosechas ya se pagó casi todo lo bueno: lo que queda vivo es, por definición, lo que no ha pagado. De 2023 solo quedan COP 85 millones vivos, y son mora casi en su totalidad.\n\nPor eso el ICV sirve para dimensionar lo que hay que cobrar hoy, y el análisis de cosechas para juzgar cómo se originó. Confundirlos lleva a conclusiones opuestas sobre el mismo año.\n\nPara la cobranza, la consecuencia práctica es que el esfuerzo no se reparte por igual: 122 créditos concentran tres cuartas partes de lo que hay por recuperar.',
+    { x: 7.0, y: 4.24, w: 5.7, h: 2.3, fontSize: 11, color: MUTED, fontFace: BODY,
       valign: 'top', lineSpacing: 15 });
   s.addNotes('La concentración es el argumento para focalizar cobranza: 122 créditos, no 1.213.');
 }
@@ -487,7 +487,7 @@ ANIOS.forEach(([anio, titulo]) => {
     labels: ejeCosechas(D.colocacion.map(d => d.cosecha)), values: D.colocacion.map(d => d.monto_M) }],
     Object.assign({}, baseChart, {
       x: MX, y: 2.0, w: W - 2 * MX, h: 3.45, barDir: 'col', chartColors: [BLUE],
-      valAxisLabelFormatCode: '#,##0', catAxisLabelFontSize: 11,
+      valAxisLabelFormatCode: '0', catAxisLabelFontSize: 11,
       valAxisLabelFontSize: 10, barGapWidthPct: 30,
     }));
   const kk = [['COP 197 M', 'promedio mensual en 2022'], ['COP 450 M', 'promedio mensual en 2026'],
@@ -541,9 +541,9 @@ ANIOS.forEach(([anio, titulo]) => {
     color: WHITE, fontFace: HEAD });
 
   const dec = [
-    ['Intervenir Cartagena-Suzuki y Puerto Berrío AKT', 'Auditoría de originación de los dos puntos con peor mora al mes 6: expediente, avalúo, verificación de ingresos y cuota inicial efectiva de las cosechas 2025–2026.', 'Gerencia comercial', '31 de octubre', 'COP 71 M al año'],
+    ['Intervenir Cartagena-Suzuki y Puerto Berrío AKT', 'Auditoría de originación de los dos puntos con peor mora al mes 6: expediente, avalúo, verificación de ingresos y cuota inicial efectiva de las cosechas 2025–2026.', 'Gerencia comercial', '31 de octubre', 'COP 71 M/año'],
     ['Cuadrar el castigo de julio con contabilidad', 'Confirmar qué se castigó, contra qué provisión, con qué autorización y con qué efecto en el P&G del año. Sin esto no se reporta mejora de mora a la junta ni al fondeador.', 'Contabilidad', '15 de octubre', 'COP 549 M'],
-    ['Incorporar tres campos al reporte mensual', 'Cuota inicial y precio de factura, score de buró en la originación, y asesor comercial. Que el corte de octubre ya salga con ellos.', 'Sistemas y crédito', '30 de noviembre', 'Habilita fijar política'],
+    ['Incorporar tres campos al reporte mensual', 'Cuota inicial y precio de factura, score de buró en la originación, y asesor comercial. Que el corte de octubre ya salga con ellos.', 'Sistemas y crédito', '30 de nov.', 'Fijar política'],
   ];
   dec.forEach(([t, b, quien, cuando, monto], i) => {
     const y = 1.9 + i * 1.55;
@@ -558,10 +558,10 @@ ANIOS.forEach(([anio, titulo]) => {
       fontFace: BODY, valign: 'top', lineSpacing: 14 });
     const meta = [['Responsable', quien], ['Fecha', cuando], ['En juego', monto]];
     meta.forEach(([k, v], j) => {
-      const mx = MX + 8.25 + j * 1.38;
-      txt(s, k.toUpperCase(), { x: mx, y: y + 0.28, w: 1.32, h: 0.2, fontSize: 7.5,
+      const mx = MX + 8.15 + j * 1.32;
+      txt(s, k.toUpperCase(), { x: mx, y: y + 0.28, w: 1.22, h: 0.2, fontSize: 7.5,
         color: '6E8CAE', bold: true, charSpacing: 0.6, fontFace: BODY });
-      txt(s, v, { x: mx, y: y + 0.52, w: 1.32, h: 0.7, fontSize: 10, bold: true,
+      txt(s, v, { x: mx, y: y + 0.52, w: 1.22, h: 0.7, fontSize: 10, bold: true,
         color: WHITE, fontFace: BODY, valign: 'top', lineSpacing: 13 });
     });
   });
@@ -597,7 +597,7 @@ ANIOS.forEach(([anio, titulo]) => {
     'Los cortes por punto de venta se miden a los 6 meses de vida, donde el capital de los créditos vigentes todavía cubre el 81% de lo colocado. Más allá, el sesgo de supervivencia los vuelve inservibles.',
   ];
   sal.forEach((t, i) => {
-    txt(s, t, { x: MX, y: 4.78 + i * 0.47, w: 12.1, h: 0.44, fontSize: 10, color: MUTED,
+    txt(s, t, { x: MX, y: 4.78 + i * 0.42, w: 11.75, h: 0.4, fontSize: 10, color: MUTED,
       fontFace: BODY, valign: 'top', bullet: { code: '2013' }, lineSpacing: 13 });
   });
   footer(s, 'Reproducible con: python3 analizar_cosechas.py Cosechas_2026.xlsx — imprime los controles, reescribe las tablas y actualiza el tablero.');
