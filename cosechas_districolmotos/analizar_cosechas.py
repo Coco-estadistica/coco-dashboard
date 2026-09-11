@@ -12,6 +12,7 @@ Uso:
 Reglas que respeta (no las cambies sin pensarlo dos veces):
   - Un dato faltante es s/d, nunca cero. Las series llevan None, no 0.
   - Las cosechas solo se comparan a MOB constante.
+  - El numerador es el CAPITAL VENCIDO (SALDO EN MORA), no el saldo del crédito.
   - El denominador es la colocación original de la cosecha, y es fijo.
   - Las curvas por año se cortan donde cambiaría la composición del grupo.
   - La ventana de observación termina en jun-2026: desde jul-2026 hay un castigo
@@ -139,8 +140,11 @@ def validar(cred, base, con, colo):
     ago = cred[(cred.corte == '2026-08') & (cred.cosecha >= '2022-01')]
     calc = ago.loc[ago.dias_mora > 30, 'saldo_mora'].sum()
     ref = con.loc[con.obs == '2026-08', 'capital_mora'].sum()
-    print(f'  [{"OK " if abs(calc - ref) < 1 else "!! "}] numerador ago-2026: saldo con DIASMORA>30 '
+    print(f'  [{"OK " if abs(calc - ref) < 1 else "!! "}] numerador ago-2026: capital vencido con DIASMORA>30 '
           f'= {calc:,.0f} vs Consolidado {ref:,.0f}')
+    print(f'  [i  ] exposición: el saldo TOTAL de esos créditos es '
+          f'{ago.loc[ago.dias_mora > 30, "saldo_cap"].sum():,.0f} '
+          f'({ago.loc[ago.dias_mora > 30, "saldo_cap"].sum() / calc:.1f}x el capital vencido)')
 
     jun = cred[cred.corte == '2026-06']; jul = cred[cred.corte == '2026-07']
     salio = jun.saldo_mora.sum() - jul.saldo_mora.sum()

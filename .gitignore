@@ -24,3 +24,9 @@ _RESPALDOS_NO_ABRIR/
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# Informe de cosechas: artefactos de construccion, no se versionan
+cosechas_districolmotos/junta/node_modules/
+cosechas_districolmotos/junta/package*.json
+cosechas_districolmotos/junta/slide-*.jpg
+cosechas_districolmotos/junta/*.pdf

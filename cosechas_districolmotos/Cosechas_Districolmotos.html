@@ -101,7 +101,7 @@ summary:hover{color:var(--text-primary)}
 
 <div class="card">
   <h2>2024 y 2025 maduran a la mitad del ritmo de 2022 y 2023</h2>
-  <p class="den">Mora 30+ <b>vigente al cierre de cada mes</b>, como % de la colocación original de la cosecha, por meses en libros (MOB). Cosechas agrupadas por año de desembolso y ponderadas por monto colocado. Observaciones hasta jun-2026.</p>
+  <p class="den">Capital vencido de los créditos con mora 30+ al cierre de cada mes, como % de la colocación original de la cosecha, por meses en libros (MOB). Cosechas agrupadas por año de desembolso y ponderadas por monto colocado. Observaciones hasta jun-2026.</p>
   <ul class="legend" id="lg-curvas"></ul>
   <div id="c-curvas"></div>
   <p class="note"><b>Esta curva es un saldo, no un acumulado.</b> Mide cuánta mora hay viva en cada momento, así que sube mientras la cosecha se deteriora y vuelve a bajar cuando los créditos se ponen al día, se pagan o se castigan. Por eso 2022 hace pico en 8,3% al mes 24 y luego cede: no es que haya mejorado, es que la cartera se fue vaciando.<br><br><b>Composición constante:</b> cada línea llega solo hasta el mes en que <em>todas</em> las cosechas de ese año siguen observadas. Si no, la curva daría un salto artificial cuando las cosechas malas dejan de tener dato y quedan solo las buenas. Por eso 2025 llega al mes 6 y 2026 al mes 2: son jóvenes, todavía no hay nada que afirmar sobre ellas. La línea de 2022 arranca en el mes 12 porque el archivo empieza a observar en ene-2023.</p>
@@ -383,11 +383,11 @@ function estaticos(){
   <h2 style="margin-bottom:10px">Cómo se calculó</h2>
   <p style="color:var(--text-secondary);font-size:13.2px;margin:0 0 14px">
   <b>Cosecha</b> = mes de desembolso del crédito. <b>MOB</b> = meses transcurridos desde el desembolso (MOB 0 = mes de desembolso).
-  <b>Indicador</b> = saldo de capital de los créditos con más de 30 días de mora <em>en esa fecha</em>, dividido por la <b>colocación original</b> de esa cosecha.
+  <b>Indicador</b> = <b>capital vencido</b> (columna <em>SALDO EN MORA</em>) de los créditos con más de 30 días de mora <em>en esa fecha</em>, dividido por la <b>colocación original</b> de esa cosecha. Es la porción de las cuotas ya vencidas y no pagadas, no el saldo entero del crédito: a los 31–60 días es en promedio el 20% del saldo, y pasados los 360 días es prácticamente el 100%.
   El denominador es fijo, que es lo que permite comparar cosechas entre sí. Es un <b>saldo vigente, no un acumulado</b>: baja cuando los créditos se curan, se pagan o se castigan, así que las curvas hacen pico y después ceden. Para medir pérdida definitiva por cosecha haría falta el dato de castigos, que este archivo no trae. Las curvas por año ponderan cada cosecha por su monto colocado, no promedian porcentajes.</p>
   <h2 style="margin-bottom:10px">Validaciones que se corrieron</h2>
   <ul style="color:var(--text-secondary);font-size:13.2px;margin:0 0 14px;padding-left:20px">
-  <li><b>Cuadre exacto del numerador.</b> La suma del saldo de créditos con DIASMORA&gt;30 en el corte de ago-2026 da COP 301.160.233, idéntico peso a peso al total de la hoja <em>Consolidado</em>. La metodología del archivo quedó confirmada.</li>
+  <li><b>Cuadre exacto del numerador.</b> La suma del <em>capital vencido</em> de los créditos con DIASMORA&gt;30 en el corte de ago-2026 da COP 301.160.233, idéntico peso a peso al total de la hoja <em>Consolidado</em>. Eso confirma qué mide el archivo. Ojo con la lectura: el <b>saldo total</b> de esos mismos créditos es COP 728 millones — 2,4 veces más. El indicador de cosechas mide lo vencido, no la exposición.</li>
   <li><b>Colocación constante.</b> Las 56 cosechas mantienen el mismo monto de colocación en los 13 bloques de observación: el denominador no se mueve.</li>
   <li><b>Triángulo vs Consolidado.</b> Cuadran en 622 de 638 celdas. Las 16 que no cuadran están todas en la columna <em>julio 2025</em> de la hoja <em>Cosechas</em>, con valores redondeados a 3 decimales (0,040 / 0,079 / 0,104…): esa columna se digitó a mano. Se usó el <em>Consolidado</em> como fuente y el triángulo solo para rellenar.</li>
   </ul>

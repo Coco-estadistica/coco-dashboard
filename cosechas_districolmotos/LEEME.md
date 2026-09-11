@@ -83,9 +83,15 @@ diagnosticar.
 **Cosecha** = mes de desembolso. **MOB** = meses transcurridos desde el desembolso
 (MOB 0 = mes de desembolso).
 
-**Indicador** = saldo de capital de los créditos con más de 30 días de mora *en esa fecha*,
-dividido por la **colocación original** de la cosecha. El denominador es fijo: es lo que
-permite comparar cosechas entre sí.
+**Indicador** = **capital vencido** (columna `SALDO EN MORA`) de los créditos con más de 30
+días de mora *en esa fecha*, dividido por la **colocación original** de la cosecha. El
+denominador es fijo: es lo que permite comparar cosechas entre sí.
+
+Ojo con la lectura: el numerador es la porción de cuotas ya vencidas, no el saldo entero del
+crédito. A los 31–60 días de mora es en promedio el 20% del saldo; pasados los 360 días, casi
+el 100%. En ago-2026 el capital vencido son COP 301 millones, pero el **saldo total de esos
+mismos créditos son COP 728 millones**: 2,4 veces más. El indicador mide lo vencido, no la
+exposición.
 
 Es un **saldo vigente, no un acumulado**: baja cuando los créditos se curan, se pagan o se
 castigan, así que las curvas hacen pico y después ceden. Para medir pérdida definitiva por
@@ -98,9 +104,9 @@ artificial cuando las cosechas malas dejan de tener dato y quedan solo las buena
 
 ### Controles que corre el script
 
-- **Numerador, cuadre exacto.** La suma del saldo de créditos con `DIASMORA > 30` en el
-  corte de ago-2026 da COP 301.160.233, idéntico peso a peso al total de la hoja
-  `Consolidado`. Eso confirma qué mide el archivo.
+- **Numerador, cuadre exacto.** La suma del capital vencido de los créditos con
+  `DIASMORA > 30` en el corte de ago-2026 da COP 301.160.233, idéntico peso a peso al total
+  de la hoja `Consolidado`. Eso confirma qué mide el archivo.
 - **Denominador constante.** Las 56 cosechas mantienen el mismo monto de colocación en los
   13 bloques de observación.
 - **Ruptura de julio.** El script reporta cuánta mora salió y cómo se movió la fecha de
