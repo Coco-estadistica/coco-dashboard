@@ -2,6 +2,14 @@
 
 Estado documentado: 13 de agosto de 2026.
 
+> **Muy desactualizado — leer con cuidado.** Este documento es anterior a la
+> migración a Cloudflare y al cambio de nombre del tablero (`Dashboard_COCO.html`
+> pasó a ser `index.html` el 02-sep-2026). Las rutas de archivo de aquí abajo, la
+> carpeta `COCO_Dashboard_Cloud/` y la mención de Google Sheets **ya no reflejan
+> la estructura actual del proyecto**. Para el estado real, usar `README.md`
+> (autoridad vigente) y `LEEME_PARA_CLAUDE.txt`. Se deja este archivo como
+> historia del proyecto, no como referencia operativa.
+
 ## 1. Objetivo
 
 Mantener un dashboard financiero y operativo multipais para COCO Tecnologias. El dashboard consolida Colombia, EE.UU., Peru y Costa Rica, permite filtrar periodos y moneda, y consume una base maestra Excel o su equivalente en Google Sheets.

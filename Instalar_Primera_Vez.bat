@@ -83,21 +83,14 @@ echo     LISTO. Tu carpeta de trabajo quedo en:
 echo        %CD%\coco-dashboard
 echo   ================================================================
 echo.
-echo   FALTAN DOS COSAS, hazlas ahora:
+echo   Todo lo que necesitas ya vino incluido: el codigo, las plantillas,
+echo   los scripts y la carpeta  modelo  (para la pestana Burn ^& Runway).
+echo   No hace falta copiar nada de otro lado.
 echo.
-echo   1. Copia la carpeta  modelo  desde tu carpeta vieja de OneDrive
-echo      a la carpeta nueva. Esa carpeta no esta en GitHub y hace
-echo      falta para la pestana Burn ^& Runway.
+echo   Para revisar que todo llego bien, haz doble clic en Revisar_Base.bat
+echo   dentro de esa carpeta.
 echo.
-echo   2. Compara tu Excel viejo con el nuevo:
-echo         viejo:  tu carpeta de OneDrive \migracion\BD_MAESTRA_COCO.xlsx
-echo         nuevo:  %CD%\coco-dashboard\migracion\BD_MAESTRA_COCO.xlsx
-echo      Si el tuyo tiene cifras mas recientes, copialo encima del nuevo
-echo      y despues haz doble clic en Subir_A_GitHub.bat
-echo.
-echo   NO borres tu carpeta de OneDrive todavia. Dejala como respaldo
-echo   hasta que compruebes que todo funciona en la carpeta nueva.
-echo.
-echo   Desde manana trabajas SIEMPRE en la carpeta nueva.
+echo   Antes de empezar a cargar datos cada vez, haz doble clic en
+echo   Actualizar_Desde_GitHub.bat para traer lo mas reciente.
 echo.
 pause

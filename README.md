@@ -1,9 +1,11 @@
 # COCO Tecnologías — Cockpit Financiero
 
 Tablero financiero y operativo multipaís (Colombia, EE.UU., Perú, Costa Rica).
-Corre en tu computador leyendo un Excel, y está preparado para publicarse en Google.
+Corre en tu computador leyendo un Excel. Se publica en **Cloudflare**
+(`coco-cockpit.cocotec.workers.dev`), protegido por Cloudflare Access.
 
-Última revisión de este documento: **20 de agosto de 2026**.
+Última revisión de este documento: **17 de septiembre de 2026** (corregidas las
+referencias desactualizadas a Google como plan de despliegue — ver sección 9).
 
 ---
 
@@ -17,10 +19,17 @@ En esta carpeta hay tres archivos `.bat`. **Doble clic, nada más.**
 | **`Abrir_Dashboard_COCO.bat`** | Abrir el tablero | No |
 | **`Revisar_Base.bat`** | Comprobar que la base esté sana, antes de publicar un cierre | **No** |
 | **`Corregir_Base.bat`** | Alinear capas desfasadas. Muestra qué cambiaría y pide confirmación | Sí, con respaldo |
-| **`Subir_A_GitHub.bat`** | Guardar tu trabajo en GitHub. **Termina siempre por aquí** | Sí: publica |
+| **`Subir_A_GitHub.bat`** | Guardar tu trabajo en GitHub. **Termina siempre por aquí** | Sí: sube a GitHub |
 
 Los archivos `.py` que hay en las subcarpetas son las instrucciones que ejecutan esos
 botones. **No hay que abrirlos ni ejecutarlos a mano.**
+
+> **Subir a GitHub no es lo mismo que publicar el tablero.** `Subir_A_GitHub.bat`
+> guarda y versiona el trabajo, pero el tablero público (Cloudflare) **no se entera
+> solo**. Publicar es un paso manual aparte: **Cloudflare → Workers & Pages →
+> coco-cockpit → Deployments → New deployment**, subiendo el paquete
+> `publicar/COCO_dashboard_publicar.zip`. Sin ese paso, GitHub tiene la versión
+> nueva pero el tablero público sigue mostrando la anterior.
 
 ### 1.0 La primera vez: `Instalar_Primera_Vez.bat`
 
@@ -33,16 +42,17 @@ actual**, así que la vieja queda intacta como respaldo hasta que compruebes que
 funciona. Requiere tener Git instalado (https://git-scm.com/download/win); el botón lo
 comprueba y avisa si falta.
 
-Al terminar quedan dos cosas por hacer a mano, y el propio botón las recuerda en pantalla:
-copiar la carpeta `modelo/` desde la carpeta vieja (no está en GitHub, ver sección 5), y
-comparar el Excel viejo con el nuevo por si el tuyo trae cifras más recientes.
+Al terminar, la carpeta `modelo/` ya viene incluida (vive en GitHub, no hace falta
+copiarla de otro lado). Si vienes de una copia vieja de antes de esta migración, vale
+la pena comparar tu Excel viejo con el nuevo por si el tuyo trae cifras más recientes.
 
 ### 1.1 Una sola copia manda: la de GitHub
 
-El mismo Excel puede existir en tu computador, en GitHub y en Google Sheets. Para que no
-se repita el problema de la sección 3 —una cifra en varios sitios desalineándose sin
-avisar—, **la copia oficial es la de GitHub**. La de tu computador es la copia de
-trabajo: se baja antes de empezar y se sube al terminar.
+El mismo Excel puede existir en varios computadores a la vez. Para que no se repita el
+problema de la sección 3 —una cifra en varios sitios desalineándose sin avisar—, **la
+copia oficial es la de GitHub**. La de tu computador es la copia de trabajo: se baja
+antes de empezar y se sube al terminar. (Google Sheets no entra en esta cuenta: es un
+plan que quedó preparado pero nunca se activó — ver sección 9.)
 
 **La regla que no se puede romper: un `.xlsx` es binario, y Git no lo puede fusionar.**
 Si dos personas editan la base a la vez, no hay forma de combinar los dos archivos —
@@ -56,8 +66,10 @@ De ahí salen dos costumbres:
 - **Mientras alguien más esté trabajando sobre la base**, tú no la editas. Se avisa
   cuando queda libre. Nunca los dos a la vez sobre el mismo archivo.
 
-> Si al abrir el tablero aparece "Carga la base de datos", espera unos segundos: la base
-> vive en OneDrive y a veces tarda en descargarse. El tablero reintenta solo 3 veces.
+> Si al abrir el tablero aparece "Carga la base de datos", espera unos segundos: el
+> tablero reintenta solo 3 veces antes de avisar que algo falló. En el tablero
+> publicado (Cloudflare), la base se sirve como parte del despliegue, no desde
+> OneDrive.
 
 ---
 
@@ -67,8 +79,8 @@ La base se separó en dos el 13-ago-2026 para eliminar la duplicación de cifras
 
 ### `migracion/BD_MAESTRA_COCO.xlsx` — 14 hojas · la que importa
 
-Es la **única fuente de verdad**. La que lee el tablero, la que se respalda y la que
-se sube a Google Sheets.
+Es la **única fuente de verdad**. La que lee el tablero, la que se respalda, y la que
+viaja dentro del paquete que se publica en Cloudflare.
 
 | Hoja | Papel |
 |---|---|
@@ -78,8 +90,8 @@ se sube a Google Sheets.
 | `Calc_LTV_Fin` | Cálculo de LTV. Referenciado por `BD_Indicadores` y `Marketing` |
 | `Analisis_Churn` / `Analisis_Reconciliacion` | Insumos de pestañas específicas |
 | `Pipeline_Comercial` | Oportunidades comerciales |
-| `CATALOGOS` | Qué códigos puede cargar cada área (lo usa Apps Script) |
-| `LOG` | Bitácora de quién cargó qué (lo escribe Apps Script) |
+| `CATALOGOS` | Qué códigos puede cargar cada área. Preparada para el plan de Google Sheets de la sección 9 (sin activar); hoy no la escribe ni la lee nada automáticamente |
+| `LOG` | Bitácora de quién cargó qué. Mismo caso: preparada para la sección 9, hoy vacía |
 | `MAP_DASHBOARD_GASTOS`<br>`BD_GASTOS_HOMOLOGADOS`<br>`BD_GASTOS_DASHBOARD_BRIDGE`<br>`BD_GASTOS_RESUMEN_MENSUAL` | **Cadena de gastos.** Las tres primeras producen la cuarta, que es la que el tablero lee. Se mantienen juntas porque son una cadena de producción activa |
 
 ### `migracion/BD_TRAZABILIDAD_COCO.xlsx` — 24 hojas · el archivo
@@ -288,7 +300,12 @@ Ocho pasos. El orden importa: cada uno asume el anterior.
 
 ### H. Publica
 
-10. **`Subir_A_GitHub.bat`** — el cierre no está terminado hasta que está publicado.
+10. **`Subir_A_GitHub.bat`** — guarda el cierre en GitHub, con historial.
+
+11. **Publicar en Cloudflare** — el cierre no está terminado hasta este paso. Subir a
+    GitHub no actualiza el tablero público por sí solo: falta subir manualmente
+    `publicar/COCO_dashboard_publicar.zip` en **Cloudflare → Workers & Pages →
+    coco-cockpit → Deployments → New deployment**.
 
 ### Si además actualizaste el Modelo financiero
 
@@ -404,9 +421,15 @@ Los huecos hoy visibles en el tablero, y todos verificados contra la base:
 
 ## 9. Publicar en Google (opcional, preparado y sin desplegar)
 
-Ver **`DESPLIEGUE.md`**. Resumen: el Sheet queda como fuente de datos, Apps Script
-sirve el tablero, y cada área carga su porción con su cuenta `@cocotech.ai` — sin
+**El tablero real está publicado en Cloudflare, no en Google.** Esta sección describe
+un plan alterno que se dejó preparado (Sheet + Apps Script) pero nunca se activó — no
+lo confundas con lo que está en producción hoy.
+
+Ver **`DESPLIEGUE.md`**. Resumen: el Sheet quedaría como fuente de datos, Apps Script
+serviría el tablero, y cada área cargaría su porción con su cuenta `@cocotech.ai` — sin
 claves que repartir, con la identidad verificada por Google y todo registrado en `LOG`.
+Mientras siga sin desplegarse, las hojas `CATALOGOS` y `LOG` de la base están vacías o
+sin uso.
 
 ---
 
