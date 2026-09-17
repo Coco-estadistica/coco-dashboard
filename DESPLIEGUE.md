@@ -1,5 +1,10 @@
 # Poner el dashboard en línea — guía paso a paso
 
+> **Este plan nunca se activó.** El tablero real está publicado en **Cloudflare**
+> (`coco-cockpit.cocotec.workers.dev`), no en Google. Esta guía describe un camino
+> alterno que se dejó preparado y quedó en pausa — no la sigas pensando que es
+> cómo está desplegado hoy. Para el despliegue real, ver `README.md`, secciones 1 y 9.
+
 Tiempo estimado: **20 minutos**. Todo es gratis (Google Workspace que ya tienes).
 
 Al terminar vas a tener:

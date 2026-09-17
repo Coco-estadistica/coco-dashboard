@@ -1,17 +1,24 @@
 INICIO RAPIDO
 =============
-Actualizado: 20 de agosto de 2026.
+Actualizado: 17 de septiembre de 2026.
 
 ORDEN DE LECTURA
   1. README.md          <- estado ACTUAL del proyecto (este manda)
-  2. CLAUDE_HANDOFF.md  <- contexto de agosto 2026; ojo, quedo desactualizado en 2 puntos
-                           (ver seccion 10 del README)
+  2. CLAUDE_HANDOFF.md  <- contexto de agosto 2026, MUY desactualizado (rutas y
+                           nombres de archivo de antes de la migracion a Cloudflare).
+                           Util solo como historia; no seguir sus rutas al pie de la letra.
 
 ARCHIVOS OFICIALES
-  Tablero:        Dashboard_COCO.html          (unico; los demas HTML son respaldos)
+  Tablero:        index.html   (asi se llama desde el 02-sep-2026; Dashboard_COCO.html
+                                 ya no existe)
   Base operativa: migracion/BD_MAESTRA_COCO.xlsx        14 hojas
   Trazabilidad:   migracion/BD_TRAZABILIDAD_COCO.xlsx   24 hojas (el tablero NO la lee)
-  Lanzador:       Abrir_Dashboard_COCO.bat     (puerto 8740)
+  Lanzador:       Abrir_Dashboard_COCO.bat     (puerto 8740, solo para probar local)
+
+  OJO: subir a GitHub NO publica el tablero. El tablero real vive en Cloudflare
+  (coco-cockpit.cocotec.workers.dev) y se publica con un paso manual aparte:
+  Workers & Pages > coco-cockpit > Deployments > New deployment, subiendo
+  publicar/COCO_dashboard_publicar.zip. Ver README.md, seccion 1 y 9.
 
 COMO SE TRABAJA (desde el 20-ago-2026)
   La copia OFICIAL de la base es la de GitHub. La del computador es copia de trabajo.
